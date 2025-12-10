@@ -1,0 +1,10 @@
+{
+    "name": "it-inventory/management-system",
+    "description": "IT Inventory Management System",
+    "require": {
+        "php": ">=7.4",
+        "phpoffice/phpspreadsheet": "^1.29"
+    }
+}
+
+
