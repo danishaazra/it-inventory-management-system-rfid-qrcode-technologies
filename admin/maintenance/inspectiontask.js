@@ -1,5 +1,7 @@
 // Get URL parameters
 const urlParams = new URLSearchParams(window.location.search);
+const maintenanceId = urlParams.get('maintenanceId');
+// Legacy support
 const branch = urlParams.get('branch');
 const location = urlParams.get('location');
 const itemName = urlParams.get('itemName');
@@ -9,13 +11,17 @@ let tasks = []; // Array of {text: string, scheduledDate: string}
 
 // Load maintenance details
 async function loadMaintenanceDetails() {
-  if (!branch || !location || !itemName) {
-    document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Parameters Required</h1><p>Please provide branch, location, and itemName in the URL.</p><a href="maintenance.html">← Back to maintenance checklist</a></div>';
+  if (!maintenanceId && (!branch || !location || !itemName)) {
+    document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Parameters Required</h1><p>Please provide maintenanceId in the URL.</p><a href="maintenance.html">← Back to maintenance checklist</a></div>';
     return;
   }
 
   try {
-    const resp = await fetch(`./get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`);
+    const url = maintenanceId 
+      ? `./get_maintenance.php?maintenanceId=${encodeURIComponent(maintenanceId)}`
+      : `./get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+    
+    const resp = await fetch(url);
     const data = await resp.json();
 
     if (!resp.ok || !data.ok) {
@@ -24,6 +30,17 @@ async function loadMaintenanceDetails() {
     }
 
     currentMaintenance = data.maintenance;
+    
+    // Update URL with maintenanceId if using legacy parameters
+    if (!maintenanceId && currentMaintenance._id) {
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('maintenanceId', currentMaintenance._id);
+      newUrl.searchParams.delete('branch');
+      newUrl.searchParams.delete('location');
+      newUrl.searchParams.delete('itemName');
+      window.history.replaceState({}, '', newUrl);
+    }
+    
     displayMaintenanceDetails(currentMaintenance);
     parseTasks(currentMaintenance.inspectionTasks || '');
     displayTasks();
@@ -253,21 +270,9 @@ function displayTasks() {
         ${allDatesHtml}
       </div>
       <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <a href="maintenanaceasset.html?branch=${encodeURIComponent(currentMaintenance.branch)}&location=${encodeURIComponent(currentMaintenance.location)}&itemName=${encodeURIComponent(currentMaintenance.itemName)}" class="view-more-btn" style="text-decoration: none; display: inline-block;">
+        <a href="maintenanceasset.html?maintenanceId=${currentMaintenance._id || ''}" class="view-more-btn" style="text-decoration: none; display: inline-block;">
           View Assets
         </a>
-        ${task.allScheduledDates && task.allScheduledDates.length > 1 ? `
-          <button class="view-more-btn" onclick="toggleTaskView(${task.id})">
-            ${isExpanded ? 'View Less' : 'View More'}
-          </button>
-        ` : ''}
-        <div class="inspection-actions-wrapper">
-          <button class="inspection-actions-btn" onclick="openTaskActions(${task.id})">⋯</button>
-          <div class="inspection-actions-menu" id="task-actions-${task.id}">
-            <button type="button" class="edit-action" onclick="editTask(${task.id})">✏️ Edit</button>
-            <button type="button" class="delete-action" onclick="deleteTask(${task.id})">🗑️ Delete</button>
-          </div>
-        </div>
       </div>
     `;
     tasksList.appendChild(li);
