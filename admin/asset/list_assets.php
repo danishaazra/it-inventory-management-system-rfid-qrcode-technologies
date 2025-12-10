@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require 'db.php';
+require '../api/db.php';
 
 try {
   // Query all assets from MongoDB, sorted by assetId

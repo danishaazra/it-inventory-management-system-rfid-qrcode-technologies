@@ -1,7 +1,7 @@
 <?php
 // Supports CSV and Excel files (.xlsx, .xls)
 header('Content-Type: application/json');
-require 'db.php';
+require '../api/db.php';
 
 if (!isset($_FILES['file'])) {
   http_response_code(400);
@@ -242,3 +242,4 @@ $requiredCol = 'assetId';
   echo json_encode(['ok' => false, 'error' => 'Upload failed: ' . $e->getMessage()]);
 }
 ?>
+

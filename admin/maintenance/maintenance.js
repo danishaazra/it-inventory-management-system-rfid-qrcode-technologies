@@ -1,0 +1,482 @@
+// Wait for DOM to be ready
+let addMenu, addBtn, fileInput, addForm, maintenanceTableBody;
+let addModalOverlay, closeAddModalBtn, cancelAddBtn, frequencySelect, scheduleContainer, scheduleCalendar;
+
+function initElements() {
+  addMenu = document.getElementById('add-maintenance-menu');
+  addBtn = document.getElementById('add-maintenance-btn');
+  fileInput = document.getElementById('maintenance-file-input');
+  addForm = document.getElementById('add-maintenance-form');
+  maintenanceTableBody = document.getElementById('maintenance-table-body');
+  addModalOverlay = document.getElementById('add-modal-overlay');
+  closeAddModalBtn = document.getElementById('close-add-modal-btn');
+  cancelAddBtn = document.getElementById('cancel-add-btn');
+  frequencySelect = document.getElementById('add-frequency');
+  scheduleContainer = document.getElementById('add-schedule-container');
+  scheduleCalendar = document.getElementById('add-schedule-calendar');
+  
+  console.log('Elements initialized:', { addBtn, addMenu });
+  
+  if (!addBtn) {
+    console.error('add-maintenance-btn not found!');
+  }
+  if (!addMenu) {
+    console.error('add-maintenance-menu not found!');
+  }
+}
+
+// Load and display maintenance items in the table
+async function loadMaintenance() {
+  try {
+    const resp = await fetch('./list_maintenance.php');
+    if (!resp.ok) {
+      console.error('Failed to load maintenance items');
+      return;
+    }
+    const data = await resp.json();
+    if (data.ok && data.maintenance) {
+      displayMaintenance(data.maintenance);
+    }
+  } catch (error) {
+    console.error('Error loading maintenance:', error);
+  }
+}
+
+// Display maintenance items in the table
+function displayMaintenance(maintenanceItems) {
+  maintenanceTableBody.innerHTML = '';
+  if (maintenanceItems.length === 0) {
+    maintenanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #888;">No maintenance items found</td></tr>';
+    return;
+  }
+  
+  maintenanceItems.forEach(item => {
+    const row = document.createElement('tr');
+    const frequency = item.frequency || '';
+    const frequencyClass = frequency.toLowerCase();
+    
+    row.innerHTML = `
+      <td>${item.branch || '-'}</td>
+      <td>${item.location || '-'}</td>
+      <td>${item.itemName || '-'}</td>
+      <td><span class="frequency-badge frequency-${frequencyClass}">${frequency || '-'}</span></td>
+      <td><a href="maintenancetask.html?branch=${encodeURIComponent(item.branch || '')}&location=${encodeURIComponent(item.location || '')}&itemName=${encodeURIComponent(item.itemName || '')}" class="inspection-tasks-link">View Tasks</a></td>
+    `;
+    maintenanceTableBody.appendChild(row);
+  });
+}
+
+
+// Initialize everything when DOM is ready
+function init() {
+  initElements();
+  
+  if (!addBtn || !addMenu) {
+    console.error('Critical elements not found! Retrying...');
+    setTimeout(init, 100);
+    return;
+  }
+  
+  // Load maintenance when page loads
+  loadMaintenance();
+  
+  // Setup event listeners
+  setupEventListeners();
+}
+
+// Start initialization
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init(); // DOM already loaded
+}
+
+// Function to close the add modal
+function closeAddModal() {
+  addModalOverlay.classList.remove('open');
+  addForm.reset();
+  scheduleContainer.style.display = 'none';
+  scheduleCalendar.innerHTML = '';
+}
+
+function setupEventListeners() {
+  // Add button click handler - THIS WAS MISSING!
+  if (addBtn) {
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      console.log('Add button clicked!', addMenu);
+      if (addMenu) {
+        addMenu.classList.toggle('open');
+        console.log('Menu toggled, classList:', addMenu.classList.toString());
+      } else {
+        console.error('addMenu is null!');
+      }
+    });
+  } else {
+    console.error('addBtn is null, cannot add event listener!');
+  }
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (addBtn && addMenu && !addBtn.contains(e.target) && !addMenu.contains(e.target)) {
+      addMenu.classList.remove('open');
+    }
+  });
+
+  // Menu click handlers
+  if (addMenu) {
+    addMenu.addEventListener('click', async (e) => {
+      console.log('Menu clicked:', e.target, e.target.dataset.action);
+      if (e.target.dataset.action === 'manual') {
+        if (addModalOverlay) {
+          addModalOverlay.classList.add('open');
+        }
+        addMenu.classList.remove('open'); // Close menu when opening modal
+      }
+      if (e.target.dataset.action === 'upload') {
+        // Set accept attribute to include Excel and CSV files
+        if (fileInput) {
+          fileInput.setAttribute('accept', '.csv,.xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv');
+          fileInput.click();
+        }
+      }
+    });
+  }
+
+  // Close modal when clicking X button
+  if (closeAddModalBtn) {
+    closeAddModalBtn.addEventListener('click', closeAddModal);
+  }
+
+  // Close modal when clicking Cancel button
+  if (cancelAddBtn) {
+    cancelAddBtn.addEventListener('click', closeAddModal);
+  }
+
+  // Close modal when clicking outside (on overlay)
+  if (addModalOverlay) {
+    addModalOverlay.addEventListener('click', (e) => {
+      if (e.target === addModalOverlay) {
+        closeAddModal();
+      }
+    });
+  }
+
+  // Handle frequency change to show/hide schedule
+  if (frequencySelect) {
+    frequencySelect.addEventListener('change', function() {
+      const frequency = this.value;
+      if (frequency && scheduleContainer && scheduleCalendar) {
+        scheduleContainer.style.display = 'block';
+        generateScheduleCalendar(frequency);
+      } else if (scheduleContainer) {
+        scheduleContainer.style.display = 'none';
+        if (scheduleCalendar) scheduleCalendar.innerHTML = '';
+      }
+    });
+  }
+
+// Generate schedule calendar based on frequency
+function generateScheduleCalendar(frequency) {
+  if (!scheduleCalendar) return;
+  scheduleCalendar.innerHTML = '';
+  
+  if (frequency === 'Weekly') {
+    generateWeeklySchedule();
+  } else if (frequency === 'Monthly') {
+    generateMonthlySchedule();
+  } else if (frequency === 'Quarterly') {
+    generateQuarterlySchedule();
+  }
+}
+
+function generateWeeklySchedule() {
+  const currentYear = new Date().getFullYear();
+  const yearSelect = document.createElement('div');
+  yearSelect.className = 'calendar-year-selector';
+  
+  const yearLabel = document.createElement('label');
+  yearLabel.textContent = 'Year: ';
+  const yearDropdown = document.createElement('select');
+  yearDropdown.id = 'schedule-year';
+    for (let y = currentYear; y <= currentYear + 2; y++) {
+    const option = document.createElement('option');
+    option.value = y;
+    option.textContent = y;
+    if (y === currentYear) option.selected = true;
+    yearDropdown.appendChild(option);
+  }
+  
+  yearSelect.appendChild(yearLabel);
+  yearSelect.appendChild(yearDropdown);
+  scheduleCalendar.appendChild(yearSelect);
+  
+  const monthsDiv = document.createElement('div');
+  monthsDiv.className = 'calendar-months';
+  
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  months.forEach((month, index) => {
+    const monthDiv = document.createElement('div');
+    monthDiv.className = 'calendar-month';
+    
+    const monthHeader = document.createElement('div');
+    monthHeader.className = 'calendar-month-header';
+    monthHeader.textContent = month;
+    monthDiv.appendChild(monthHeader);
+    
+    const weeksDiv = document.createElement('div');
+    weeksDiv.className = 'calendar-weeks';
+    
+    // Get number of weeks in month
+    const firstDay = new Date(currentYear, index, 1).getDay();
+    const daysInMonth = new Date(currentYear, index + 1, 0).getDate();
+    const weeks = Math.ceil((daysInMonth + firstDay) / 7);
+    
+    for (let week = 1; week <= weeks; week++) {
+      const weekDiv = document.createElement('div');
+      weekDiv.className = 'calendar-week';
+      
+      const weekLabel = document.createElement('div');
+      weekLabel.className = 'calendar-week-label';
+      weekLabel.textContent = `Week ${week}:`;
+      
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.className = 'calendar-date-input';
+      dateInput.name = `schedule[${month}][Week${week}]`;
+      
+      weekDiv.appendChild(weekLabel);
+      weekDiv.appendChild(dateInput);
+      weeksDiv.appendChild(weekDiv);
+    }
+    
+    monthDiv.appendChild(weeksDiv);
+    monthsDiv.appendChild(monthDiv);
+  });
+  
+  scheduleCalendar.appendChild(monthsDiv);
+}
+
+function generateMonthlySchedule() {
+  const currentYear = new Date().getFullYear();
+  const yearSelect = document.createElement('div');
+  yearSelect.className = 'calendar-year-selector';
+  
+  const yearLabel = document.createElement('label');
+  yearLabel.textContent = 'Year: ';
+  const yearDropdown = document.createElement('select');
+  yearDropdown.id = 'schedule-year';
+  for (let y = currentYear; y <= currentYear + 2; y++) {
+    const option = document.createElement('option');
+    option.value = y;
+    option.textContent = y;
+    if (y === currentYear) option.selected = true;
+    yearDropdown.appendChild(option);
+  }
+  
+  yearSelect.appendChild(yearLabel);
+  yearSelect.appendChild(yearDropdown);
+  scheduleCalendar.appendChild(yearSelect);
+  
+  const monthsDiv = document.createElement('div');
+  monthsDiv.className = 'calendar-months';
+  
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  months.forEach((month, index) => {
+    const monthDiv = document.createElement('div');
+    monthDiv.className = 'calendar-month';
+    
+    const monthHeader = document.createElement('div');
+    monthHeader.className = 'calendar-month-header';
+    monthHeader.textContent = month;
+    monthDiv.appendChild(monthHeader);
+    
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'calendar-date-input';
+    dateInput.name = `schedule[${month}]`;
+    dateInput.style.width = '100%';
+    dateInput.style.marginTop = '0.5rem';
+    
+    monthDiv.appendChild(dateInput);
+    monthsDiv.appendChild(monthDiv);
+  });
+  
+  scheduleCalendar.appendChild(monthsDiv);
+}
+
+function generateQuarterlySchedule() {
+  const currentYear = new Date().getFullYear();
+  const yearSelect = document.createElement('div');
+  yearSelect.className = 'calendar-year-selector';
+  
+  const yearLabel = document.createElement('label');
+  yearLabel.textContent = 'Year: ';
+  const yearDropdown = document.createElement('select');
+  yearDropdown.id = 'schedule-year';
+  for (let y = currentYear; y <= currentYear + 2; y++) {
+    const option = document.createElement('option');
+    option.value = y;
+    option.textContent = y;
+    if (y === currentYear) option.selected = true;
+    yearDropdown.appendChild(option);
+  }
+  
+  yearSelect.appendChild(yearLabel);
+  yearSelect.appendChild(yearDropdown);
+  scheduleCalendar.appendChild(yearSelect);
+  
+  const quartersDiv = document.createElement('div');
+  quartersDiv.className = 'calendar-months';
+  
+  const quarters = [
+    { name: 'Q1', months: ['January', 'February', 'March'] },
+    { name: 'Q2', months: ['April', 'May', 'June'] },
+    { name: 'Q3', months: ['July', 'August', 'September'] },
+    { name: 'Q4', months: ['October', 'November', 'December'] }
+  ];
+  
+  quarters.forEach(quarter => {
+    const quarterDiv = document.createElement('div');
+    quarterDiv.className = 'calendar-quarter';
+    
+    const quarterLabel = document.createElement('div');
+    quarterLabel.className = 'calendar-quarter-label';
+    quarterLabel.textContent = quarter.name;
+    quarterDiv.appendChild(quarterLabel);
+    
+    quarter.months.forEach(month => {
+      const monthSelect = document.createElement('select');
+      monthSelect.className = 'calendar-month-select';
+      monthSelect.name = `schedule[${quarter.name}][${month}]`;
+      
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = `${month}...`;
+      monthSelect.appendChild(option);
+      
+      // Add date options (simplified - you can expand this)
+      for (let day = 1; day <= 31; day++) {
+        const dayOption = document.createElement('option');
+        dayOption.value = day;
+        dayOption.textContent = `Day ${day}`;
+        monthSelect.appendChild(dayOption);
+      }
+      
+      quarterDiv.appendChild(monthSelect);
+    });
+    
+    quartersDiv.appendChild(quarterDiv);
+  });
+  
+  scheduleCalendar.appendChild(quartersDiv);
+}
+
+// Form submit handler
+if (addForm) {
+  addForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addForm);
+    
+    // Collect schedule data
+    const scheduleData = {};
+    const scheduleInputs = scheduleCalendar.querySelectorAll('[name^="schedule"]');
+    scheduleInputs.forEach(input => {
+      if (input.value) {
+        const nameParts = input.name.match(/schedule\[(.*?)\](?:\[(.*?)\])?/);
+        if (nameParts) {
+          const key1 = nameParts[1];
+          const key2 = nameParts[2];
+          if (key2) {
+            if (!scheduleData[key1]) scheduleData[key1] = {};
+            scheduleData[key1][key2] = input.value;
+          } else {
+            scheduleData[key1] = input.value;
+          }
+        }
+      }
+    });
+    
+    const data = Object.fromEntries(formData.entries());
+    if (Object.keys(scheduleData).length > 0) {
+      data.maintenanceSchedule = scheduleData;
+    }
+    
+    try {
+      const resp = await fetch('./add_maintenance.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      
+      const result = await resp.json();
+      
+      if (!resp.ok || !result.ok) {
+        console.error('Add maintenance error:', result);
+        if (resp.status === 409 || result.error === 'Data already exists') {
+          return alert(`Data already exists!\n\n${result.message || 'A maintenance item with these details already exists in the database.'}`);
+        }
+        return alert(`Save failed: ${result.error || 'Unknown error. Please check console for details.'}`);
+      }
+      
+      alert('Maintenance item added successfully!');
+      addForm.reset();
+      closeAddModal();
+      loadMaintenance(); // Refresh table data
+    } catch (error) {
+      console.error('Error adding maintenance:', error);
+      alert(`Save failed: ${error.message || 'Network error. Please try again.'}`);
+    }
+  });
+}
+
+// File input change handler
+if (fileInput) {
+  fileInput.addEventListener('change', async () => {
+    if (!fileInput.files.length) return;
+    const fd = new FormData();
+    fd.append('file', fileInput.files[0]);
+    
+    try {
+      const resp = await fetch('./upload_maintenance.php', { method: 'POST', body: fd });
+      const data = await resp.json();
+      
+      if (!resp.ok || !data.ok) {
+        console.error('Upload error:', data);
+        fileInput.value = '';
+        addMenu.classList.remove('open'); // Close menu even on error
+        return alert(`Upload failed: ${data.error || 'Unknown error'}`);
+      }
+      
+      if (data.inserted > 0) {
+        let message = `Successfully uploaded ${data.inserted} maintenance item(s)!`;
+        if (data.duplicates && data.duplicates.length > 0) {
+          message += `\n\n${data.duplicates.length} duplicate(s) skipped:\n${data.duplicates.slice(0, 5).join(', ')}${data.duplicates.length > 5 ? '...' : ''}`;
+        }
+        alert(message);
+        loadMaintenance(); // Refresh table data
+      } else {
+        let message = `No maintenance items were inserted.`;
+        if (data.duplicates && data.duplicates.length > 0) {
+          message += `\n\n${data.duplicates.length} duplicate(s) found and skipped:\n${data.duplicates.slice(0, 5).join(', ')}${data.duplicates.length > 5 ? '...' : ''}`;
+        } else {
+          message += `\n\n${data.message || 'Please check that your file has valid data.'}`;
+        }
+        alert(message);
+      }
+      
+      fileInput.value = '';
+      addMenu.classList.remove('open'); // Close the dropdown menu after upload
+    } catch (error) {
+      console.error('Upload error:', error);
+      fileInput.value = '';
+      addMenu.classList.remove('open'); // Close menu on error
+      alert(`Upload failed: ${error.message || 'Network error. Please try again.'}`);
+    }
+  });
+}
+}

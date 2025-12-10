@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require 'db.php';
+require '../api/db.php';
 
 // Get assetId from query parameter
 $assetId = $_GET['assetId'] ?? '';
@@ -55,5 +55,4 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Could not load asset: ' . $e->getMessage()]);
 }
 ?>
-
 

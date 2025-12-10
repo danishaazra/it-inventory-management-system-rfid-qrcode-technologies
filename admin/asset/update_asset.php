@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require 'db.php';
+require '../api/db.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 if (!isset($data['assetId']) || $data['assetId'] === '') {
