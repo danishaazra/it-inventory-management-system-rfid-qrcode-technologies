@@ -49,12 +49,12 @@ try {
     $rows = $worksheet->toArray();
   } else {
     // Read CSV file
-    $handle = fopen($tmpPath, 'r');
-    if (!$handle) {
-      http_response_code(400);
-      echo json_encode(['ok' => false, 'error' => 'Could not read file']);
-      exit;
-    }
+$handle = fopen($tmpPath, 'r');
+if (!$handle) {
+  http_response_code(400);
+  echo json_encode(['ok' => false, 'error' => 'Could not read file']);
+  exit;
+}
     while (($row = fgetcsv($handle)) !== false) {
       $rows[] = $row;
     }
@@ -73,10 +73,10 @@ try {
   }, $rows[0]);
   
   if (empty($rawHeader)) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Empty file or missing header']);
-    exit;
-  }
+  http_response_code(400);
+  echo json_encode(['ok' => false, 'error' => 'Empty file or missing header']);
+  exit;
+}
   
   // Normalize header names: convert "Asset ID" -> "assetId", "Serial No." -> "serialNo", etc.
   // This function converts Excel column headers to system field names
@@ -121,14 +121,14 @@ try {
   
   // Normalize all headers
   $header = array_map('normalizeHeaderName', $rawHeader);
-  
-  // Normalize header names
-  $requiredCol = 'assetId';
+
+// Normalize header names
+$requiredCol = 'assetId';
   $inserted = 0;
   $skipped = 0;
   $duplicates = [];
   $batch = [];
-  
+
   // Process data rows (skip header row)
   for ($i = 1; $i < count($rows); $i++) {
     $row = $rows[$i];
@@ -198,7 +198,7 @@ try {
       $result = mongoInsertMany($mongoManager, $assetsNamespace, $batch);
       $actualInserted = $result['insertedCount'] ?? 0;
       $writeErrors = $result['writeErrors'] ?? [];
-      
+
       if (!empty($writeErrors)) {
         error_log('MongoDB write errors: ' . json_encode($writeErrors));
         throw new Exception('Some documents failed to insert. Check server logs.');
