@@ -7,7 +7,7 @@ const assetTableBody = document.getElementById('asset-table-body');
 // Load and display assets in the table
 async function loadAssets() {
   try {
-    const resp = await fetch('../api/list_assets.php');
+    const resp = await fetch('./list_assets.php');
     if (!resp.ok) {
       console.error('Failed to load assets');
       return;
@@ -116,7 +116,7 @@ document.addEventListener('click', (e) => {
 // Load existing locations for dropdown
 async function loadLocations() {
   try {
-    const resp = await fetch('../api/get_locations.php');
+    const resp = await fetch('./get_locations.php');
     if (!resp.ok) {
       console.warn('Failed to load locations');
       return [];
@@ -177,7 +177,7 @@ addForm.addEventListener('submit', async (e) => {
   }
   
   try {
-    const resp = await fetch('../api/add_asset.php', {
+    const resp = await fetch('./add_asset.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(formData)
@@ -213,7 +213,7 @@ fileInput.addEventListener('change', async () => {
   fd.append('file', fileInput.files[0]);
   
   try {
-    const resp = await fetch('../api/upload_assets.php', { method: 'POST', body: fd });
+    const resp = await fetch('./upload_assets.php', { method: 'POST', body: fd });
     const data = await resp.json();
     
     if (!resp.ok || !data.ok) {

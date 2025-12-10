@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maintenance Checklist • IT Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      padding: 2rem;
+      gap: 2rem;
+      transition: gap 0.3s ease;
+    }
+    
+    /* Adjust gap when sidebar is collapsed */
+    .app-shell.has-collapsed-sidebar {
+      gap: 1rem;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: rgba(7, 3, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      color: #f5f5ff;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsed {
+      width: 80px;
+      padding: 2rem 0.5rem;
+      align-items: center;
+    }
+    
+    .sidebar.collapsed .sidebar-nav {
+      display: none;
+    }
+    
+    .sidebar.collapsed:hover .sidebar-nav {
+      display: flex;
+    }
+    
+    .sidebar.collapsed .sidebar-footer {
+      display: none;
+    }
+    
+    .sidebar.collapsed:hover .sidebar-footer {
+      display: flex;
+    }
+
+    /* Only expand on hover when collapsed */
+    .sidebar.collapsed:hover {
+      width: 260px;
+      padding: 2rem 1.5rem;
+      z-index: 100;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      align-items: flex-start;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      transition: justify-content 0.3s ease;
+      padding-right: 3rem;
+      position: relative;
+    }
+
+    .sidebar.collapsed .sidebar-brand {
+      justify-content: center;
+      padding-right: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand {
+      justify-content: flex-start;
+      padding-right: 3rem;
+      width: auto;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+    }
+
+    .sidebar.collapsed .sidebar-logo {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-logo {
+      opacity: 1;
+      width: 36px;
+      height: 36px;
+      margin: 0;
+    }
+
+    .sidebar-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .sidebar-brand-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: normal;
+      word-wrap: break-word;
+      opacity: 1;
+      max-width: 160px;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: visible;
+      display: block;
+    }
+
+    .sidebar.collapsed .sidebar-brand-text {
+      opacity: 0;
+      max-width: 0;
+      max-height: 0;
+      margin: 0;
+      overflow: hidden;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand-text {
+      opacity: 1;
+      max-width: 160px;
+      max-height: 100px;
+      overflow: visible;
+      font-size: 0.85rem;
+      width: auto;
+      height: auto;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background 0.15s, color 0.15s, transform 0.15s, justify-content 0.3s ease;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .sidebar.collapsed .nav-item {
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      color: transparent;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .nav-item {
+      justify-content: flex-start;
+      padding: 0.75rem 1rem;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      width: auto;
+      height: auto;
+      overflow: visible;
+    }
+
+    .nav-item::before {
+      content: '●';
+      font-size: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sidebar.collapsed .nav-item::before {
+      opacity: 0;
+      display: none;
+    }
+
+    .sidebar.collapsed:hover .nav-item::before {
+      opacity: 0;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-meta {
+      font-size: 0.75rem;
+      color: #8c88c9;
+      opacity: 0.9;
+      text-align: left;
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 50px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .sidebar-meta {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-meta {
+      opacity: 0.9;
+      max-height: 50px;
+      font-size: 0.75rem;
+      width: auto;
+      height: auto;
+    }
+
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .sidebar-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    #toggle-icon {
+      display: inline-block;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      line-height: 1;
+      color: #ffffff !important;
+    }
+
+    .sidebar.collapsed #toggle-icon {
+      transform: rotate(0deg);
+      color: #ffffff !important;
+    }
+
+    .logout-btn {
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .logout-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar.collapsed:hover .logout-btn {
+      opacity: 1;
+      max-height: 100px;
+      padding: 0.75rem 1rem;
+    }
+
+    .dashboard-container {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      max-width: 100%;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #140958;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.4);
+    }
+
+    .user-greeting {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-greeting-main {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .user-greeting-sub {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .logout-btn {
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .maintenance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .maintenance-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .add-maintenance-wrapper {
+      position: relative;
+    }
+
+    .add-maintenance-btn {
+      padding: 0.6rem 1.4rem;
+      border-radius: 8px;
+      border: none;
+      background: #140958;
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 4px 14px rgba(20, 9, 88, 0.35);
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .add-maintenance-btn:hover {
+      transform: translateY(-1px);
+      background: #1a0d6b;
+      box-shadow: 0 6px 18px rgba(20, 9, 88, 0.45);
+    }
+
+    .add-maintenance-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.5rem);
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+      padding: 0.4rem 0;
+      min-width: 180px;
+      z-index: 30;
+      display: none;
+    }
+
+    .add-maintenance-menu.open {
+      display: block;
+    }
+
+    .add-maintenance-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 1rem;
+      border: none;
+      background: transparent;
+      font-size: 0.875rem;
+      color: #1f2933;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .add-maintenance-menu button:hover {
+      background: #f3f4f6;
+    }
+
+    .maintenance-table-container {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+      overflow: auto;
+    }
+
+    table.maintenance-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      font-size: 0.85rem;
+    }
+
+    .maintenance-table thead {
+      background: #f1f3f5;
+    }
+
+    .maintenance-table th,
+    .maintenance-table td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .maintenance-table th {
+      font-weight: 600;
+      color: #444;
+    }
+
+    .maintenance-table tbody tr:nth-child(even) {
+      background: #fafbfc;
+    }
+
+    .maintenance-table tbody tr:hover {
+      background: #eef4ff;
+    }
+
+    .inspection-tasks-link {
+      color: #140958;
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .inspection-tasks-link:hover {
+      color: #1a0d6b;
+      text-decoration: underline;
+    }
+
+    .frequency-badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .frequency-weekly {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .frequency-monthly {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .frequency-quarterly {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .add-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .add-modal-overlay.open {
+      display: flex;
+    }
+
+    .add-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .add-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .add-modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .close-modal-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-modal-btn:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .add-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #111827;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+
+    .form-field textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .btn-cancel {
+      padding: 0.6rem 1.5rem;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #374151;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .btn-save {
+      padding: 0.6rem 1.5rem;
+      border: none;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Schedule Calendar Styles */
+    .schedule-calendar {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
+      margin-top: 0.5rem;
+    }
+
+    .calendar-year-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .calendar-year-selector select {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #ffffff;
+    }
+
+    .calendar-months {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .calendar-month {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .calendar-month-header {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #1a1a1a;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .calendar-weeks {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .calendar-week {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .calendar-week-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 60px;
+    }
+
+    .calendar-date-input {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 150px;
+    }
+
+    .calendar-date-input:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    }
+
+    .calendar-quarter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .calendar-quarter-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+    }
+
+    .calendar-month-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #ffffff;
+      color: #111827;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .calendar-month-select:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    }
+  </style>
+  <script type="module">
+    import '../shared/init.js';
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle sidebar">
+        <span id="toggle-icon">☰</span>
+      </button>
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          <img src="../../images/pkt_logo.png" alt="PKT Logistics logo">
+        </div>
+        <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html">Dashboard</a>
+        <a class="nav-item" href="asset.html">Assets</a>
+        <a class="nav-item active" href="maintenance.html">Maintenance Checklist</a>
+        <a class="nav-item">RFID Scans</a>
+        <a class="nav-item" href="qrcode.html">QR Codes</a>
+        <a class="nav-item">Reports</a>
+        <a class="nav-item">Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logout-btn">Logout</button>
+        <div class="sidebar-meta">v1.0 • Maintenance</div>
+      </div>
+    </aside>
+
+    <main class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Maintenance Checklist</h1>
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-greeting">
+            <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
+            <span class="user-greeting-sub">Maintenance overview</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="maintenance-header">
+        <h2>Maintenance Checklist</h2>
+        <div class="add-maintenance-wrapper">
+          <button class="add-maintenance-btn" id="add-maintenance-btn">
+            <span>＋</span>
+            <span>Add Maintenance</span>
+          </button>
+          <div class="add-maintenance-menu" id="add-maintenance-menu">
+            <button type="button" data-action="manual">Add manually</button>
+            <button type="button" data-action="upload">Upload file</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="maintenance-table-container">
+        <table class="maintenance-table">
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>Location</th>
+              <th>Item Name</th>
+              <th>Frequency</th>
+              <th>List of Inspection Tasks</th>
+            </tr>
+          </thead>
+          <tbody id="maintenance-table-body">
+            <!-- Maintenance rows will be loaded here -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <!-- Add Maintenance Modal -->
+  <div class="add-modal-overlay" id="add-modal-overlay">
+    <div class="add-modal">
+      <div class="add-modal-header">
+        <h2>Add Maintenance Item</h2>
+        <button class="close-modal-btn" id="close-add-modal-btn">×</button>
+      </div>
+      <form id="add-maintenance-form">
+        <div class="add-form-grid">
+          <div class="form-field">
+            <label for="add-branch">Branch *</label>
+            <input type="text" id="add-branch" name="branch" required>
+          </div>
+          <div class="form-field">
+            <label for="add-location">Location *</label>
+            <input type="text" id="add-location" name="location" required>
+          </div>
+          <div class="form-field">
+            <label for="add-itemName">Item Name *</label>
+            <input type="text" id="add-itemName" name="itemName" required>
+          </div>
+          <div class="form-field">
+            <label for="add-frequency">Frequency *</label>
+            <select id="add-frequency" name="frequency" required>
+              <option value="">Select frequency</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+            </select>
+          </div>
+          <div class="form-field" id="add-schedule-container" style="grid-column: 1 / -1; display: none;">
+            <label>Maintenance Schedule *</label>
+            <div id="add-schedule-calendar" class="schedule-calendar">
+              <!-- Calendar will be generated here -->
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="add-inspectionTasks">List of Inspection Tasks *</label>
+            <textarea id="add-inspectionTasks" name="inspectionTasks" placeholder="Enter inspection tasks, one per line" required></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancel-add-btn">Cancel</button>
+          <button type="submit" class="btn-save" id="save-add-btn">Add Maintenance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <input type="file" id="maintenance-file-input" style="display:none" />
+
+  <script type="module" src="./maintenance.js"></script>
+</body>
+</html>

@@ -10,7 +10,7 @@ async function loadAssetDetails() {
   }
 
   try {
-    const resp = await fetch(`../api/get_asset.php?assetId=${encodeURIComponent(assetId)}`);
+    const resp = await fetch(`./get_asset.php?assetId=${encodeURIComponent(assetId)}`);
     const data = await resp.json();
 
     if (!resp.ok || !data.ok) {
@@ -243,7 +243,7 @@ const cancelEditBtn = document.getElementById('cancel-edit-btn');
 // Load locations for edit form dropdown
 async function loadLocationsForEdit() {
   try {
-    const resp = await fetch('../api/get_locations.php');
+    const resp = await fetch('./get_locations.php');
     if (!resp.ok) return [];
     const data = await resp.json();
     return data.ok && data.locations ? data.locations : [];
@@ -331,7 +331,7 @@ if (deleteBtn) {
     }
     
     try {
-      const resp = await fetch('../api/delete_asset.php', {
+      const resp = await fetch('./delete_asset.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({assetId: assetId})
@@ -386,7 +386,7 @@ if (editForm) {
     }
     
     try {
-      const resp = await fetch('../api/update_asset.php', {
+      const resp = await fetch('./update_asset.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(formData)

@@ -71,6 +71,9 @@ function assetExists(MongoDB\Driver\Manager $manager, string $namespace, string 
 // 6) Build namespace string for the assets collection.
 $assetsNamespace = $mongoDb . '.assets';
 
+// 8) Build namespace string for the maintenance collection.
+$maintenanceNamespace = $mongoDb . '.maintenance';
+
 // Export manager and namespace.
 $mongoManager = getMongoManager($mongoUri);
 ?>
