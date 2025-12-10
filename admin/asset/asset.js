@@ -113,7 +113,40 @@ document.addEventListener('click', (e) => {
   }
 });
 
-addMenu.addEventListener('click', (e) => {
+// Load existing locations for dropdown
+async function loadLocations() {
+  try {
+    const resp = await fetch('../api/get_locations.php');
+    if (!resp.ok) {
+      console.warn('Failed to load locations');
+      return [];
+    }
+    const data = await resp.json();
+    if (data.ok && data.locations) {
+      return data.locations;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error loading locations:', error);
+    return [];
+  }
+}
+
+// Populate location dropdown with existing locations
+function populateLocationDropdown(locations) {
+  // Clear existing options except the first "Select location..." option
+  locationDescriptionSelect.innerHTML = '<option value="">Select location...</option>';
+  
+  // Add each location as an option
+  locations.forEach(location => {
+    const option = document.createElement('option');
+    option.value = location;
+    option.textContent = location;
+    locationDescriptionSelect.appendChild(option);
+  });
+}
+
+addMenu.addEventListener('click', async (e) => {
   if (e.target.dataset.action === 'manual') {
     addModalOverlay.classList.add('open');
     addMenu.classList.remove('open'); // Close menu when opening modal
@@ -121,6 +154,10 @@ addMenu.addEventListener('click', (e) => {
     customLocationInput.style.display = 'none';
     locationDescriptionSelect.style.display = 'block';
     toggleCustomLocationBtn.textContent = '+ Add custom location';
+    
+    // Load and populate existing locations
+    const locations = await loadLocations();
+    populateLocationDropdown(locations);
   }
   if (e.target.dataset.action === 'upload') {
     // Set accept attribute to include Excel and CSV files
@@ -156,10 +193,14 @@ addForm.addEventListener('submit', async (e) => {
       return alert(`Save failed: ${data.error || 'Unknown error. Please check console for details.'}`);
     }
     
-    alert('Asset added successfully!');
-    addForm.reset();
-    closeAddModal();
-    loadAssets(); // Refresh table data
+  alert('Asset added successfully!');
+  addForm.reset();
+  closeAddModal();
+  loadAssets(); // Refresh table data
+  
+  // Reload locations after adding (in case a new location was added)
+  const locations = await loadLocations();
+  populateLocationDropdown(locations);
   } catch (error) {
     console.error('Error adding asset:', error);
     alert(`Save failed: ${error.message || 'Network error. Please try again.'}`);

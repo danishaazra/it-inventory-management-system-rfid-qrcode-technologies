@@ -823,7 +823,6 @@
       font-size: 1rem;
     }
   </style>
-  <script type="module" src="./assetdetails.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -913,11 +912,11 @@
         </div>
       </section>
 
-      <section class="spec-section" id="qr-code-section" style="display: none;">
+      <section class="spec-section" id="qr-code-section">
         <div class="spec-header">QR Code</div>
         <div style="padding: 1.5rem; text-align: center;">
-          <div id="qr-code-container" style="display: inline-block; padding: 1rem; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
-            <!-- QR code will be generated here -->
+          <div id="qr-code-container" style="padding: 1rem; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+            <p style="color: #9ca3af;">Loading QR code...</p>
           </div>
           <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
             <button id="download-qr-btn" class="download-qr-btn" style="display: none;">
@@ -1043,6 +1042,10 @@
       </form>
     </div>
   </div>
+  
+  <!-- QR Code Library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script type="module" src="./assetdetails.js"></script>
 </body>
 </html>
 
