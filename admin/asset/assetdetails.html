@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asset Details • IT Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      padding: 2rem;
+      gap: 2rem;
+      transition: gap 0.3s ease;
+    }
+    
+    /* Adjust gap when sidebar is collapsed */
+    .app-shell.has-collapsed-sidebar {
+      gap: 1rem;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: rgba(7, 3, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      color: #f5f5ff;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsed {
+      width: 80px;
+      padding: 2rem 0.5rem;
+      align-items: center;
+    }
+    
+    .sidebar.collapsed .sidebar-nav {
+      display: none;
+    }
+    
+    .sidebar.collapsed:hover .sidebar-nav {
+      display: flex;
+    }
+    
+    .sidebar.collapsed .sidebar-footer {
+      display: none;
+    }
+    
+    .sidebar.collapsed:hover .sidebar-footer {
+      display: flex;
+    }
+
+    /* Only expand on hover when collapsed */
+    .sidebar.collapsed:hover {
+      width: 260px;
+      padding: 2rem 1.5rem;
+      z-index: 100;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      align-items: flex-start;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      transition: justify-content 0.3s ease;
+      padding-right: 3rem;
+      position: relative;
+    }
+
+    .sidebar.collapsed .sidebar-brand {
+      justify-content: center;
+      padding-right: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand {
+      justify-content: flex-start;
+      padding-right: 3rem;
+      width: auto;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+    }
+
+    .sidebar.collapsed .sidebar-logo {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-logo {
+      opacity: 1;
+      width: 36px;
+      height: 36px;
+      margin: 0;
+    }
+
+    .sidebar-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .sidebar-brand-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: normal;
+      word-wrap: break-word;
+      opacity: 1;
+      max-width: 160px;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: visible;
+      display: block;
+    }
+
+    .sidebar.collapsed .sidebar-brand-text {
+      opacity: 0;
+      max-width: 0;
+      max-height: 0;
+      margin: 0;
+      overflow: hidden;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand-text {
+      opacity: 1;
+      max-width: 160px;
+      max-height: 100px;
+      overflow: visible;
+      font-size: 0.85rem;
+      width: auto;
+      height: auto;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background 0.15s, color 0.15s, transform 0.15s, justify-content 0.3s ease;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .sidebar.collapsed .nav-item {
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      color: transparent;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .nav-item {
+      justify-content: flex-start;
+      padding: 0.75rem 1rem;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      width: auto;
+      height: auto;
+      overflow: visible;
+    }
+
+    .nav-item::before {
+      content: '●';
+      font-size: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      margin-right: 0;
+    }
+
+    .sidebar.collapsed .nav-item::before {
+      opacity: 0;
+      display: none;
+    }
+
+    .sidebar.collapsed:hover .nav-item::before {
+      opacity: 0;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-meta {
+      font-size: 0.75rem;
+      color: #8c88c9;
+      opacity: 0.9;
+      text-align: left;
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 50px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .sidebar-meta {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-meta {
+      opacity: 0.9;
+      max-height: 50px;
+      font-size: 0.75rem;
+      width: auto;
+      height: auto;
+    }
+
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .sidebar-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    #toggle-icon {
+      display: inline-block;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      line-height: 1;
+      color: #ffffff !important;
+    }
+
+    .sidebar.collapsed #toggle-icon {
+      transform: rotate(0deg);
+      color: #ffffff !important;
+    }
+
+    .logout-btn {
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .logout-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .logout-btn {
+      opacity: 1;
+      max-height: 100px;
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      width: auto;
+      height: auto;
+    }
+
+    .dashboard-container {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      max-width: 100%;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #140958;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.4);
+    }
+
+    .user-greeting {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-greeting-main {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .user-greeting-sub {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .logout-btn {
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .asset-details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .asset-details-meta {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .back-link {
+      font-size: 0.85rem;
+      color: #140958;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .summary-card {
+      background: #f8fafc;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      padding: 1rem 1.25rem;
+    }
+
+    .summary-card h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-card p {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .spec-section {
+      margin-top: 0.5rem;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      overflow: hidden;
+    }
+
+    .spec-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: #f3f4f6;
+    }
+
+    .spec-list {
+      padding: 0.75rem 1.5rem 1.25rem;
+    }
+
+    .spec-row {
+      display: grid;
+      grid-template-columns: minmax(160px, 260px) minmax(0, 1fr);
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #e5e7eb;
+      column-gap: 2rem;
+    }
+
+    .spec-row:last-child {
+      border-bottom: none;
+    }
+
+    .spec-label {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .spec-value {
+      font-size: 0.9rem;
+      color: #111827;
+      word-break: break-word;
+    }
+
+    .muted {
+      color: #9ca3af;
+    }
+
+    .status-active {
+      color: #16a34a;
+      font-weight: 600;
+    }
+
+    .asset-actions-wrapper {
+      position: relative;
+      margin-left: 1rem;
+    }
+
+    .asset-actions-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      color: #6b7280;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .asset-actions-btn:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      color: #111827;
+    }
+
+    .asset-actions-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.5rem);
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+      padding: 0.4rem 0;
+      min-width: 160px;
+      z-index: 30;
+      display: none;
+    }
+
+    .asset-actions-menu.open {
+      display: block;
+    }
+
+    .asset-actions-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 1rem;
+      border: none;
+      background: transparent;
+      font-size: 0.875rem;
+      color: #1f2933;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s;
+    }
+
+    .asset-actions-menu button:hover {
+      background: #f3f4f6;
+    }
+
+    .asset-actions-menu button.delete-action {
+      color: #dc2626;
+    }
+
+    .asset-actions-menu button.delete-action:hover {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .edit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .edit-modal-overlay.open {
+      display: flex;
+    }
+
+    .edit-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 700px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .edit-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .edit-modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .close-modal-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-modal-btn:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .edit-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-field input,
+    .form-field select {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #111827;
+      transition: border-color 0.15s;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .btn-cancel {
+      padding: 0.6rem 1.5rem;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #374151;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .btn-save {
+      padding: 0.6rem 1.5rem;
+      border: none;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .qr-code-container {
+      display: inline-block;
+      padding: 1rem;
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .qr-code-container canvas {
+      display: block;
+      margin: 0 auto;
+    }
+
+    .qr-code-container img {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .download-qr-btn {
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s;
+      box-shadow: 0 2px 8px rgba(20, 9, 88, 0.2);
+    }
+
+    .download-qr-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .download-qr-btn:active {
+      transform: translateY(0);
+    }
+
+    .download-qr-btn span {
+      font-size: 1rem;
+    }
+  </style>
+  <script type="module" src="./assetdetails.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle sidebar">
+        <span id="toggle-icon">☰</span>
+      </button>
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          <img src="/it-inventory-management-system-rfid-qrcode-technologies/images/pkt_logo.png" alt="PKT Logistics logo">
+        </div>
+        <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html">Dashboard</a>
+        <a class="nav-item active" href="asset.html">Assets</a>
+        <a class="nav-item" href="maintenance.html">Maintenance Checklist</a>
+        <a class="nav-item">RFID Scans</a>
+        <a class="nav-item" href="qrcode.html">QR Codes</a>
+        <a class="nav-item">Reports</a>
+        <a class="nav-item">Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logout-btn">Logout</button>
+        <div class="sidebar-meta">v1.0 • Asset Details</div>
+      </div>
+    </aside>
+
+    <main class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Asset Details</h1>
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-greeting">
+            <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
+            <span class="user-greeting-sub">Review asset information</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="asset-details-header">
+        <div>
+          <a href="asset.html" class="back-link">← Back to asset list</a>
+          <div class="asset-details-meta" id="asset-id-meta"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+          <div class="asset-actions-wrapper">
+            <button class="asset-actions-btn" id="asset-actions-btn" aria-label="Asset actions">⋯</button>
+            <div class="asset-actions-menu" id="asset-actions-menu">
+              <button type="button" class="edit-action" id="edit-asset-btn">
+                <span>✏️</span>
+                <span>Edit asset</span>
+              </button>
+              <button type="button" class="delete-action" id="delete-asset-btn">
+                <span>🗑️</span>
+                <span>Delete asset</span>
+              </button>
+            </div>
+          </div>
+          <div class="asset-details-meta" id="asset-status-meta"></div>
+        </div>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-card">
+          <h3>Asset ID</h3>
+          <p id="summary-asset-id">-</p>
+        </div>
+        <div class="summary-card">
+          <h3>Category</h3>
+          <p id="summary-category">-</p>
+        </div>
+        <div class="summary-card">
+          <h3>Location</h3>
+          <p id="summary-location">-</p>
+        </div>
+        <div class="summary-card">
+          <h3>Owner</h3>
+          <p id="summary-owner">-</p>
+        </div>
+      </div>
+
+      <section class="spec-section">
+        <div class="spec-header">Asset specifications</div>
+        <div class="spec-list" id="asset-spec-list">
+          <!-- Filled by script -->
+        </div>
+      </section>
+
+      <section class="spec-section" id="qr-code-section" style="display: none;">
+        <div class="spec-header">QR Code</div>
+        <div style="padding: 1.5rem; text-align: center;">
+          <div id="qr-code-container" style="display: inline-block; padding: 1rem; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <!-- QR code will be generated here -->
+          </div>
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
+            <button id="download-qr-btn" class="download-qr-btn" style="display: none;">
+              <span>⬇</span> Download QR Code
+            </button>
+          </div>
+          <p style="margin-top: 1rem; font-size: 0.85rem; color: #6b7280;">Scan this QR code to view asset details</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Edit Asset Modal -->
+  <div class="edit-modal-overlay" id="edit-modal-overlay">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h2>Edit Asset</h2>
+        <button class="close-modal-btn" id="close-modal-btn">×</button>
+      </div>
+      <form id="edit-asset-form">
+        <div class="edit-form-grid">
+          <div class="form-field">
+            <label for="edit-no">No.</label>
+            <input type="text" id="edit-no" name="no">
+          </div>
+          <div class="form-field">
+            <label for="edit-branchCode">Branch Code</label>
+            <input type="text" id="edit-branchCode" name="branchCode">
+          </div>
+          <div class="form-field">
+            <label for="edit-assetId">Asset ID</label>
+            <input type="text" id="edit-assetId" name="assetId" required>
+          </div>
+          <div class="form-field">
+            <label for="edit-assetDescription">Asset Description</label>
+            <input type="text" id="edit-assetDescription" name="assetDescription">
+          </div>
+          <div class="form-field">
+            <label for="edit-assetCategory">Asset Category</label>
+            <input type="text" id="edit-assetCategory" name="assetCategory">
+          </div>
+          <div class="form-field">
+            <label for="edit-assetCategoryDescription">Asset Category Description</label>
+            <input type="text" id="edit-assetCategoryDescription" name="assetCategoryDescription">
+          </div>
+          <div class="form-field">
+            <label for="edit-ownerCode">Owner Code</label>
+            <input type="text" id="edit-ownerCode" name="ownerCode">
+          </div>
+          <div class="form-field">
+            <label for="edit-ownerName">Owner Name</label>
+            <input type="text" id="edit-ownerName" name="ownerName">
+          </div>
+          <div class="form-field">
+            <label for="edit-model">Model</label>
+            <input type="text" id="edit-model" name="model">
+          </div>
+          <div class="form-field">
+            <label for="edit-brand">Brand</label>
+            <input type="text" id="edit-brand" name="brand">
+          </div>
+          <div class="form-field">
+            <label for="edit-status">Status</label>
+            <select id="edit-status" name="status">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Retired">Retired</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="edit-warrantyPeriod">Warranty Period</label>
+            <input type="text" id="edit-warrantyPeriod" name="warrantyPeriod">
+          </div>
+          <div class="form-field">
+            <label for="edit-serialNo">Serial No.</label>
+            <input type="text" id="edit-serialNo" name="serialNo">
+          </div>
+          <div class="form-field">
+            <label for="edit-location">Location</label>
+            <input type="text" id="edit-location" name="location">
+          </div>
+          <div class="form-field">
+            <label for="edit-locationDescription">Location Description</label>
+            <select id="edit-locationDescription" name="locationDescription">
+              <option value="">Select location...</option>
+              <!-- Options will be populated from maintenance locations -->
+            </select>
+            <input type="text" id="edit-locationDescription-custom" name="locationDescriptionCustom" placeholder="Or enter custom location" style="margin-top: 0.5rem; display: none;">
+            <button type="button" id="toggle-custom-location-edit" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">+ Add custom location</button>
+          </div>
+          <div class="form-field">
+            <label for="edit-area">Area</label>
+            <input type="text" id="edit-area" name="area">
+          </div>
+          <div class="form-field">
+            <label for="edit-departmentCode">Department Code</label>
+            <input type="text" id="edit-departmentCode" name="departmentCode">
+          </div>
+          <div class="form-field">
+            <label for="edit-departmentDescription">Department Description</label>
+            <input type="text" id="edit-departmentDescription" name="departmentDescription">
+          </div>
+          <div class="form-field">
+            <label for="edit-condition">Condition</label>
+            <select id="edit-condition" name="condition">
+              <option value="">Select condition</option>
+              <option value="In Use (Assigned)">In Use (Assigned)</option>
+              <option value="Available">Available</option>
+              <option value="Under Maintenance">Under Maintenance</option>
+              <option value="Retired">Retired</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="edit-currentUser">Current User</label>
+            <input type="text" id="edit-currentUser" name="currentUser">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancel-edit-btn">Cancel</button>
+          <button type="submit" class="btn-save" id="save-edit-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+
+
