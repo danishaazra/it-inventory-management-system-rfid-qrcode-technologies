@@ -3,16 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign In • IT Inventory</title>
-
+  <title>Select Role • IT Inventory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Firebase will be installed via npm: npm install firebase -->
-  <!-- Or use a bundler like Vite/Webpack for ES modules -->
-
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#140958">
   <style>
     * {
       margin: 0;
@@ -164,6 +158,76 @@
       border-color: #d32f2f;
     }
 
+    .role-select-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .role-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .role-btn {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      border: 2px solid #e5e5e5;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1a1a1a;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .role-btn:hover {
+      border-color: #140958;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .role-btn:active {
+      transform: translateY(0);
+    }
+
+    .role-icon {
+      font-size: 1.25rem;
+    }
+
+    .role-btn.admin {
+      border-color: #f6c945;
+    }
+
+    .role-btn.admin:hover {
+      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
+      border-color: #f6c945;
+      color: #1a1a1a;
+    }
+
+    .role-btn.staff {
+      border-color: #3b82f6;
+    }
+
+    .role-btn.staff:hover {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-color: #3b82f6;
+      color: #ffffff;
+    }
+
     .btn {
       width: 100%;
       padding: 0.875rem 1.5rem;
@@ -215,115 +279,12 @@
       text-decoration: underline;
     }
 
-    .error-message {
-      background: #fee;
-      color: #c33;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      margin-bottom: 1rem;
-      display: none;
-      border: 2px solid #fcc;
-    }
-
-    .error-message.show {
-      display: block;
-    }
-
     @media (max-width: 480px) {
       .auth-card {
         padding: 2rem 1.5rem;
       }
     }
   </style>
-  <script type="module" src="./script.js"></script>
-  <script>
-    // Handle role parameter and store it for later use
-    const urlParams = new URLSearchParams(window.location.search);
-    const role = urlParams.get('role');
-    
-    if (role) {
-      // Store role in sessionStorage for use after login
-      sessionStorage.setItem('userRole', role);
-    }
-    
-    // Security: Remove URL parameters but keep role for redirect logic
-    if (window.location.search || window.location.hash) {
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
-
-    // Handle form submission
-    document.addEventListener('DOMContentLoaded', function() {
-      const loginForm = document.getElementById('login-form');
-      const nameInput = document.getElementById('login-name');
-      const emailInput = document.getElementById('login-email');
-      const errorMessage = document.getElementById('error-message');
-      const loginBtn = document.getElementById('login-btn');
-
-      if (role) {
-        const roleText = role === 'admin' ? 'Admin' : 'Staff';
-        const titleElement = document.getElementById('auth-title');
-        if (titleElement) {
-          titleElement.textContent = `${roleText} Login`;
-        }
-      }
-
-      if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-          e.preventDefault();
-          
-          const name = nameInput.value.trim();
-          const email = emailInput.value.trim();
-
-          // Basic validation
-          if (!name || !email) {
-            showError('Please fill in all fields');
-            return;
-          }
-
-          if (!isValidEmail(email)) {
-            showError('Please enter a valid email address');
-            return;
-          }
-
-          // Store user info
-          sessionStorage.setItem('userName', name);
-          sessionStorage.setItem('userEmail', email);
-
-          // Disable button during login
-          loginBtn.disabled = true;
-          loginBtn.textContent = 'Logging in...';
-
-          // Redirect to appropriate dashboard
-          setTimeout(() => {
-            const userRole = sessionStorage.getItem('userRole') || 'admin';
-            if (userRole === 'staff') {
-              window.location.href = '../dashboard/dashboard_staff.html';
-            } else {
-              window.location.href = '../dashboard/dashboard_admin.html';
-            }
-          }, 500);
-        });
-      }
-    });
-
-    function showError(message) {
-      const errorMessage = document.getElementById('error-message');
-      if (errorMessage) {
-        errorMessage.textContent = message;
-        errorMessage.classList.add('show');
-        setTimeout(() => {
-          errorMessage.classList.remove('show');
-        }, 5000);
-      }
-    }
-
-    function isValidEmail(email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return emailRegex.test(email);
-    }
-  </script>
 </head>
 <body>
   <div class="auth-bg" aria-hidden="true"></div>
@@ -339,41 +300,21 @@
         </div>
       </div>
 
-      <div id="error-message" class="error-message"></div>
+      <h2 class="role-select-title">Select Your Role</h2>
 
-      <form id="login-form" role="form" onsubmit="return false;" autocomplete="on" novalidate>
-        <div class="field">
-          <label for="login-name">Full Name</label>
-          <input 
-            id="login-name" 
-            name="name" 
-            type="text" 
-            placeholder="Enter your name" 
-            required 
-            autocomplete="name"
-          />
-          <small class="error" id="login-name-error" role="status"></small>
-        </div>
+      <div class="role-buttons">
+        <a href="login.html?role=admin" class="role-btn admin">
+          <span class="role-icon">👤</span>
+          <span>Admin</span>
+        </a>
+        <a href="login.html?role=staff" class="role-btn staff">
+          <span class="role-icon">👥</span>
+          <span>Staff</span>
+        </a>
+      </div>
 
-        <div class="field">
-          <label for="login-email">Email</label>
-          <input 
-            id="login-email" 
-            name="email" 
-            type="email" 
-            inputmode="email"
-            placeholder="youremail@example.com" 
-            required 
-            autocomplete="email"
-          />
-          <small class="error" id="login-email-error" role="status"></small>
-        </div>
-
-        <button type="submit" id="login-btn" class="btn primary">SIGN IN</button>
-      </form>
-
-      <a href="role-select.html" class="back-link">← Back to Role Selection</a>
     </section>
   </main>
 </body>
 </html>
+

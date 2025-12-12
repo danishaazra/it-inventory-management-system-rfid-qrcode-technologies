@@ -62,6 +62,22 @@ function displayMaintenanceDetails(maintenance) {
   const frequency = maintenance.frequency || '';
   const frequencyClass = frequency.toLowerCase();
   frequencyEl.innerHTML = `<span class="frequency-badge frequency-${frequencyClass}">${frequency || '-'}</span>`;
+  
+  // Display assigned staff if exists
+  displayAssignedStaff(maintenance);
+}
+
+// Display assigned staff information
+function displayAssignedStaff(maintenance) {
+  const assignedStaffDisplay = document.getElementById('assigned-staff-display');
+  const assignedStaffName = document.getElementById('assigned-staff-name');
+  
+  if (maintenance.assignedStaffName) {
+    assignedStaffName.textContent = maintenance.assignedStaffName;
+    assignedStaffDisplay.style.display = 'block';
+  } else {
+    assignedStaffDisplay.style.display = 'none';
+  }
 }
 
 // Parse inspection tasks from text (newline-separated) and link with schedule dates
@@ -382,6 +398,28 @@ function init() {
 
 // Setup all event listeners
 function setupEventListeners() {
+  // Assign staff button
+  const assignStaffBtn = document.getElementById('assign-staff-btn');
+  if (assignStaffBtn) {
+    assignStaffBtn.addEventListener('click', openAssignStaffModal);
+  }
+  
+  // Close assign staff modal button
+  const closeAssignStaffModalBtn = document.getElementById('close-assign-staff-modal-btn');
+  if (closeAssignStaffModalBtn) {
+    closeAssignStaffModalBtn.addEventListener('click', closeAssignStaffModal);
+  }
+  
+  // Close assign staff modal when clicking outside
+  const assignStaffModal = document.getElementById('assign-staff-modal-overlay');
+  if (assignStaffModal) {
+    assignStaffModal.addEventListener('click', (e) => {
+      if (e.target === assignStaffModal) {
+        closeAssignStaffModal();
+      }
+    });
+  }
+  
   // Add task button
   const addTaskBtn = document.getElementById('add-task-btn');
   if (addTaskBtn) {
@@ -884,6 +922,142 @@ document.addEventListener('click', (e) => {
     });
   }
 });
+
+// Staff Assignment Functions
+let selectedStaffId = null;
+
+// Load and display staff list
+async function loadStaffList() {
+  const staffListEl = document.getElementById('staff-list');
+  if (!staffListEl) return;
+  
+  staffListEl.innerHTML = '<div style="text-align: center; padding: 2rem; color: #9ca3af;">Loading staff...</div>';
+  
+  try {
+    const resp = await fetch('./list_staff.php');
+    const data = await resp.json();
+    
+    if (!resp.ok || !data.ok) {
+      staffListEl.innerHTML = `<div class="no-staff">Error loading staff: ${data.error || 'Unknown error'}</div>`;
+      return;
+    }
+    
+    const staff = data.staff || [];
+    
+    if (staff.length === 0) {
+      staffListEl.innerHTML = '<div class="no-staff">No staff members found in the system.</div>';
+      return;
+    }
+    
+    // Display staff list
+    staffListEl.innerHTML = staff.map(member => {
+      const initial = (member.name || 'U').charAt(0).toUpperCase();
+      const isSelected = selectedStaffId === member._id ? 'selected' : '';
+      return `
+        <div class="staff-list-item ${isSelected}" data-staff-id="${member._id}" data-staff-name="${escapeHtml(member.name || 'Unknown')}">
+          <div class="staff-avatar">${initial}</div>
+          <div class="staff-info">
+            <div class="staff-name">${escapeHtml(member.name || 'Unknown')}</div>
+            <div class="staff-email">${escapeHtml(member.email || '')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Add click handlers to staff items
+    staffListEl.querySelectorAll('.staff-list-item').forEach(item => {
+      item.addEventListener('click', () => {
+        // Remove previous selection
+        staffListEl.querySelectorAll('.staff-list-item').forEach(i => i.classList.remove('selected'));
+        // Select clicked item
+        item.classList.add('selected');
+        selectedStaffId = item.dataset.staffId;
+        const staffName = item.dataset.staffName;
+        
+        // Assign immediately when clicked
+        assignStaffToMaintenance(selectedStaffId, staffName);
+      });
+    });
+    
+  } catch (error) {
+    console.error('Error loading staff:', error);
+    staffListEl.innerHTML = `<div class="no-staff">Error loading staff: ${error.message}</div>`;
+  }
+}
+
+// Assign staff to maintenance task
+async function assignStaffToMaintenance(staffId, staffName) {
+  if (!currentMaintenance || !currentMaintenance._id) {
+    alert('Cannot assign staff: Maintenance item not loaded');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('./assign_staff.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        maintenanceId: currentMaintenance._id,
+        staffId: staffId
+      })
+    });
+    
+    const data = await resp.json();
+    
+    if (!resp.ok || !data.ok) {
+      alert(`Error assigning staff: ${data.error || 'Unknown error'}`);
+      return;
+    }
+    
+    // Update current maintenance object
+    currentMaintenance.assignedStaffId = data.assignedStaff.id;
+    currentMaintenance.assignedStaffName = data.assignedStaff.name;
+    currentMaintenance.assignedStaffEmail = data.assignedStaff.email;
+    
+    // Update display
+    displayAssignedStaff(currentMaintenance);
+    
+    // Close modal
+    const modal = document.getElementById('assign-staff-modal-overlay');
+    if (modal) {
+      modal.classList.remove('open');
+    }
+    
+    // Show success message
+    alert(`Task assigned to ${data.assignedStaff.name} successfully!`);
+    
+  } catch (error) {
+    console.error('Error assigning staff:', error);
+    alert(`Error assigning staff: ${error.message}`);
+  }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Open assign staff modal
+function openAssignStaffModal() {
+  const modal = document.getElementById('assign-staff-modal-overlay');
+  if (modal) {
+    modal.classList.add('open');
+    selectedStaffId = null;
+    loadStaffList();
+  }
+}
+
+// Close assign staff modal
+function closeAssignStaffModal() {
+  const modal = document.getElementById('assign-staff-modal-overlay');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+}
 
 // Start initialization
 if (document.readyState === 'loading') {

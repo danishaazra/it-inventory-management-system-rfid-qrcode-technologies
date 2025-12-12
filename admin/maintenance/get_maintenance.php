@@ -56,6 +56,9 @@ try {
     'maintenanceSchedule' => $maintenanceSchedule,
     'inspectionTasks' => $doc->inspectionTasks ?? null,
     'created_at' => $doc->created_at ?? null,
+    'assignedStaffId' => $doc->assignedStaffId ?? null,
+    'assignedStaffName' => $doc->assignedStaffName ?? null,
+    'assignedStaffEmail' => $doc->assignedStaffEmail ?? null,
   ];
   
   echo json_encode(['ok' => true, 'maintenance' => $maintenance]);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard • IT Inventory</title>
+  <title>RFID Scanner • IT Inventory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,7 +29,6 @@
       transition: gap 0.3s ease;
     }
     
-    /* Adjust gap when sidebar is collapsed */
     .app-shell.has-collapsed-sidebar {
       gap: 1rem;
     }
@@ -72,7 +71,6 @@
       display: flex;
     }
 
-    /* Only expand on hover when collapsed */
     .sidebar.collapsed:hover {
       width: 260px;
       padding: 2rem 1.5rem;
@@ -220,23 +218,6 @@
       overflow: visible;
     }
 
-    .nav-item::before {
-      content: '●';
-      font-size: 0.5rem;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      margin-right: 0;
-    }
-
-    .sidebar.collapsed .nav-item::before {
-      opacity: 0;
-      display: none;
-    }
-
-    .sidebar.collapsed:hover .nav-item::before {
-      opacity: 0;
-    }
-
     .nav-item:hover {
       background: rgba(255, 255, 255, 0.06);
       color: #ffffff;
@@ -307,17 +288,6 @@
       overflow: hidden;
     }
 
-    .sidebar.collapsed .sidebar-toggle-btn {
-      right: 0.5rem;
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-    }
-
-    .sidebar.collapsed .sidebar-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: #ffffff;
-    }
-
     .sidebar-toggle-btn:hover {
       background: rgba(255, 255, 255, 0.2);
       transform: scale(1.1);
@@ -327,6 +297,17 @@
 
     .sidebar-toggle-btn:active {
       transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
     }
 
     #toggle-icon {
@@ -341,33 +322,6 @@
       color: #ffffff !important;
     }
 
-    .logout-btn {
-      white-space: nowrap;
-      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
-      max-height: 100px;
-      overflow: hidden;
-    }
-
-    .sidebar.collapsed .logout-btn {
-      opacity: 0;
-      max-height: 0;
-      padding: 0;
-      margin: 0;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      overflow: hidden;
-    }
-
-    .sidebar.collapsed:hover .logout-btn {
-      opacity: 1;
-      max-height: 100px;
-      padding: 0.5rem 1.5rem;
-      font-size: 0.875rem;
-      width: auto;
-      height: auto;
-    }
-
     .dashboard-container {
       flex: 1;
       background: #ffffff;
@@ -377,16 +331,16 @@
       display: flex;
       flex-direction: column;
       max-width: 100%;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .dashboard-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 2px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
     }
 
     .dashboard-header h1 {
@@ -399,6 +353,7 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      margin-left: auto;
     }
 
     .user-avatar {
@@ -442,6 +397,9 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
+      max-height: 100px;
+      overflow: hidden;
     }
 
     .logout-btn:hover {
@@ -449,130 +407,253 @@
       box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
     }
 
-    .dashboard-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    .sidebar.collapsed .logout-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .logout-btn {
+      opacity: 1;
+      max-height: 100px;
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      width: auto;
+      height: auto;
+    }
+
+    .scanner-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       gap: 2rem;
       margin-top: 2rem;
     }
 
-    .dashboard-card {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 2rem;
-      border: 2px solid #e5e5e5;
+    .btn-scan {
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    .dashboard-card h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
+    .btn-scan:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .btn-scan:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .scan-result {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      width: 100%;
+      max-width: 600px;
+      display: none;
+    }
+
+    .scan-result.show {
+      display: block;
+    }
+
+    .scan-result h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
       color: #1a1a1a;
       margin-bottom: 1rem;
     }
 
-    .dashboard-card p {
-      color: #666;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-
-    .stat {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-      background: white;
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: #666;
-    }
-
-    .stat-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #140958;
-    }
-
-    .asset-table-wrapper {
-      margin-top: 2rem;
-      grid-column: 1 / -1;
-    }
-
-    .asset-table-container {
+    .scan-result-data {
       background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e5e5e5;
-      overflow: auto;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      word-break: break-all;
     }
 
-    table.asset-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 800px;
-      font-size: 0.85rem;
-    }
-
-    .asset-table thead {
-      background: #f1f3f5;
-    }
-
-    .asset-table th,
-    .asset-table td {
-      padding: 0.6rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e5e5;
-      white-space: nowrap;
-    }
-
-    .asset-table th {
+    .btn-view-asset,
+    .btn-inspect {
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
       font-weight: 600;
-      color: #444;
-    }
-
-    .asset-table tbody tr:nth-child(even) {
-      background: #fafbfc;
-    }
-
-    .asset-table tbody tr:hover {
-      background: #eef4ff;
-    }
-
-    .asset-table .action-link {
-      color: #140958;
-      font-weight: 600;
-      text-decoration: none;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      min-width: 120px;
     }
 
-    .asset-table .action-link:hover {
-      text-decoration: underline;
-    }
-
-    .welcome-message {
+    .btn-view-asset {
       background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
       color: white;
-      padding: 2rem;
-      border-radius: 12px;
-      margin-bottom: 2rem;
+      border: none;
     }
 
-    .welcome-message h2 {
-      font-size: 1.75rem;
+    .btn-view-asset:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .btn-inspect {
+      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
+      color: #1a1a1a;
+      border: none;
+    }
+
+    .btn-inspect:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(246, 201, 69, 0.4);
+    }
+
+    .scan-result-actions {
+      display: flex !important;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .error-message {
+      padding: 1rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      color: #991b1b;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .instructions {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .instructions h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 0.75rem;
+    }
+
+    .instructions ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .instructions li {
+      padding: 0.5rem 0;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+
+    .instructions li:before {
+      content: "• ";
+      color: #140958;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+
+    .rfid-input-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .rfid-input-container label {
+      display: block;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
       margin-bottom: 0.5rem;
     }
 
-    .welcome-message p {
-      color: rgba(255, 255, 255, 0.9);
+    .rfid-input-container input {
+      width: 100%;
+      max-width: 500px;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.15s;
+    }
+
+    .rfid-input-container input:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      background: #6b7280;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .back-link:hover {
+      background: #4b5563;
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+      .app-shell {
+        flex-direction: column;
+        padding: 1rem;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+
+      .dashboard-container {
+        padding: 1.5rem;
+      }
     }
   </style>
   <script type="module">
-    import './auth-check.js';
-    import '../admin/shared/init.js';
-    import './dashboard.js';
+    import '../../../admin/shared/init.js';
+    import './rfid.js';
   </script>
 </head>
 <body>
@@ -583,103 +664,67 @@
       </button>
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="../images/pkt_logo.png" alt="PKT Logistics logo">
+          <img src="../../../images/pkt_logo.png" alt="PKT Logistics logo">
         </div>
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item active" href="dashboard_admin.html">Dashboard</a>
-        <a class="nav-item" href="../admin/asset/asset.html">Assets</a>
-        <a class="nav-item" href="../admin/maintenance/maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../admin/scan/scan.html">Scan Asset</a>
-        <a class="nav-item">Reports</a>
+        <a class="nav-item" href="../../dashboard/dashboard_staff.html">Dashboard</a>
+        <a class="nav-item" href="../../inspection/inspection.html">Maintenance Checklist</a>
+        <a class="nav-item active" href="../scan.html">Scan Asset</a>
         <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
-        <div class="sidebar-meta">v1.0 • Dashboard</div>
+        <div class="sidebar-meta">v1.0 • RFID Scanner</div>
       </div>
     </aside>
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Dashboard Analytics</h1>
+        <div>
+          <a href="../scan.html" class="back-link">← Back to Scan Options</a>
+          <h1>RFID Scanner</h1>
+        </div>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Welcome back</span>
+            <span class="user-greeting-sub">Scan asset using RFID</span>
           </div>
         </div>
       </div>
 
-      <div class="welcome-message">
-        <h2>Welcome to IT Inventory Management System</h2>
-        <p>Manage your IT assets using RFID & QR Code Technologies</p>
+      <div class="instructions">
+        <h3>How to use the RFID Scanner:</h3>
+        <ul>
+          <li>Connect your RFID reader to your device</li>
+          <li>Enter or scan the RFID tag ID in the field below</li>
+          <li>Click "Search Asset" to find the asset</li>
+          <li>Once found, you can view the asset details</li>
+        </ul>
       </div>
 
-      <div class="dashboard-content">
-        <div class="dashboard-card">
-          <h2>Total Assets</h2>
-          <div class="stat">
-            <span class="stat-label">Registered Items</span>
-            <span class="stat-value" id="total-assets-stat">-</span>
-          </div>
-          <p>Total number of IT assets in the system</p>
+      <div class="scanner-container">
+        <div class="rfid-input-container">
+          <label for="rfid-input">RFID Tag ID</label>
+          <input type="text" id="rfid-input" placeholder="Enter RFID tag ID or scan with RFID reader" autofocus>
+          <button class="btn-scan" id="search-rfid-btn">Search Asset</button>
         </div>
 
-        <div class="dashboard-card">
-          <h2>Maintenance Items</h2>
-          <div class="stat">
-            <span class="stat-label">Active Maintenance</span>
-            <span class="stat-value" id="total-maintenance-stat">-</span>
-          </div>
-          <p>Number of maintenance items in the system</p>
-        </div>
+        <div class="error-message" id="error-message"></div>
 
-        <div class="dashboard-card">
-          <h2>Quick Actions</h2>
-          <p>Add new assets, scan QR codes, generate reports, and more.</p>
-          <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <a href="../admin/asset/asset.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Manage Assets</a>
-            <a href="../admin/maintenance/maintenance.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Manage Maintenance</a>
-            <a href="../admin/scan/scan.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Scan Assets</a>
-          </div>
-        </div>
-
-        <div class="asset-table-wrapper">
-          <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Assets Overview</h2>
-          <p style="color: #666; margin-bottom: 0.75rem;">Key details for your IT assets.</p>
-          <div class="asset-table-container">
-            <table class="asset-table">
-              <thead>
-                <tr>
-                  <th>Asset Code</th>
-                  <th>Asset Name</th>
-                  <th>Category</th>
-                  <th>Model</th>
-                  <th>Serial Number</th>
-                  <th>Location</th>
-                  <th>Area</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="assets-table-body">
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 2rem; color: #888;">Loading assets...</td>
-                </tr>
-              </tbody>
-            </table>
+        <div class="scan-result" id="scan-result">
+          <h3>Scan Result</h3>
+          <div class="scan-result-data" id="scan-result-data"></div>
+          <div class="scan-result-actions">
+            <a href="#" class="btn-view-asset" id="view-details-btn" style="display: none;">View Details</a>
+            <a href="#" class="btn-inspect" id="inspect-btn" style="display: none;">Inspect</a>
           </div>
         </div>
       </div>
     </main>
   </div>
-
-  <script type="module">
-    import './auth-check.js';
-    import '../admin/shared/init.js';
-    import './dashboard.js';
-  </script>
 </body>
 </html>
+

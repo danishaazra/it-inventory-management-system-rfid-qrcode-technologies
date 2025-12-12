@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Assets • IT Inventory</title>
+  <title>Maintenance Checklist • IT Inventory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -220,7 +220,6 @@
       overflow: visible;
     }
 
-
     .nav-item::before {
       content: '●';
       font-size: 0.5rem;
@@ -353,19 +352,12 @@
       max-height: 0;
       padding: 0;
       margin: 0;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      overflow: hidden;
     }
 
     .sidebar.collapsed:hover .logout-btn {
       opacity: 1;
       max-height: 100px;
-      padding: 0.5rem 1.5rem;
-      font-size: 0.875rem;
-      width: auto;
-      height: auto;
+      padding: 0.75rem 1rem;
     }
 
     .dashboard-container {
@@ -445,13 +437,31 @@
       transition: all 0.2s;
     }
 
-    .add-asset-wrapper {
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .maintenance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .maintenance-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .add-maintenance-wrapper {
       position: relative;
     }
 
-    .add-asset-btn {
+    .add-maintenance-btn {
       padding: 0.6rem 1.4rem;
-      border-radius: 999px;
+      border-radius: 8px;
       border: none;
       background: #140958;
       color: #ffffff;
@@ -463,128 +473,120 @@
       gap: 0.4rem;
       box-shadow: 0 4px 14px rgba(20, 9, 88, 0.35);
       transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-      white-space: nowrap;
     }
 
-    .add-asset-btn:hover {
+    .add-maintenance-btn:hover {
       transform: translateY(-1px);
       background: #1a0d6b;
       box-shadow: 0 6px 18px rgba(20, 9, 88, 0.45);
     }
 
-    .add-asset-btn span.icon {
-      font-size: 1rem;
-    }
-
-    .add-asset-menu {
+    .add-maintenance-menu {
       position: absolute;
       right: 0;
-      top: calc(100% + 0.4rem);
+      top: calc(100% + 0.5rem);
       background: #ffffff;
       border-radius: 10px;
-      border: 1px solid #e5e5e5;
+      border: 1px solid #e5e7eb;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
-      padding: 0.35rem 0;
-      min-width: 170px;
-      z-index: 20;
+      padding: 0.4rem 0;
+      min-width: 180px;
+      z-index: 30;
       display: none;
     }
 
-    .add-asset-menu.open {
+    .add-maintenance-menu.open {
       display: block;
     }
 
-    .add-asset-menu button {
+    .add-maintenance-menu button {
       width: 100%;
       text-align: left;
-      padding: 0.55rem 0.9rem;
+      padding: 0.6rem 1rem;
       border: none;
       background: transparent;
-      font-size: 0.85rem;
+      font-size: 0.875rem;
       color: #1f2933;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      transition: background 0.15s;
     }
 
-    .add-asset-menu button:hover {
-      background: #f3f4ff;
+    .add-maintenance-menu button:hover {
+      background: #f3f4f6;
     }
 
-    .logout-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
-    }
-
-    .asset-table-header {
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .asset-table-header-text h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-    }
-
-    .asset-table-header-text p {
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .asset-table-container {
+    .maintenance-table-container {
       background: #ffffff;
       border-radius: 12px;
       border: 1px solid #e5e5e5;
       overflow: auto;
     }
 
-    table.asset-table {
+    table.maintenance-table {
       width: 100%;
       border-collapse: collapse;
       min-width: 900px;
       font-size: 0.85rem;
     }
 
-    .asset-table thead {
+    .maintenance-table thead {
       background: #f1f3f5;
     }
 
-    .asset-table th,
-    .asset-table td {
+    .maintenance-table th,
+    .maintenance-table td {
       padding: 0.6rem 0.75rem;
       text-align: left;
       border-bottom: 1px solid #e5e5e5;
-      white-space: nowrap;
     }
 
-    .asset-table th {
+    .maintenance-table th {
       font-weight: 600;
       color: #444;
     }
 
-    .asset-table tbody tr:nth-child(even) {
+    .maintenance-table tbody tr:nth-child(even) {
       background: #fafbfc;
     }
 
-    .asset-table tbody tr:hover {
+    .maintenance-table tbody tr:hover {
       background: #eef4ff;
     }
 
-    .asset-table .action-link {
+    .inspection-tasks-link {
       color: #140958;
-      font-weight: 600;
       text-decoration: none;
+      font-weight: 500;
       cursor: pointer;
+      transition: color 0.15s;
     }
 
-    .asset-table .action-link:hover {
+    .inspection-tasks-link:hover {
+      color: #1a0d6b;
       text-decoration: underline;
+    }
+
+    .frequency-badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .frequency-weekly {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .frequency-monthly {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .frequency-quarterly {
+      background: #d1fae5;
+      color: #065f46;
     }
 
     .add-modal-overlay {
@@ -608,7 +610,7 @@
       background: #ffffff;
       border-radius: 16px;
       padding: 2rem;
-      max-width: 700px;
+      max-width: 600px;
       width: 90%;
       max-height: 90vh;
       overflow-y: auto;
@@ -652,7 +654,7 @@
 
     .add-form-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: 1fr;
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
@@ -670,39 +672,28 @@
     }
 
     .form-field input,
-    .form-field select {
+    .form-field select,
+    .form-field textarea {
       padding: 0.6rem 0.75rem;
       border: 1px solid #d1d5db;
       border-radius: 8px;
       font-size: 0.9rem;
       color: #111827;
       transition: border-color 0.15s;
+      font-family: inherit;
+    }
+
+    .form-field textarea {
+      min-height: 100px;
+      resize: vertical;
     }
 
     .form-field input:focus,
-    .form-field select:focus {
+    .form-field select:focus,
+    .form-field textarea:focus {
       outline: none;
       border-color: #140958;
       box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
-    }
-
-    #add-locationDescription-custom {
-      width: 100%;
-    }
-
-    #toggle-custom-location {
-      font-size: 0.8rem;
-      padding: 0.4rem 0.8rem;
-      background: #f3f4f6;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    #toggle-custom-location:hover {
-      background: #e5e7eb;
-      border-color: #9ca3af;
     }
 
     .form-actions {
@@ -753,11 +744,122 @@
       cursor: not-allowed;
       transform: none;
     }
+
+    /* Schedule Calendar Styles */
+    .schedule-calendar {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
+      margin-top: 0.5rem;
+    }
+
+    .calendar-year-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .calendar-year-selector select {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #ffffff;
+    }
+
+    .calendar-months {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .calendar-month {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .calendar-month-header {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #1a1a1a;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .calendar-weeks {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .calendar-week {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .calendar-week-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 60px;
+    }
+
+    .calendar-date-input {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 150px;
+    }
+
+    .calendar-date-input:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    }
+
+    .calendar-quarter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .calendar-quarter-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+    }
+
+    .calendar-month-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #ffffff;
+      color: #111827;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .calendar-month-select:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    }
   </style>
   <script type="module">
-    import '../shared/init.js';
+    import '../../admin/shared/init.js';
   </script>
-  <script type="module" src="./asset.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -767,191 +869,58 @@
       </button>
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="/it-inventory-management-system-rfid-qrcode-technologies/images/pkt_logo.png" alt="PKT Logistics logo">
+          <img src="../../images/pkt_logo.png" alt="PKT Logistics logo">
         </div>
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item" href="../../dashboard/dashboard_admin.html">Dashboard</a>
-        <a class="nav-item active" href="asset.html">Assets</a>
-        <a class="nav-item" href="../maintenance/maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../scan/scan.html">Scan Asset</a>
-        <a class="nav-item">Reports</a>
+        <a class="nav-item" href="../../dashboard/dashboard_staff.html">Dashboard</a>
+        <a class="nav-item active" href="inspection.html">Maintenance Checklist</a>
+        <a class="nav-item" href="../scan_staff/scan.html">Scan Asset</a>
         <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
-        <div class="sidebar-meta">v1.0 • Assets</div>
+        <div class="sidebar-meta">v1.0 • Maintenance</div>
       </div>
     </aside>
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Assets</h1>
+        <h1>Maintenance Checklist</h1>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Assets overview</span>
+            <span class="user-greeting-sub">Your assigned tasks</span>
           </div>
         </div>
       </div>
 
-      <section class="asset-table-header">
-        <div class="asset-table-header-text">
-          <h2>Asset List</h2>
-          <p>All registered IT assets with basic information.</p>
-        </div>
-        <div class="add-asset-wrapper">
-          <button class="add-asset-btn" id="add-asset-btn-table">
-            <span class="icon">＋</span>
-            <span>Add assets</span>
-          </button>
-          <div class="add-asset-menu" id="add-asset-menu-table">
-            <button type="button" data-action="manual">Add manually</button>
-            <button type="button" data-action="upload">Upload file</button>
-          </div>
-        </div>
+      <section class="maintenance-header">
+        <h2>My Assigned Maintenance Tasks</h2>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">Tasks assigned to you by administrators</p>
       </section>
 
-      <section class="asset-table-container">
-        <table class="asset-table">
+      <section class="maintenance-table-container">
+        <table class="maintenance-table">
           <thead>
             <tr>
-              <th>Asset Code</th>
-              <th>Asset Name</th>
-              <th>Category</th>
-              <th>Model</th>
-              <th>Serial Number</th>
+              <th>Branch</th>
               <th>Location</th>
-              <th>Area</th>
+              <th>Item Name</th>
+              <th>Frequency</th>
               <th>Action</th>
             </tr>
           </thead>
-          <tbody id="asset-table-body">
-            <!-- Asset rows will be loaded here -->
+          <tbody id="maintenance-table-body">
+            <!-- Maintenance rows will be loaded here -->
           </tbody>
         </table>
       </section>
     </main>
   </div>
 
-  <!-- Add Asset Modal -->
-  <div class="add-modal-overlay" id="add-modal-overlay">
-    <div class="add-modal">
-      <div class="add-modal-header">
-        <h2>Add New Asset</h2>
-        <button class="close-modal-btn" id="close-add-modal-btn">×</button>
-      </div>
-      <form id="add-asset-form">
-        <div class="add-form-grid">
-          <div class="form-field">
-            <label for="add-no">No.</label>
-            <input type="text" id="add-no" name="no">
-          </div>
-          <div class="form-field">
-            <label for="add-branchCode">Branch Code</label>
-            <input type="text" id="add-branchCode" name="branchCode">
-          </div>
-          <div class="form-field">
-            <label for="add-assetId">Asset ID *</label>
-            <input type="text" id="add-assetId" name="assetId" required>
-          </div>
-          <div class="form-field">
-            <label for="add-assetDescription">Asset Description</label>
-            <input type="text" id="add-assetDescription" name="assetDescription">
-          </div>
-          <div class="form-field">
-            <label for="add-assetCategory">Asset Category</label>
-            <input type="text" id="add-assetCategory" name="assetCategory">
-          </div>
-          <div class="form-field">
-            <label for="add-assetCategoryDescription">Asset Category Description</label>
-            <input type="text" id="add-assetCategoryDescription" name="assetCategoryDescription">
-          </div>
-          <div class="form-field">
-            <label for="add-ownerCode">Owner Code</label>
-            <input type="text" id="add-ownerCode" name="ownerCode">
-          </div>
-          <div class="form-field">
-            <label for="add-ownerName">Owner Name</label>
-            <input type="text" id="add-ownerName" name="ownerName">
-          </div>
-          <div class="form-field">
-            <label for="add-model">Model</label>
-            <input type="text" id="add-model" name="model">
-          </div>
-          <div class="form-field">
-            <label for="add-brand">Brand</label>
-            <input type="text" id="add-brand" name="brand">
-          </div>
-          <div class="form-field">
-            <label for="add-status">Status</label>
-            <select id="add-status" name="status">
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Retired">Retired</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="add-warrantyPeriod">Warranty Period</label>
-            <input type="text" id="add-warrantyPeriod" name="warrantyPeriod">
-          </div>
-          <div class="form-field">
-            <label for="add-serialNo">Serial No.</label>
-            <input type="text" id="add-serialNo" name="serialNo">
-          </div>
-          <div class="form-field">
-            <label for="add-location">Location</label>
-            <input type="text" id="add-location" name="location">
-          </div>
-          <div class="form-field">
-            <label for="add-locationDescription">Location Description</label>
-            <select id="add-locationDescription" name="locationDescription">
-              <option value="">Select location...</option>
-              <!-- Options will be populated from maintenance locations -->
-            </select>
-            <input type="text" id="add-locationDescription-custom" name="locationDescriptionCustom" placeholder="Or enter custom location" style="margin-top: 0.5rem; display: none;">
-            <button type="button" id="toggle-custom-location" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">+ Add custom location</button>
-          </div>
-          <div class="form-field">
-            <label for="add-area">Area</label>
-            <input type="text" id="add-area" name="area">
-          </div>
-          <div class="form-field">
-            <label for="add-departmentCode">Department Code</label>
-            <input type="text" id="add-departmentCode" name="departmentCode">
-          </div>
-          <div class="form-field">
-            <label for="add-departmentDescription">Department Description</label>
-            <input type="text" id="add-departmentDescription" name="departmentDescription">
-          </div>
-          <div class="form-field">
-            <label for="add-condition">Condition</label>
-            <select id="add-condition" name="condition">
-              <option value="">Select condition</option>
-              <option value="In Use (Assigned)">In Use (Assigned)</option>
-              <option value="Available">Available</option>
-              <option value="Under Maintenance">Under Maintenance</option>
-              <option value="Retired">Retired</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="add-currentUser">Current User</label>
-            <input type="text" id="add-currentUser" name="currentUser">
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn-cancel" id="cancel-add-btn">Cancel</button>
-          <button type="submit" class="btn-save" id="save-add-btn">Add Asset</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <input type="file" id="asset-file-input" style="display:none" />
+  <script type="module" src="./inspection.js"></script>
 </body>
 </html>
-
-

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard • IT Inventory</title>
+  <title>Scan Asset • IT Inventory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -307,17 +307,6 @@
       overflow: hidden;
     }
 
-    .sidebar.collapsed .sidebar-toggle-btn {
-      right: 0.5rem;
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-    }
-
-    .sidebar.collapsed .sidebar-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: #ffffff;
-    }
-
     .sidebar-toggle-btn:hover {
       background: rgba(255, 255, 255, 0.2);
       transform: scale(1.1);
@@ -327,6 +316,17 @@
 
     .sidebar-toggle-btn:active {
       transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
     }
 
     #toggle-icon {
@@ -341,33 +341,6 @@
       color: #ffffff !important;
     }
 
-    .logout-btn {
-      white-space: nowrap;
-      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
-      max-height: 100px;
-      overflow: hidden;
-    }
-
-    .sidebar.collapsed .logout-btn {
-      opacity: 0;
-      max-height: 0;
-      padding: 0;
-      margin: 0;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      overflow: hidden;
-    }
-
-    .sidebar.collapsed:hover .logout-btn {
-      opacity: 1;
-      max-height: 100px;
-      padding: 0.5rem 1.5rem;
-      font-size: 0.875rem;
-      width: auto;
-      height: auto;
-    }
-
     .dashboard-container {
       flex: 1;
       background: #ffffff;
@@ -377,16 +350,16 @@
       display: flex;
       flex-direction: column;
       max-width: 100%;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .dashboard-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 2px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
     }
 
     .dashboard-header h1 {
@@ -399,6 +372,7 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      margin-left: auto;
     }
 
     .user-avatar {
@@ -442,6 +416,9 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
+      white-space: nowrap;
+      max-height: 100px;
+      overflow: hidden;
     }
 
     .logout-btn:hover {
@@ -449,130 +426,112 @@
       box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
     }
 
-    .dashboard-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
+    .sidebar.collapsed .logout-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .logout-btn {
+      opacity: 1;
+      max-height: 100px;
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      width: auto;
+      height: auto;
+    }
+
+
+    /* Scan Type Selection Styles */
+    .scan-type-selection {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
       margin-top: 2rem;
     }
 
-    .dashboard-card {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 2rem;
-      border: 2px solid #e5e5e5;
+    .selection-container {
+      width: 100%;
+      max-width: 800px;
+      text-align: center;
     }
 
-    .dashboard-card h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 1rem;
-    }
-
-    .dashboard-card p {
-      color: #666;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-
-    .stat {
+    .scan-options {
       display: flex;
-      justify-content: space-between;
+      gap: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .scan-option-btn {
+      flex: 1;
+      min-width: 250px;
+      max-width: 300px;
+      padding: 3rem 2rem;
+      background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      padding: 1rem;
-      background: white;
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
+      gap: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      text-decoration: none;
+      color: inherit;
     }
 
-    .stat-label {
-      font-size: 0.875rem;
-      color: #666;
+    .scan-option-btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(20, 9, 88, 0.15);
+      border-color: #140958;
     }
 
-    .stat-value {
+    .scan-option-btn:active {
+      transform: translateY(-2px);
+    }
+
+    .scan-option-icon {
+      font-size: 4rem;
+      line-height: 1;
+    }
+
+    .scan-option-title {
       font-size: 1.5rem;
       font-weight: 700;
-      color: #140958;
+      color: #1a1a1a;
     }
 
-    .asset-table-wrapper {
-      margin-top: 2rem;
-      grid-column: 1 / -1;
+    .scan-option-description {
+      font-size: 0.95rem;
+      color: #6b7280;
     }
 
-    .asset-table-container {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e5e5e5;
-      overflow: auto;
-    }
 
-    table.asset-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 800px;
-      font-size: 0.85rem;
-    }
+    @media (max-width: 768px) {
+      .app-shell {
+        flex-direction: column;
+        padding: 1rem;
+      }
 
-    .asset-table thead {
-      background: #f1f3f5;
-    }
+      .sidebar {
+        width: 100%;
+      }
 
-    .asset-table th,
-    .asset-table td {
-      padding: 0.6rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e5e5;
-      white-space: nowrap;
-    }
-
-    .asset-table th {
-      font-weight: 600;
-      color: #444;
-    }
-
-    .asset-table tbody tr:nth-child(even) {
-      background: #fafbfc;
-    }
-
-    .asset-table tbody tr:hover {
-      background: #eef4ff;
-    }
-
-    .asset-table .action-link {
-      color: #140958;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .asset-table .action-link:hover {
-      text-decoration: underline;
-    }
-
-    .welcome-message {
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 12px;
-      margin-bottom: 2rem;
-    }
-
-    .welcome-message h2 {
-      font-size: 1.75rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .welcome-message p {
-      color: rgba(255, 255, 255, 0.9);
+      .dashboard-container {
+        padding: 1.5rem;
+      }
     }
   </style>
   <script type="module">
-    import './auth-check.js';
-    import '../admin/shared/init.js';
-    import './dashboard.js';
+    import '../../admin/shared/init.js';
   </script>
 </head>
 <body>
@@ -588,98 +547,50 @@
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item active" href="dashboard_admin.html">Dashboard</a>
-        <a class="nav-item" href="../admin/asset/asset.html">Assets</a>
-        <a class="nav-item" href="../admin/maintenance/maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../admin/scan/scan.html">Scan Asset</a>
-        <a class="nav-item">Reports</a>
+        <a class="nav-item" href="../dashboard/dashboard_staff.html">Dashboard</a>
+        <a class="nav-item" href="../inspection/inspection.html">Maintenance Checklist</a>
+        <a class="nav-item active" href="scan.html">Scan Asset</a>
         <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
-        <div class="sidebar-meta">v1.0 • Dashboard</div>
+        <div class="sidebar-meta">v1.0 • Scan Asset</div>
       </div>
     </aside>
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Dashboard Analytics</h1>
+        <h1>Scan Asset</h1>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Welcome back</span>
+            <span class="user-greeting-sub">Scan asset using RFID or QR Code</span>
           </div>
         </div>
       </div>
 
-      <div class="welcome-message">
-        <h2>Welcome to IT Inventory Management System</h2>
-        <p>Manage your IT assets using RFID & QR Code Technologies</p>
-      </div>
-
-      <div class="dashboard-content">
-        <div class="dashboard-card">
-          <h2>Total Assets</h2>
-          <div class="stat">
-            <span class="stat-label">Registered Items</span>
-            <span class="stat-value" id="total-assets-stat">-</span>
-          </div>
-          <p>Total number of IT assets in the system</p>
-        </div>
-
-        <div class="dashboard-card">
-          <h2>Maintenance Items</h2>
-          <div class="stat">
-            <span class="stat-label">Active Maintenance</span>
-            <span class="stat-value" id="total-maintenance-stat">-</span>
-          </div>
-          <p>Number of maintenance items in the system</p>
-        </div>
-
-        <div class="dashboard-card">
-          <h2>Quick Actions</h2>
-          <p>Add new assets, scan QR codes, generate reports, and more.</p>
-          <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <a href="../admin/asset/asset.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Manage Assets</a>
-            <a href="../admin/maintenance/maintenance.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Manage Maintenance</a>
-            <a href="../admin/scan/scan.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Scan Assets</a>
-          </div>
-        </div>
-
-        <div class="asset-table-wrapper">
-          <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Assets Overview</h2>
-          <p style="color: #666; margin-bottom: 0.75rem;">Key details for your IT assets.</p>
-          <div class="asset-table-container">
-            <table class="asset-table">
-              <thead>
-                <tr>
-                  <th>Asset Code</th>
-                  <th>Asset Name</th>
-                  <th>Category</th>
-                  <th>Model</th>
-                  <th>Serial Number</th>
-                  <th>Location</th>
-                  <th>Area</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="assets-table-body">
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 2rem; color: #888;">Loading assets...</td>
-                </tr>
-              </tbody>
-            </table>
+      <!-- Scan Type Selection -->
+      <div class="scan-type-selection">
+        <div class="selection-container">
+          <h2 style="font-size: 1.5rem; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem; text-align: center;">Choose Scan Method</h2>
+          <p style="text-align: center; color: #6b7280; margin-bottom: 2rem;">Select how you want to scan the asset</p>
+          <div class="scan-options">
+            <a href="rfid/rfid.html" class="scan-option-btn">
+              <div class="scan-option-icon">📡</div>
+              <div class="scan-option-title">RFID</div>
+              <div class="scan-option-description">Scan using RFID reader</div>
+            </a>
+            <a href="qrcode/qrcode.html" class="scan-option-btn">
+              <div class="scan-option-icon">📱</div>
+              <div class="scan-option-title">QR Code</div>
+              <div class="scan-option-description">Scan using QR code camera</div>
+            </a>
           </div>
         </div>
       </div>
     </main>
   </div>
-
-  <script type="module">
-    import './auth-check.js';
-    import '../admin/shared/init.js';
-    import './dashboard.js';
-  </script>
 </body>
 </html>
+

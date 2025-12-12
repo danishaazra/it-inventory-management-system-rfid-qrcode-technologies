@@ -1196,6 +1196,76 @@
       color: #6b7280;
       font-size: 0.95rem;
     }
+
+    .btn-assign-staff {
+      box-shadow: 0 2px 8px rgba(246, 201, 69, 0.3);
+    }
+
+    .btn-assign-staff:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(246, 201, 69, 0.4);
+    }
+
+    .staff-list-item {
+      padding: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .staff-list-item:hover {
+      border-color: #140958;
+      background: #eef4ff;
+      transform: translateX(4px);
+    }
+
+    .staff-list-item.selected {
+      border-color: #140958;
+      background: #eef4ff;
+    }
+
+    .staff-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .staff-info {
+      flex: 1;
+    }
+
+    .staff-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+
+    .staff-email {
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .no-staff {
+      text-align: center;
+      padding: 2rem;
+      color: #9ca3af;
+      font-size: 0.95rem;
+    }
   </style>
   <script type="module">
     import '../shared/init.js';
@@ -1217,7 +1287,7 @@
         <a class="nav-item" href="../../dashboard/dashboard_admin.html">Dashboard</a>
         <a class="nav-item" href="../asset/asset.html">Assets</a>
         <a class="nav-item active" href="maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../qrcode.html">Scan Asset</a>
+        <a class="nav-item" href="../scan/scan.html">Scan Asset</a>
         <a class="nav-item">Reports</a>
         <a class="nav-item">Settings</a>
       </nav>
@@ -1240,10 +1310,17 @@
       </div>
 
       <div class="asset-details-header">
-        <div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
           <a href="maintenance.html" class="back-link">← Back to maintenance checklist</a>
+          <div id="assigned-staff-display" style="display: none; padding: 0.75rem 1rem; background: #eef4ff; border-radius: 8px; border-left: 4px solid #140958;">
+            <div style="font-size: 0.75rem; font-weight: 600; color: #6b7280; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Assigned Staff</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #1a1a1a;" id="assigned-staff-name">-</div>
+          </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn-assign-staff" id="assign-staff-btn" style="padding: 0.6rem 1.25rem; background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%); color: #1a1a1a; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: all 0.2s;">
+            👤 Assign to Staff
+          </button>
           <div class="inspection-actions-wrapper">
             <button class="inspection-actions-btn" id="inspection-actions-btn" aria-label="Maintenance actions">⋯</button>
             <div class="inspection-actions-menu" id="inspection-actions-menu">
@@ -1316,6 +1393,24 @@
     </div>
   </div>
 
+  <!-- Assign Staff Modal -->
+  <div class="edit-modal-overlay" id="assign-staff-modal-overlay">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h2>Assign Task to Staff</h2>
+        <button class="close-modal-btn" id="close-assign-staff-modal-btn">×</button>
+      </div>
+      <div style="padding: 1rem 0;">
+        <div style="margin-bottom: 1rem; color: #6b7280; font-size: 0.875rem;">
+          Select a staff member to assign this maintenance task:
+        </div>
+        <div id="staff-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto;">
+          <div style="text-align: center; padding: 2rem; color: #9ca3af;">Loading staff...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Maintenance Modal -->
   <div class="edit-modal-overlay" id="edit-modal-overlay">
     <div class="edit-modal">
@@ -1364,6 +1459,9 @@
     </div>
   </div>
 
+  <script type="module">
+    import '../shared/init.js';
+  </script>
   <script type="module" src="./inspectiontask.js"></script>
 </body>
 </html>

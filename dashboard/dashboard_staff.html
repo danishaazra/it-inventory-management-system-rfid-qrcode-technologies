@@ -616,8 +616,8 @@
     }
   </style>
   <script type="module">
-    import '../shared/init.js';
-    import './dashboard.js';
+    import './auth-check.js';
+    import '../admin/shared/init.js';
   </script>
 </head>
 <body>
@@ -634,9 +634,8 @@
       </div>
       <nav class="sidebar-nav">
         <a class="nav-item active" href="dashboard_staff.html">Dashboard</a>
-        <a class="nav-item" href="../admin/maintenance/maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../admin/qrcode.html">Scan Asset</a>
-        <a class="nav-item">Reports</a>
+        <a class="nav-item" href="../Staff/inspection/inspection.html">Maintenance Checklist</a>
+        <a class="nav-item" href="../Staff/scan_staff/scan.html">Scan Asset</a>
         <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
@@ -694,8 +693,8 @@
           <h2 class="quick-actions-title">Quick Actions</h2>
           <p style="color: #666; margin-bottom: 1rem;">These are actions IT Staff can perform frequently.</p>
           <div class="quick-actions-buttons">
-            <a href="../admin/maintenance/maintenance.html" class="quick-action-btn">View Assigned Maintenance Tasks</a>
-            <a href="../admin/qrcode.html" class="quick-action-btn">Scan & Verify Asset</a>
+            <a href="../Staff/inspection/inspection.html" class="quick-action-btn">View Assigned Maintenance Tasks</a>
+            <a href="../Staff/scan_staff/scan.html" class="quick-action-btn">Scan & Verify Asset</a>
           </div>
         </div>
 
@@ -716,44 +715,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td>TASK-001</td>
-                  <td>AS-0001</td>
-                  <td>Monthly Inspection</td>
-                  <td>2024-12-15</td>
-                  <td><span style="color: #f59e0b; font-weight: 600;">Pending</span></td>
-                  <td><a class="action-link">View Task</a></td>
-                </tr>
-                <tr>
-                  <td>TASK-002</td>
-                  <td>AS-0002</td>
-                  <td>Quarterly Check</td>
-                  <td>2024-12-20</td>
-                  <td><span style="color: #3b82f6; font-weight: 600;">In Progress</span></td>
-                  <td><a class="action-link">Continue</a></td>
-                </tr>
-                <tr>
-                  <td>TASK-003</td>
-                  <td>AS-0003</td>
-                  <td>Weekly Inspection</td>
-                  <td>2024-12-10</td>
-                  <td><span style="color: #10b981; font-weight: 600;">Completed</span></td>
-                  <td><a class="action-link">View Details</a></td>
-                </tr>
-                <tr>
-                  <td>TASK-004</td>
-                  <td>AS-0004</td>
-                  <td>Monthly Inspection</td>
-                  <td>2024-12-18</td>
-                  <td><span style="color: #f59e0b; font-weight: 600;">Pending</span></td>
-                  <td><a class="action-link">View Task</a></td>
-                </tr>
-                <tr>
-                  <td>TASK-005</td>
-                  <td>AS-0005</td>
-                  <td>Weekly Inspection</td>
-                  <td>2024-12-12</td>
-                  <td><span style="color: #ef4444; font-weight: 600;">Overdue</span></td>
-                  <td><a class="action-link">Start Task</a></td>
+                  <td colspan="6" style="text-align: center; padding: 2rem; color: #888;">Loading tasks...</td>
                 </tr>
               </tbody>
             </table>
@@ -763,8 +725,6 @@
     </main>
   </div>
 
-  <script type="module">
-    import '../admin/shared/init.js';
-  </script>
+  <script type="module" src="./dashboard_staff.js"></script>
 </body>
 </html>
