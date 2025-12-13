@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inspection Assets • IT Inventory</title>
+  <title>Inspection Tasks • IT Inventory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -451,470 +451,154 @@
     }
 
     .back-link {
-      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       color: #140958;
       text-decoration: none;
-      font-weight: 600;
+      font-weight: 500;
+      font-size: 0.9rem;
       margin-bottom: 1rem;
-      display: inline-block;
+      transition: color 0.15s;
     }
 
     .back-link:hover {
+      color: #1a0d6b;
       text-decoration: underline;
     }
 
-    .asset-details-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1.5rem;
-      margin-bottom: 1.75rem;
-    }
-
-    .stats-row {
+    .summary-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1.5rem;
       margin-bottom: 2rem;
     }
 
-    .stat-card {
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
-
-    .stat-card-label {
-      font-size: 0.85rem;
-      color: #6b7280;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
-
-    .stat-card-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-
-    .stat-card-value.highlight {
-      color: #140958;
-    }
-
-    .assets-section {
-      margin-top: 2rem;
-    }
-
-    .assets-section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #e5e5e5;
-    }
-
-    .assets-section-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-
-    .btn-add-asset {
-      padding: 0.6rem 1.2rem;
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-add-asset:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
-    }
-
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-overlay.open {
-      display: flex;
-    }
-
-    .modal {
-      background: white;
-      border-radius: 16px;
-      padding: 2rem;
-      max-width: 800px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #e5e5e5;
-    }
-
-    .modal-header h3 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-
-    .close-modal-btn {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      color: #6b7280;
-      cursor: pointer;
-      padding: 0.25rem 0.5rem;
-      border-radius: 6px;
-      transition: all 0.15s;
-    }
-
-    .close-modal-btn:hover {
-      background: #f3f4f6;
-      color: #1a1a1a;
-    }
-
-    .asset-select-list {
-      margin-bottom: 1.5rem;
-      max-height: 500px;
-      overflow-y: auto;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-    }
-
-    .asset-select-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .asset-select-table thead {
+    .summary-card {
       background: #f8f9fa;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
     }
 
-    .asset-select-table th {
-      padding: 0.75rem 1rem;
-      text-align: left;
+    .summary-card-label {
+      font-size: 0.75rem;
       font-weight: 600;
-      font-size: 0.875rem;
       color: #6b7280;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 2px solid #e5e7eb;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
     }
 
-    .asset-select-table td {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 0.9rem;
-    }
-
-    .asset-select-table tbody tr {
-      transition: background 0.15s;
-    }
-
-    .asset-select-table tbody tr:hover {
-      background: #f8f9fa;
-    }
-
-    .asset-select-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .asset-select-checkbox {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
-
-    .asset-select-id {
-      font-weight: 600;
+    .summary-card-value {
+      font-size: 1.25rem;
+      font-weight: 700;
       color: #1a1a1a;
     }
 
-    .asset-select-name {
-      color: #1a1a1a;
-    }
-
-    .asset-select-category {
-      color: #6b7280;
-    }
-
-    .btn-view-more {
-      padding: 0.4rem 0.8rem;
-      background: #140958;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      transition: all 0.15s;
-    }
-
-    .btn-view-more:hover {
-      background: #1a0d6b;
-      transform: translateY(-1px);
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: flex-end;
-      padding-top: 1rem;
-      border-top: 2px solid #e5e5e5;
-    }
-
-    .btn-cancel {
-      padding: 0.6rem 1.2rem;
-      background: #f3f4f6;
-      color: #1a1a1a;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-cancel:hover {
-      background: #e5e7eb;
-    }
-
-    .btn-save {
-      padding: 0.6rem 1.2rem;
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-save:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
-    }
-
-    .btn-remove-asset {
-      padding: 0.4rem 0.8rem;
-      background: #dc2626;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-remove-asset:hover {
-      background: #b91c1c;
-    }
-
-    .btn-inspect {
-      padding: 0.4rem 0.8rem;
-      background: #140958;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-inspect:hover {
-      background: #1a0d6b;
-      transform: translateY(-1px);
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
+    .frequency-badge {
+      padding: 0.25rem 0.6rem;
       border-radius: 12px;
       font-size: 0.75rem;
       font-weight: 600;
-      text-transform: uppercase;
+      display: inline-block;
     }
 
-    .status-open {
+    .frequency-weekly {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .frequency-monthly {
       background: #fef3c7;
       color: #92400e;
     }
 
-    .status-complete {
-      background: #10b981;
-      color: #ffffff;
+    .frequency-quarterly {
+      background: #d1fae5;
+      color: #065f46;
     }
 
-    .inspection-form-field {
-      margin-bottom: 1rem;
+    .tasks-section {
+      margin-top: 2rem;
     }
 
-    .inspection-form-field label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
+    .tasks-header {
+      font-size: 1.5rem;
+      font-weight: 700;
       color: #1a1a1a;
-      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #e5e5e5;
+      position: relative;
+      z-index: 1;
     }
 
-    .inspection-form-field textarea {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    .inspection-form-field textarea:focus {
-      outline: none;
-      border-color: #140958;
-      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
-    }
-
-    .solved-options {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .solved-option {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .solved-option input[type="radio"] {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
-
-    .solved-option label {
-      margin: 0;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .assets-list {
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .assets-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .assets-table thead {
-      background: #f8f9fa;
-      position: sticky;
-      top: 0;
+    .btn-add-task {
+      position: relative;
       z-index: 10;
     }
 
-    .assets-table th {
-      padding: 0.75rem 1rem;
-      text-align: left;
-      font-weight: 600;
-      font-size: 0.875rem;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 2px solid #e5e7eb;
-    }
-
-    .assets-table td {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 0.9rem;
-    }
-
-    .assets-table tbody tr {
-      transition: background 0.15s;
-    }
-
-    .assets-table tbody tr:hover {
-      background: #f8f9fa;
-    }
-
-    .assets-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .asset-id {
-      font-weight: 600;
-      color: #1a1a1a;
-    }
-
-    .asset-name {
-      color: #1a1a1a;
-    }
-
-    .asset-category {
-      color: #6b7280;
-    }
-
-    .btn-view-more-asset {
-      padding: 0.4rem 0.8rem;
-      background: #140958;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      transition: all 0.15s;
-    }
-
-    .btn-view-more-asset:hover {
-      background: #1a0d6b;
+    .btn-add-task:hover {
+      background: #1a0d6b !important;
       transform: translateY(-1px);
     }
 
-    .no-assets {
+    .btn-add-task:active {
+      transform: translateY(0);
+    }
+
+    .tasks-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .task-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      border-left: 4px solid #140958;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .task-item:hover {
+      background: #eef4ff;
+      transform: translateX(4px);
+    }
+
+    .task-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #140958;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+
+    .no-tasks {
       text-align: center;
       padding: 3rem;
       color: #6b7280;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
+
 
     .edit-modal-overlay {
       position: fixed;
@@ -979,10 +663,16 @@
       color: #111827;
     }
 
+    .edit-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
     .form-field {
       display: flex;
       flex-direction: column;
-      margin-bottom: 1rem;
     }
 
     .form-field label {
@@ -1023,13 +713,420 @@
       justify-content: flex-end;
       margin-top: 1.5rem;
       padding-top: 1.5rem;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid #e5e5e5;
     }
+
+    .btn-cancel {
+      padding: 0.6rem 1.5rem;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #374151;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .btn-save {
+      padding: 0.6rem 1.5rem;
+      border: none;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .view-more-btn {
+      padding: 0.6rem 1.5rem;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #374151;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .view-more-btn:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .asset-details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    /* Schedule Calendar Styles */
+    .schedule-calendar {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
+      margin-top: 0.5rem;
+    }
+
+    .calendar-year-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .calendar-year-selector select {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #ffffff;
+    }
+
+    .calendar-months {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .calendar-month {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .calendar-month-header {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #1a1a1a;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .calendar-weeks {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .calendar-week {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .calendar-week-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 60px;
+    }
+
+    .calendar-date-input {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      width: 100%;
+      max-width: 150px;
+    }
+
+    .calendar-date-input:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    }
+
+    .calendar-quarter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .calendar-quarter-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+    }
+
+    .calendar-month-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #ffffff;
+      color: #111827;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .calendar-month-select:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    }
+
+    .task-date {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .task-date-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .task-date-label {
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .task-date-value {
+      color: #1a1a1a;
+    }
+
+    .task-countdown {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-top: 0.25rem;
+    }
+
+    .task-countdown.overdue {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .task-countdown.due-today {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .task-countdown.due-soon {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .task-countdown.upcoming {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .view-more-btn:hover {
+      background: #e5e7eb !important;
+      border-color: #9ca3af !important;
+    }
+
+    .task-date-edit-btn {
+      padding: 0.4rem 0.75rem;
+      background: #140958;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: #ffffff;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .task-date-edit-btn:hover {
+      background: #1a0d6b;
+      transform: translateY(-1px);
+    }
+
+    /* Task Date Modal */
+    .task-date-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .task-date-modal-overlay.open {
+      display: flex;
+    }
+
+    .task-date-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .task-date-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .task-date-modal-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .close-task-date-modal-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-task-date-modal-btn:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    /* Asset List Section */
+    .assets-section {
+      margin-top: 2rem;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .assets-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .assets-section-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .assets-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .asset-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      transition: all 0.15s;
+    }
+
+    .asset-card:hover {
+      background: #eef4ff;
+      border-color: #140958;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.1);
+    }
+
+    .asset-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .asset-card-id {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #1a1a1a;
+    }
+
+    .asset-card-category {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+    }
+
+    .asset-card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    .asset-card-detail {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .asset-card-detail-label {
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 80px;
+    }
+
+    .asset-card-detail-value {
+      color: #1a1a1a;
+    }
+
+    .no-assets {
+      text-align: center;
+      padding: 2rem;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
   </style>
-  <script type="module">
-    import '../shared/init.js';
-    import './inspectionassets.js';
-  </script>
 </head>
 <body>
   <div class="app-shell">
@@ -1044,110 +1141,142 @@
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
       <nav class="sidebar-nav">
-        <a class="nav-item" href="dashboard.html">Dashboard</a>
-        <a class="nav-item" href="asset.html">Assets</a>
-        <a class="nav-item active" href="maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item">RFID Scans</a>
-        <a class="nav-item" href="qrcode.html">QR Codes</a>
-        <a class="nav-item">Reports</a>
+        <a class="nav-item" href="../../dashboard/dashboard_staff.html">Dashboard</a>
+        <a class="nav-item active" href="../inspection/inspection.html">Maintenance Checklist</a>
+        <a class="nav-item" href="../scan_staff/scan.html">Scan Asset</a>
         <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
-        <div class="sidebar-meta">v1.0 • Inspection Assets</div>
+        <div class="sidebar-meta">v1.0 • Inspection Tasks</div>
       </div>
     </aside>
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1 id="page-title">Inspection Assets</h1>
+        <h1>Inspection Tasks</h1>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Asset inspection</span>
+            <span class="user-greeting-sub">Task details</span>
           </div>
         </div>
       </div>
 
       <div class="asset-details-header">
-        <div>
-          <a href="#" class="back-link" id="back-link">← Back to inspection tasks</a>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <a href="inspection.html" class="back-link">← Back to maintenance checklist</a>
         </div>
       </div>
 
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-card-label">Assets Remaining</div>
-          <div class="stat-card-value highlight" id="assets-remaining">-</div>
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="summary-card-label">Branch</div>
+          <div class="summary-card-value" id="summary-branch">-</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Days Until Next Maintenance</div>
-          <div class="stat-card-value highlight" id="days-remaining">-</div>
+        <div class="summary-card">
+          <div class="summary-card-label">Location</div>
+          <div class="summary-card-value" id="summary-location">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-label">Item Name</div>
+          <div class="summary-card-value" id="summary-itemName">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-label">Frequency</div>
+          <div class="summary-card-value" id="summary-frequency">-</div>
         </div>
       </div>
 
-      <section class="assets-section">
-        <div class="assets-section-header">
-          <h2>Assets to Inspect</h2>
-          <button class="btn-add-asset" id="add-asset-btn">+ Add Asset</button>
+      <section class="tasks-section">
+        <div class="tasks-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>List of Inspection Tasks</span>
+          <button type="button" class="btn-add-task" id="add-task-btn" style="padding: 0.5rem 1rem; background: #140958; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 0.9rem;">
+            ＋ Add Task
+          </button>
         </div>
-        <div class="assets-list" id="assets-list">
-          <!-- Assets will be loaded here -->
-        </div>
+        <ul class="tasks-list" id="tasks-list">
+          <!-- Tasks will be loaded here -->
+        </ul>
       </section>
+
     </main>
   </div>
 
-  <!-- Add Asset Modal -->
-  <div class="modal-overlay" id="add-asset-modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Select Assets to Add</h3>
-        <button class="close-modal-btn" id="close-add-asset-modal-btn">&times;</button>
+  <!-- Add Task Modal -->
+  <div class="edit-modal-overlay" id="add-task-modal-overlay">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h2>Add New Task</h2>
+        <button class="close-modal-btn" id="close-add-task-modal-btn">×</button>
       </div>
-      <div class="asset-select-list" id="asset-select-list">
-        <!-- Asset selection table will be loaded here -->
-      </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="cancel-add-asset-btn">Cancel</button>
-        <button class="btn-save" id="save-add-asset-btn">Add Selected Assets</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Inspection Modal -->
-  <div class="modal-overlay" id="inspection-modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Inspection Action</h3>
-        <button class="close-modal-btn" id="close-inspection-modal-btn">&times;</button>
-      </div>
-      <form id="inspection-form">
-        <div class="inspection-form-field">
-          <label for="inspection-notes">Description / Notes *</label>
-          <textarea id="inspection-notes" name="notes" required placeholder="Enter inspection notes, findings, or description..."></textarea>
-        </div>
-        <div class="inspection-form-field">
-          <label>Status *</label>
-          <div class="solved-options">
-            <div class="solved-option">
-              <input type="radio" id="solved-yes" name="solved" value="yes" required>
-              <label for="solved-yes">Solved</label>
-            </div>
-            <div class="solved-option">
-              <input type="radio" id="solved-no" name="solved" value="no" required>
-              <label for="solved-no">Not Solved</label>
-            </div>
+      <form id="add-task-form">
+        <div class="edit-form-grid">
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label for="add-task-text">Task Description *</label>
+            <textarea id="add-task-text" name="taskText" placeholder="Enter task description" required rows="3"></textarea>
           </div>
         </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-cancel" id="cancel-inspection-btn">Cancel</button>
-          <button type="submit" class="btn-save" id="save-inspection-btn">Save Inspection</button>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancel-add-task-btn">Cancel</button>
+          <button type="submit" class="btn-save" id="save-add-task-btn">Add Task</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- Edit Maintenance Modal -->
+  <div class="edit-modal-overlay" id="edit-modal-overlay">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h2>Edit Maintenance Item</h2>
+        <button class="close-modal-btn" id="close-modal-btn">×</button>
+      </div>
+      <form id="edit-maintenance-form">
+        <div class="edit-form-grid">
+          <div class="form-field">
+            <label for="edit-branch">Branch *</label>
+            <input type="text" id="edit-branch" name="branch" required>
+          </div>
+          <div class="form-field">
+            <label for="edit-location">Location *</label>
+            <input type="text" id="edit-location" name="location" required>
+          </div>
+          <div class="form-field">
+            <label for="edit-itemName">Item Name *</label>
+            <input type="text" id="edit-itemName" name="itemName" required>
+          </div>
+          <div class="form-field">
+            <label for="edit-frequency">Frequency *</label>
+            <select id="edit-frequency" name="frequency" required>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+            </select>
+          </div>
+          <div class="form-field" id="edit-schedule-container" style="grid-column: 1 / -1; display: none;">
+            <label>Maintenance Schedule *</label>
+            <div id="edit-schedule-calendar" class="schedule-calendar">
+              <!-- Calendar will be generated here -->
+            </div>
+          </div>
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label for="edit-inspectionTasks">List of Inspection Tasks *</label>
+            <textarea id="edit-inspectionTasks" name="inspectionTasks" placeholder="Enter inspection tasks, one per line" required></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancel-edit-btn">Cancel</button>
+          <button type="submit" class="btn-save" id="save-edit-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import '../../admin/shared/init.js';
+  </script>
+  <script type="module" src="./inspectiontask.js?v=2"></script>
 </body>
 </html>

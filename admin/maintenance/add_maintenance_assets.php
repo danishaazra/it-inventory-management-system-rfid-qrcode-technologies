@@ -4,14 +4,22 @@ require '../api/db.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
+$maintenanceId = $data['maintenanceId'] ?? '';
 $branch = $data['branch'] ?? '';
 $location = $data['location'] ?? '';
 $itemName = $data['itemName'] ?? '';
 $assetIds = $data['assetIds'] ?? [];
 
-if (empty($branch) || empty($location) || empty($itemName) || empty($assetIds) || !is_array($assetIds)) {
+if (empty($assetIds) || !is_array($assetIds)) {
   http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'branch, location, itemName, and assetIds array are required']);
+  echo json_encode(['ok' => false, 'error' => 'assetIds array is required']);
+  exit;
+}
+
+// If maintenanceId is not provided, fall back to branch/location/itemName (legacy)
+if (empty($maintenanceId) && (empty($branch) || empty($location) || empty($itemName))) {
+  http_response_code(400);
+  echo json_encode(['ok' => false, 'error' => 'maintenanceId is required, or provide branch, location, and itemName']);
   exit;
 }
 
@@ -33,12 +41,19 @@ try {
     }
     
     // Check if already assigned
-    $filter = [
-      'branch' => $branch,
-      'location' => $location,
-      'itemName' => $itemName,
-      'assetId' => $assetId
-    ];
+    if (!empty($maintenanceId)) {
+      $filter = [
+        'maintenanceId' => $maintenanceId,
+        'assetId' => $assetId
+      ];
+    } else {
+      $filter = [
+        'branch' => $branch,
+        'location' => $location,
+        'itemName' => $itemName,
+        'assetId' => $assetId
+      ];
+    }
     $existing = mongoFind($mongoManager, $inspectionsNamespace, $filter, ['limit' => 1]);
     
     if (!empty($existing)) {
@@ -46,15 +61,22 @@ try {
       continue; // Already assigned
     }
     
-    $batch[] = [
-      'branch' => $branch,
-      'location' => $location,
-      'itemName' => $itemName,
+    $doc = [
       'assetId' => $assetId,
       'inspectionStatus' => 'open',
       'solved' => false,
       'created_at' => new MongoDB\BSON\UTCDateTime(),
     ];
+    
+    if (!empty($maintenanceId)) {
+      $doc['maintenanceId'] = $maintenanceId;
+    } else {
+      $doc['branch'] = $branch;
+      $doc['location'] = $location;
+      $doc['itemName'] = $itemName;
+    }
+    
+    $batch[] = $doc;
     $inserted++;
   }
   
@@ -79,4 +101,5 @@ try {
   echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
 

@@ -16,10 +16,14 @@ try {
       'assetId' => $doc->assetId ?? null,
       'assetDescription' => $doc->assetDescription ?? null,
       'assetCategory' => $doc->assetCategory ?? null,
+      'assetCategoryDescription' => $doc->assetCategoryDescription ?? null,
       'model' => $doc->model ?? null,
       'serialNo' => $doc->serialNo ?? null,
+      'serialNumber' => $doc->serialNumber ?? null, // Support both field names
       'location' => $doc->location ?? null,
+      'locationDescription' => $doc->locationDescription ?? null,
       'area' => $doc->area ?? null,
+      'locationArea' => $doc->locationArea ?? null,
     ];
     $assets[] = $asset;
   }
@@ -30,4 +34,5 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Could not load assets: ' . $e->getMessage()]);
 }
 ?>
+
 

@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspection Assets • IT Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      padding: 2rem;
+      gap: 2rem;
+      transition: gap 0.3s ease;
+    }
+    
+    /* Adjust gap when sidebar is collapsed */
+    .app-shell.has-collapsed-sidebar {
+      gap: 1rem;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: rgba(7, 3, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem 1.5rem;
+      color: #f5f5ff;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar.collapsed {
+      width: 80px;
+      padding: 2rem 0.5rem;
+      align-items: center;
+    }
+    
+    .sidebar.collapsed .sidebar-nav {
+      display: none;
+    }
+    
+    .sidebar.collapsed:hover .sidebar-nav {
+      display: flex;
+    }
+    
+    .sidebar.collapsed .sidebar-footer {
+      display: none;
+    }
+    
+    .sidebar.collapsed:hover .sidebar-footer {
+      display: flex;
+    }
+
+    /* Only expand on hover when collapsed */
+    .sidebar.collapsed:hover {
+      width: 260px;
+      padding: 2rem 1.5rem;
+      z-index: 100;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      align-items: flex-start;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      transition: justify-content 0.3s ease;
+      padding-right: 3rem;
+      position: relative;
+    }
+
+    .sidebar.collapsed .sidebar-brand {
+      justify-content: center;
+      padding-right: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand {
+      justify-content: flex-start;
+      padding-right: 3rem;
+      width: auto;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+    }
+
+    .sidebar.collapsed .sidebar-logo {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-logo {
+      opacity: 1;
+      width: 36px;
+      height: 36px;
+      margin: 0;
+    }
+
+    .sidebar-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .sidebar-brand-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: normal;
+      word-wrap: break-word;
+      opacity: 1;
+      max-width: 160px;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: visible;
+      display: block;
+    }
+
+    .sidebar.collapsed .sidebar-brand-text {
+      opacity: 0;
+      max-width: 0;
+      max-height: 0;
+      margin: 0;
+      overflow: hidden;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand-text {
+      opacity: 1;
+      max-width: 160px;
+      max-height: 100px;
+      overflow: visible;
+      font-size: 0.85rem;
+      width: auto;
+      height: auto;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background 0.15s, color 0.15s, transform 0.15s, justify-content 0.3s ease;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .sidebar.collapsed .nav-item {
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      color: transparent;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .nav-item {
+      justify-content: flex-start;
+      padding: 0.75rem 1rem;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      width: auto;
+      height: auto;
+      overflow: visible;
+    }
+
+    .nav-item::before {
+      content: '●';
+      font-size: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      margin-right: 0;
+    }
+
+    .sidebar.collapsed .nav-item::before {
+      opacity: 0;
+      display: none;
+    }
+
+    .sidebar.collapsed:hover .nav-item::before {
+      opacity: 0;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-meta {
+      font-size: 0.75rem;
+      color: #8c88c9;
+      opacity: 0.9;
+      text-align: left;
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 50px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .sidebar-meta {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-meta {
+      opacity: 0.9;
+      max-height: 50px;
+      font-size: 0.75rem;
+      width: auto;
+      height: auto;
+    }
+
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .sidebar-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    #toggle-icon {
+      display: inline-block;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      line-height: 1;
+      color: #ffffff !important;
+    }
+
+    .sidebar.collapsed #toggle-icon {
+      transform: rotate(0deg);
+      color: #ffffff !important;
+    }
+
+    .logout-btn {
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .logout-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .logout-btn {
+      opacity: 1;
+      max-height: 100px;
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      width: auto;
+      height: auto;
+    }
+
+    .dashboard-container {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 3rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      max-width: 100%;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #140958;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.4);
+    }
+
+    .user-greeting {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-greeting-main {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .user-greeting-sub {
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    .logout-btn {
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .back-link {
+      font-size: 0.85rem;
+      color: #140958;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .asset-details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.5rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-card-label {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .stat-card-value.highlight {
+      color: #140958;
+    }
+
+    .assets-section {
+      margin-top: 2rem;
+    }
+
+    .assets-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .assets-section-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .btn-add-asset {
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add-asset:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .modal-header h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .close-modal-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .close-modal-btn:hover {
+      background: #f3f4f6;
+      color: #1a1a1a;
+    }
+
+    .asset-select-list {
+      margin-bottom: 1.5rem;
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+
+    .asset-select-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .asset-select-table thead {
+      background: #f8f9fa;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .asset-select-table th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .asset-select-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+
+    .asset-select-table tbody tr {
+      transition: background 0.15s;
+    }
+
+    .asset-select-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    .asset-select-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .asset-select-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .asset-select-id {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .asset-select-name {
+      color: #1a1a1a;
+    }
+
+    .asset-select-category {
+      color: #6b7280;
+    }
+
+    .btn-view-more {
+      padding: 0.4rem 0.8rem;
+      background: #140958;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.15s;
+    }
+
+    .btn-view-more:hover {
+      background: #1a0d6b;
+      transform: translateY(-1px);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding-top: 1rem;
+      border-top: 2px solid #e5e5e5;
+    }
+
+    .btn-cancel {
+      padding: 0.6rem 1.2rem;
+      background: #f3f4f6;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-save {
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .btn-remove-asset {
+      padding: 0.4rem 0.8rem;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-remove-asset:hover {
+      background: #b91c1c;
+    }
+
+    .btn-inspect {
+      padding: 0.4rem 0.8rem;
+      background: #140958;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-inspect:hover {
+      background: #1a0d6b;
+      transform: translateY(-1px);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-open {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-complete {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .inspection-form-field {
+      margin-bottom: 1rem;
+    }
+
+    .inspection-form-field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      font-size: 0.9rem;
+    }
+
+    .inspection-form-field textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .inspection-form-field textarea:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .solved-options {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .solved-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .solved-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .solved-option label {
+      margin: 0;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .assets-list {
+      border: none;
+      border-radius: 0;
+      overflow: visible;
+      padding: 0;
+    }
+
+    .asset-card {
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .asset-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .assets-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .assets-table thead {
+      background: #f8f9fa;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .assets-table th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .assets-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+
+    .assets-table tbody tr {
+      transition: background 0.15s;
+    }
+
+    .assets-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    .assets-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .asset-id {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .asset-name {
+      color: #1a1a1a;
+    }
+
+    .asset-category {
+      color: #6b7280;
+    }
+
+    .btn-view-more-asset {
+      padding: 0.4rem 0.8rem;
+      background: #140958;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.15s;
+    }
+
+    .btn-view-more-asset:hover {
+      background: #1a0d6b;
+      transform: translateY(-1px);
+    }
+
+    .no-assets {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .edit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .edit-modal-overlay.open {
+      display: flex;
+    }
+
+    .edit-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 700px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .edit-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .edit-modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .close-modal-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #6b7280;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .close-modal-btn:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+
+    .form-field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #111827;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+
+    .form-field textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle sidebar">
+        <span id="toggle-icon">☰</span>
+      </button>
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          <img src="../../images/pkt_logo.png" alt="PKT Logistics logo">
+        </div>
+        <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="../../dashboard/dashboard_staff.html">Dashboard</a>
+        <a class="nav-item active" href="../inspection/inspection.html">Maintenance Checklist</a>
+        <a class="nav-item" href="../scan_staff/scan.html">Scan Asset</a>
+        <a class="nav-item">Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logout-btn">Logout</button>
+        <div class="sidebar-meta">v1.0 • Inspection Assets</div>
+      </div>
+    </aside>
+
+    <main class="dashboard-container">
+      <div class="dashboard-header">
+        <h1 id="page-title">Inspection Assets</h1>
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-greeting">
+            <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
+            <span class="user-greeting-sub">Asset inspection</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="asset-details-header">
+        <div>
+          <a href="#" class="back-link" id="back-link">← Back to inspection tasks</a>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-label">Total Assets</div>
+          <div class="stat-card-value highlight" id="total-assets">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Assets Remaining</div>
+          <div class="stat-card-value highlight" id="assets-remaining">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Days Until Next Maintenance</div>
+          <div class="stat-card-value highlight" id="days-remaining">-</div>
+        </div>
+      </div>
+
+      <section class="assets-section">
+        <div class="assets-section-header">
+          <h2>Assets to Inspect</h2>
+        </div>
+        <div class="assets-list" id="assets-list">
+          <!-- Assets will be loaded here -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Inspection Modal -->
+  <div class="modal-overlay" id="inspection-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Inspection Action</h3>
+        <button class="close-modal-btn" id="close-inspection-modal-btn">&times;</button>
+      </div>
+      <form id="inspection-form">
+        <div class="inspection-form-field">
+          <label for="inspection-notes">Description / Notes *</label>
+          <textarea id="inspection-notes" name="notes" required placeholder="Enter inspection notes, findings, or description..."></textarea>
+        </div>
+        <div class="inspection-form-field">
+          <label>Status *</label>
+          <div class="solved-options">
+            <div class="solved-option">
+              <input type="radio" id="solved-yes" name="solved" value="yes" required>
+              <label for="solved-yes">Solved</label>
+            </div>
+            <div class="solved-option">
+              <input type="radio" id="solved-no" name="solved" value="no" required>
+              <label for="solved-no">Not Solved</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="cancel-inspection-btn">Cancel</button>
+          <button type="submit" class="btn-save" id="save-inspection-btn">Save Inspection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import '../../admin/shared/init.js';
+    import './inspectionassets.js';
+  </script>
+</body>
+</html>

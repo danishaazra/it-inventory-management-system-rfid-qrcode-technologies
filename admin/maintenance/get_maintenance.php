@@ -2,24 +2,29 @@
 header('Content-Type: application/json');
 require '../api/db.php';
 
-// Get parameters from query string
+// Get parameters from query string - support both maintenanceId and legacy branch/location/itemName
+$maintenanceId = $_GET['maintenanceId'] ?? '';
 $branch = $_GET['branch'] ?? '';
 $location = $_GET['location'] ?? '';
 $itemName = $_GET['itemName'] ?? '';
 
-if (empty($branch) || empty($location) || empty($itemName)) {
-  http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'branch, location, and itemName parameters are required']);
-  exit;
-}
-
 try {
-  // Query maintenance item by branch, location, and itemName
-  $filter = [
-    'branch' => $branch,
-    'location' => $location,
-    'itemName' => $itemName
-  ];
+  // If maintenanceId is provided, use it (preferred method)
+  if (!empty($maintenanceId)) {
+    $filter = ['_id' => new MongoDB\BSON\ObjectId($maintenanceId)];
+  } elseif (!empty($branch) && !empty($location) && !empty($itemName)) {
+    // Legacy support: query by branch, location, and itemName
+    $filter = [
+      'branch' => $branch,
+      'location' => $location,
+      'itemName' => $itemName
+    ];
+  } else {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'maintenanceId parameter is required, or provide branch, location, and itemName']);
+    exit;
+  }
+  
   $results = mongoFind($mongoManager, $maintenanceNamespace, $filter, ['limit' => 1]);
   
   if (empty($results)) {
@@ -43,6 +48,7 @@ try {
   
   // Convert MongoDB document to array
   $maintenance = [
+    '_id' => (string)$doc->_id, // Include MongoDB ID
     'branch' => $doc->branch ?? null,
     'location' => $doc->location ?? null,
     'itemName' => $doc->itemName ?? null,
@@ -50,6 +56,9 @@ try {
     'maintenanceSchedule' => $maintenanceSchedule,
     'inspectionTasks' => $doc->inspectionTasks ?? null,
     'created_at' => $doc->created_at ?? null,
+    'assignedStaffId' => $doc->assignedStaffId ?? null,
+    'assignedStaffName' => $doc->assignedStaffName ?? null,
+    'assignedStaffEmail' => $doc->assignedStaffEmail ?? null,
   ];
   
   echo json_encode(['ok' => true, 'maintenance' => $maintenance]);

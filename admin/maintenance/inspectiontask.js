@@ -1,5 +1,7 @@
 // Get URL parameters
 const urlParams = new URLSearchParams(window.location.search);
+const maintenanceId = urlParams.get('maintenanceId');
+// Legacy support
 const branch = urlParams.get('branch');
 const location = urlParams.get('location');
 const itemName = urlParams.get('itemName');
@@ -9,13 +11,17 @@ let tasks = []; // Array of {text: string, scheduledDate: string}
 
 // Load maintenance details
 async function loadMaintenanceDetails() {
-  if (!branch || !location || !itemName) {
-    document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Parameters Required</h1><p>Please provide branch, location, and itemName in the URL.</p><a href="maintenance.html">← Back to maintenance checklist</a></div>';
+  if (!maintenanceId && (!branch || !location || !itemName)) {
+    document.body.innerHTML = '<div style="padding: 2rem; text-align: center;"><h1>Parameters Required</h1><p>Please provide maintenanceId in the URL.</p><a href="maintenance.html">← Back to maintenance checklist</a></div>';
     return;
   }
 
   try {
-    const resp = await fetch(`./get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`);
+    const url = maintenanceId 
+      ? `./get_maintenance.php?maintenanceId=${encodeURIComponent(maintenanceId)}`
+      : `./get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+    
+    const resp = await fetch(url);
     const data = await resp.json();
 
     if (!resp.ok || !data.ok) {
@@ -24,6 +30,17 @@ async function loadMaintenanceDetails() {
     }
 
     currentMaintenance = data.maintenance;
+    
+    // Update URL with maintenanceId if using legacy parameters
+    if (!maintenanceId && currentMaintenance._id) {
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('maintenanceId', currentMaintenance._id);
+      newUrl.searchParams.delete('branch');
+      newUrl.searchParams.delete('location');
+      newUrl.searchParams.delete('itemName');
+      window.history.replaceState({}, '', newUrl);
+    }
+    
     displayMaintenanceDetails(currentMaintenance);
     parseTasks(currentMaintenance.inspectionTasks || '');
     displayTasks();
@@ -45,6 +62,22 @@ function displayMaintenanceDetails(maintenance) {
   const frequency = maintenance.frequency || '';
   const frequencyClass = frequency.toLowerCase();
   frequencyEl.innerHTML = `<span class="frequency-badge frequency-${frequencyClass}">${frequency || '-'}</span>`;
+  
+  // Display assigned staff if exists
+  displayAssignedStaff(maintenance);
+}
+
+// Display assigned staff information
+function displayAssignedStaff(maintenance) {
+  const assignedStaffDisplay = document.getElementById('assigned-staff-display');
+  const assignedStaffName = document.getElementById('assigned-staff-name');
+  
+  if (maintenance.assignedStaffName) {
+    assignedStaffName.textContent = maintenance.assignedStaffName;
+    assignedStaffDisplay.style.display = 'block';
+  } else {
+    assignedStaffDisplay.style.display = 'none';
+  }
 }
 
 // Parse inspection tasks from text (newline-separated) and link with schedule dates
@@ -253,21 +286,9 @@ function displayTasks() {
         ${allDatesHtml}
       </div>
       <div style="display: flex; align-items: center; gap: 0.5rem;">
-        <a href="maintenanaceasset.html?branch=${encodeURIComponent(currentMaintenance.branch)}&location=${encodeURIComponent(currentMaintenance.location)}&itemName=${encodeURIComponent(currentMaintenance.itemName)}" class="view-more-btn" style="text-decoration: none; display: inline-block;">
+        <a href="maintenanceasset.html?maintenanceId=${currentMaintenance._id || ''}" class="view-more-btn" style="text-decoration: none; display: inline-block;">
           View Assets
         </a>
-        ${task.allScheduledDates && task.allScheduledDates.length > 1 ? `
-          <button class="view-more-btn" onclick="toggleTaskView(${task.id})">
-            ${isExpanded ? 'View Less' : 'View More'}
-          </button>
-        ` : ''}
-        <div class="inspection-actions-wrapper">
-          <button class="inspection-actions-btn" onclick="openTaskActions(${task.id})">⋯</button>
-          <div class="inspection-actions-menu" id="task-actions-${task.id}">
-            <button type="button" class="edit-action" onclick="editTask(${task.id})">✏️ Edit</button>
-            <button type="button" class="delete-action" onclick="deleteTask(${task.id})">🗑️ Delete</button>
-          </div>
-        </div>
       </div>
     `;
     tasksList.appendChild(li);
@@ -377,6 +398,28 @@ function init() {
 
 // Setup all event listeners
 function setupEventListeners() {
+  // Assign staff button
+  const assignStaffBtn = document.getElementById('assign-staff-btn');
+  if (assignStaffBtn) {
+    assignStaffBtn.addEventListener('click', openAssignStaffModal);
+  }
+  
+  // Close assign staff modal button
+  const closeAssignStaffModalBtn = document.getElementById('close-assign-staff-modal-btn');
+  if (closeAssignStaffModalBtn) {
+    closeAssignStaffModalBtn.addEventListener('click', closeAssignStaffModal);
+  }
+  
+  // Close assign staff modal when clicking outside
+  const assignStaffModal = document.getElementById('assign-staff-modal-overlay');
+  if (assignStaffModal) {
+    assignStaffModal.addEventListener('click', (e) => {
+      if (e.target === assignStaffModal) {
+        closeAssignStaffModal();
+      }
+    });
+  }
+  
   // Add task button
   const addTaskBtn = document.getElementById('add-task-btn');
   if (addTaskBtn) {
@@ -879,6 +922,142 @@ document.addEventListener('click', (e) => {
     });
   }
 });
+
+// Staff Assignment Functions
+let selectedStaffId = null;
+
+// Load and display staff list
+async function loadStaffList() {
+  const staffListEl = document.getElementById('staff-list');
+  if (!staffListEl) return;
+  
+  staffListEl.innerHTML = '<div style="text-align: center; padding: 2rem; color: #9ca3af;">Loading staff...</div>';
+  
+  try {
+    const resp = await fetch('./list_staff.php');
+    const data = await resp.json();
+    
+    if (!resp.ok || !data.ok) {
+      staffListEl.innerHTML = `<div class="no-staff">Error loading staff: ${data.error || 'Unknown error'}</div>`;
+      return;
+    }
+    
+    const staff = data.staff || [];
+    
+    if (staff.length === 0) {
+      staffListEl.innerHTML = '<div class="no-staff">No staff members found in the system.</div>';
+      return;
+    }
+    
+    // Display staff list
+    staffListEl.innerHTML = staff.map(member => {
+      const initial = (member.name || 'U').charAt(0).toUpperCase();
+      const isSelected = selectedStaffId === member._id ? 'selected' : '';
+      return `
+        <div class="staff-list-item ${isSelected}" data-staff-id="${member._id}" data-staff-name="${escapeHtml(member.name || 'Unknown')}">
+          <div class="staff-avatar">${initial}</div>
+          <div class="staff-info">
+            <div class="staff-name">${escapeHtml(member.name || 'Unknown')}</div>
+            <div class="staff-email">${escapeHtml(member.email || '')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Add click handlers to staff items
+    staffListEl.querySelectorAll('.staff-list-item').forEach(item => {
+      item.addEventListener('click', () => {
+        // Remove previous selection
+        staffListEl.querySelectorAll('.staff-list-item').forEach(i => i.classList.remove('selected'));
+        // Select clicked item
+        item.classList.add('selected');
+        selectedStaffId = item.dataset.staffId;
+        const staffName = item.dataset.staffName;
+        
+        // Assign immediately when clicked
+        assignStaffToMaintenance(selectedStaffId, staffName);
+      });
+    });
+    
+  } catch (error) {
+    console.error('Error loading staff:', error);
+    staffListEl.innerHTML = `<div class="no-staff">Error loading staff: ${error.message}</div>`;
+  }
+}
+
+// Assign staff to maintenance task
+async function assignStaffToMaintenance(staffId, staffName) {
+  if (!currentMaintenance || !currentMaintenance._id) {
+    alert('Cannot assign staff: Maintenance item not loaded');
+    return;
+  }
+  
+  try {
+    const resp = await fetch('./assign_staff.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        maintenanceId: currentMaintenance._id,
+        staffId: staffId
+      })
+    });
+    
+    const data = await resp.json();
+    
+    if (!resp.ok || !data.ok) {
+      alert(`Error assigning staff: ${data.error || 'Unknown error'}`);
+      return;
+    }
+    
+    // Update current maintenance object
+    currentMaintenance.assignedStaffId = data.assignedStaff.id;
+    currentMaintenance.assignedStaffName = data.assignedStaff.name;
+    currentMaintenance.assignedStaffEmail = data.assignedStaff.email;
+    
+    // Update display
+    displayAssignedStaff(currentMaintenance);
+    
+    // Close modal
+    const modal = document.getElementById('assign-staff-modal-overlay');
+    if (modal) {
+      modal.classList.remove('open');
+    }
+    
+    // Show success message
+    alert(`Task assigned to ${data.assignedStaff.name} successfully!`);
+    
+  } catch (error) {
+    console.error('Error assigning staff:', error);
+    alert(`Error assigning staff: ${error.message}`);
+  }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Open assign staff modal
+function openAssignStaffModal() {
+  const modal = document.getElementById('assign-staff-modal-overlay');
+  if (modal) {
+    modal.classList.add('open');
+    selectedStaffId = null;
+    loadStaffList();
+  }
+}
+
+// Close assign staff modal
+function closeAssignStaffModal() {
+  const modal = document.getElementById('assign-staff-modal-overlay');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+}
 
 // Start initialization
 if (document.readyState === 'loading') {

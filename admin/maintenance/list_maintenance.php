@@ -13,6 +13,7 @@ try {
   $maintenance = [];
   foreach ($results as $doc) {
     $item = [
+      '_id' => (string)$doc->_id, // Include MongoDB ID
       'branch' => $doc->branch ?? null,
       'location' => $doc->location ?? null,
       'itemName' => $doc->itemName ?? null,
@@ -28,4 +29,5 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Could not load maintenance items: ' . $e->getMessage()]);
 }
 ?>
+
 

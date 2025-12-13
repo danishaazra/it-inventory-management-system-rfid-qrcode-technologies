@@ -4,6 +4,7 @@ require '../api/db.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
+$maintenanceId = $data['maintenanceId'] ?? '';
 $branch = $data['branch'] ?? '';
 $location = $data['location'] ?? '';
 $itemName = $data['itemName'] ?? '';
@@ -11,21 +12,34 @@ $assetId = $data['assetId'] ?? '';
 $notes = $data['notes'] ?? '';
 $solved = $data['solved'] ?? false;
 
-if (empty($branch) || empty($location) || empty($itemName) || empty($assetId)) {
+if (empty($assetId)) {
   http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'branch, location, itemName, and assetId are required']);
+  echo json_encode(['ok' => false, 'error' => 'assetId is required']);
+  exit;
+}
+
+if (empty($maintenanceId) && (empty($branch) || empty($location) || empty($itemName))) {
+  http_response_code(400);
+  echo json_encode(['ok' => false, 'error' => 'maintenanceId is required, or provide branch, location, and itemName']);
   exit;
 }
 
 try {
   $inspectionsNamespace = $mongoDb . '.maintenance_assets';
   
-  $filter = [
-    'branch' => $branch,
-    'location' => $location,
-    'itemName' => $itemName,
-    'assetId' => $assetId
-  ];
+  if (!empty($maintenanceId)) {
+    $filter = [
+      'maintenanceId' => $maintenanceId,
+      'assetId' => $assetId
+    ];
+  } else {
+    $filter = [
+      'branch' => $branch,
+      'location' => $location,
+      'itemName' => $itemName,
+      'assetId' => $assetId
+    ];
+  }
   
   $updateDoc = [
     'inspectionStatus' => $solved ? 'complete' : 'open',
@@ -55,4 +69,5 @@ try {
   echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
 

@@ -60,7 +60,7 @@ function displayMaintenance(maintenanceItems) {
       <td>${item.location || '-'}</td>
       <td>${item.itemName || '-'}</td>
       <td><span class="frequency-badge frequency-${frequencyClass}">${frequency || '-'}</span></td>
-      <td><a href="maintenancetask.html?branch=${encodeURIComponent(item.branch || '')}&location=${encodeURIComponent(item.location || '')}&itemName=${encodeURIComponent(item.itemName || '')}" class="inspection-tasks-link">View Tasks</a></td>
+      <td><a href="maintenancetask.html?maintenanceId=${item._id || ''}" class="inspection-tasks-link">View Tasks</a></td>
     `;
     maintenanceTableBody.appendChild(row);
   });

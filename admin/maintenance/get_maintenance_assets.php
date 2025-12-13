@@ -2,26 +2,30 @@
 header('Content-Type: application/json');
 require '../api/db.php';
 
-// Get parameters from query string
+// Get parameters from query string - support both maintenanceId and legacy branch/location/itemName
+$maintenanceId = $_GET['maintenanceId'] ?? '';
 $branch = $_GET['branch'] ?? '';
 $location = $_GET['location'] ?? '';
 $itemName = $_GET['itemName'] ?? '';
 
-if (empty($branch) || empty($location) || empty($itemName)) {
-  http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'branch, location, and itemName parameters are required']);
-  exit;
-}
-
 try {
   $inspectionsNamespace = $mongoDb . '.maintenance_assets';
   
-  // Query maintenance assets by branch, location, and itemName
-  $filter = [
-    'branch' => $branch,
-    'location' => $location,
-    'itemName' => $itemName
-  ];
+  // If maintenanceId is provided, use it (preferred method)
+  if (!empty($maintenanceId)) {
+    $filter = ['maintenanceId' => $maintenanceId];
+  } elseif (!empty($branch) && !empty($location) && !empty($itemName)) {
+    // Legacy support: query by branch, location, and itemName
+    $filter = [
+      'branch' => $branch,
+      'location' => $location,
+      'itemName' => $itemName
+    ];
+  } else {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'maintenanceId parameter is required, or provide branch, location, and itemName']);
+    exit;
+  }
   $results = mongoFind($mongoManager, $inspectionsNamespace, $filter);
   
   $assets = [];
@@ -63,4 +67,5 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Could not load maintenance assets: ' . $e->getMessage()]);
 }
 ?>
+
 
