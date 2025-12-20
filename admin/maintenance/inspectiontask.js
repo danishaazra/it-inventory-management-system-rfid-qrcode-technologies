@@ -132,32 +132,19 @@ function extractScheduleDates(schedule, frequency) {
       }
     });
   } else if (frequency === 'Quarterly') {
-    // schedule format: { "Q1": { "January": "15", "February": "20", ... }, ... }
-    const currentYear = new Date().getFullYear();
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                    'July', 'August', 'September', 'October', 'November', 'December'];
-    
-    Object.entries(schedule).forEach(([quarter, quarterSchedule]) => {
-      if (typeof quarterSchedule === 'object') {
-        Object.entries(quarterSchedule).forEach(([monthName, dayStr]) => {
-          if (dayStr) {
-            const monthIndex = months.indexOf(monthName);
-            if (monthIndex !== -1) {
-              const day = parseInt(dayStr, 10);
-              if (day >= 1 && day <= 31) {
-                const date = new Date(currentYear, monthIndex, day);
-                if (date && !isNaN(date.getTime())) {
-                  dates.push(date);
-                }
-                // Also add for next year
-                const dateNextYear = new Date(currentYear + 1, monthIndex, day);
-                if (dateNextYear && !isNaN(dateNextYear.getTime())) {
-                  dates.push(dateNextYear);
-                }
-              }
-            }
-          }
-        });
+    // schedule format: { "Q1": "2024-01-15", "Q2": "2024-04-20", ... }
+    Object.values(schedule).forEach(dateStr => {
+      if (dateStr) {
+        const date = new Date(dateStr);
+        if (date && !isNaN(date.getTime())) {
+          dates.push(date);
+        }
+        // Also add for next year (same month and day)
+        const dateNextYear = new Date(date);
+        dateNextYear.setFullYear(dateNextYear.getFullYear() + 1);
+        if (dateNextYear && !isNaN(dateNextYear.getTime())) {
+          dates.push(dateNextYear);
+        }
       }
     });
   }
@@ -843,7 +830,11 @@ function generateEditMonthlySchedule(existingSchedule) {
 
 function generateEditQuarterlySchedule(existingSchedule) {
   const scheduleCalendar = document.getElementById('edit-schedule-calendar');
+  if (!scheduleCalendar) return;
+  
   const currentYear = new Date().getFullYear();
+  
+  // Create year selector
   const yearSelect = document.createElement('div');
   yearSelect.className = 'calendar-year-selector';
   
@@ -863,15 +854,15 @@ function generateEditQuarterlySchedule(existingSchedule) {
   yearSelect.appendChild(yearDropdown);
   scheduleCalendar.appendChild(yearSelect);
   
-  const quartersDiv = document.createElement('div');
-  quartersDiv.className = 'calendar-months';
+  // Create container for all quarters
+  const quartersContainer = document.createElement('div');
+  quartersContainer.style.marginTop = '1rem';
+  quartersContainer.style.display = 'flex';
+  quartersContainer.style.flexDirection = 'column';
+  quartersContainer.style.gap = '1rem';
   
-  const quarters = [
-    { name: 'Q1', months: ['January', 'February', 'March'] },
-    { name: 'Q2', months: ['April', 'May', 'June'] },
-    { name: 'Q3', months: ['July', 'August', 'September'] },
-    { name: 'Q4', months: ['October', 'November', 'December'] }
-  ];
+  // List all quarters Q1, Q2, Q3, Q4 - each with one date picker
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
   
   quarters.forEach(quarter => {
     const quarterDiv = document.createElement('div');
@@ -879,39 +870,56 @@ function generateEditQuarterlySchedule(existingSchedule) {
     
     const quarterLabel = document.createElement('div');
     quarterLabel.className = 'calendar-quarter-label';
-    quarterLabel.textContent = quarter.name;
+    quarterLabel.textContent = quarter;
+    quarterLabel.style.marginBottom = '0.5rem';
     quarterDiv.appendChild(quarterLabel);
     
-    quarter.months.forEach(month => {
-      const monthSelect = document.createElement('select');
-      monthSelect.className = 'calendar-month-select';
-      monthSelect.name = `schedule[${quarter.name}][${month}]`;
-      
-      const option = document.createElement('option');
-      option.value = '';
-      option.textContent = `${month}...`;
-      monthSelect.appendChild(option);
-      
-      for (let day = 1; day <= 31; day++) {
-        const dayOption = document.createElement('option');
-        dayOption.value = day;
-        dayOption.textContent = `Day ${day}`;
-        
-        // Populate existing value if available
-        if (existingSchedule && existingSchedule[quarter.name] && existingSchedule[quarter.name][month] == day) {
-          dayOption.selected = true;
-        }
-        
-        monthSelect.appendChild(dayOption);
-      }
-      
-      quarterDiv.appendChild(monthSelect);
-    });
+    // Add one date input for each quarter (like monthly frequency)
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'calendar-date-input';
+    dateInput.name = `schedule[${quarter}]`;
+    dateInput.style.width = '100%';
+    dateInput.style.marginTop = '0.5rem';
+    dateInput.style.maxWidth = '300px';
     
-    quartersDiv.appendChild(quarterDiv);
+    // Populate existing value if available
+    // Handle both new format: { "Q1": "2024-01-15" } and old format: { "Q1": { "January": "15", ... } }
+    if (existingSchedule && existingSchedule[quarter]) {
+      const quarterValue = existingSchedule[quarter];
+      if (typeof quarterValue === 'string') {
+        // New format: direct date string
+        dateInput.value = quarterValue;
+      } else if (typeof quarterValue === 'object') {
+        // Old format: convert first month's date if available
+        const months = quarter === 'Q1' ? ['January', 'February', 'March'] :
+                      quarter === 'Q2' ? ['April', 'May', 'June'] :
+                      quarter === 'Q3' ? ['July', 'August', 'September'] :
+                      ['October', 'November', 'December'];
+        
+        for (const month of months) {
+          if (quarterValue[month]) {
+            const day = parseInt(quarterValue[month], 10);
+            if (day >= 1 && day <= 31) {
+              const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June',
+                                 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(month);
+              if (monthIndex !== -1) {
+                const currentYear = new Date().getFullYear();
+                const date = new Date(currentYear, monthIndex, day);
+                dateInput.value = date.toISOString().split('T')[0];
+              }
+            }
+            break; // Use first available month
+          }
+        }
+      }
+    }
+    
+    quarterDiv.appendChild(dateInput);
+    quartersContainer.appendChild(quarterDiv);
   });
   
-  scheduleCalendar.appendChild(quartersDiv);
+  scheduleCalendar.appendChild(quartersContainer);
 }
 
 // Close task action menus when clicking outside
@@ -985,11 +993,96 @@ async function loadStaffList() {
   }
 }
 
+// Check for date conflicts
+async function checkStaffDateConflicts(staffId, currentMaintenance) {
+  try {
+    // Get all maintenance tasks assigned to this staff member
+    const resp = await fetch(`./get_assigned_maintenance.php?staffId=${encodeURIComponent(staffId)}`);
+    const data = await resp.json();
+    
+    if (!resp.ok || !data.ok || !data.maintenance) {
+      return { hasConflict: false, conflicts: [] };
+    }
+    
+    // Extract dates from current maintenance task
+    const currentDates = extractScheduleDates(
+      currentMaintenance.maintenanceSchedule,
+      currentMaintenance.frequency
+    );
+    
+    if (currentDates.length === 0) {
+      return { hasConflict: false, conflicts: [] };
+    }
+    
+    // Normalize current dates to YYYY-MM-DD format for comparison
+    const currentDateStrings = currentDates.map(date => {
+      const d = new Date(date);
+      return d.toISOString().split('T')[0];
+    });
+    
+    // Check for conflicts with other maintenance tasks
+    const conflicts = [];
+    
+    data.maintenance.forEach(otherMaintenance => {
+      // Skip the current maintenance task itself
+      if (otherMaintenance._id === currentMaintenance._id) {
+        return;
+      }
+      
+      // Extract dates from other maintenance task
+      const otherDates = extractScheduleDates(
+        otherMaintenance.maintenanceSchedule,
+        otherMaintenance.frequency
+      );
+      
+      // Check for overlapping dates
+      otherDates.forEach(otherDate => {
+        const otherDateStr = new Date(otherDate).toISOString().split('T')[0];
+        if (currentDateStrings.includes(otherDateStr)) {
+          conflicts.push({
+            maintenanceItem: `${otherMaintenance.branch || ''} - ${otherMaintenance.location || ''} - ${otherMaintenance.itemName || ''}`,
+            date: otherDateStr,
+            frequency: otherMaintenance.frequency || ''
+          });
+        }
+      });
+    });
+    
+    return {
+      hasConflict: conflicts.length > 0,
+      conflicts: conflicts
+    };
+    
+  } catch (error) {
+    console.error('Error checking conflicts:', error);
+    return { hasConflict: false, conflicts: [] };
+  }
+}
+
 // Assign staff to maintenance task
 async function assignStaffToMaintenance(staffId, staffName) {
   if (!currentMaintenance || !currentMaintenance._id) {
     alert('Cannot assign staff: Maintenance item not loaded');
     return;
+  }
+  
+  // Check for date conflicts first
+  const conflictCheck = await checkStaffDateConflicts(staffId, currentMaintenance);
+  
+  if (conflictCheck.hasConflict && conflictCheck.conflicts.length > 0) {
+    // Build conflict message
+    const conflictDates = [...new Set(conflictCheck.conflicts.map(c => c.date))];
+    const conflictItems = [...new Set(conflictCheck.conflicts.map(c => c.maintenanceItem))];
+    
+    let conflictMessage = `⚠️ Date Conflict Detected!\n\n`;
+    conflictMessage += `The selected staff member (${staffName}) is already assigned to other maintenance tasks on the following dates:\n\n`;
+    conflictMessage += `Conflicting Dates:\n${conflictDates.map(d => `  • ${new Date(d).toLocaleDateString()}`).join('\n')}\n\n`;
+    conflictMessage += `Conflicting Maintenance Items:\n${conflictItems.map(item => `  • ${item}`).join('\n')}\n\n`;
+    conflictMessage += `Assignment cannot be completed due to scheduling conflicts.`;
+    
+    // Show alert (only OK button, cannot proceed)
+    alert(conflictMessage);
+    return; // Stop assignment
   }
   
   try {
