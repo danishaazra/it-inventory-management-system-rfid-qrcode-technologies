@@ -310,7 +310,11 @@ function generateMonthlySchedule() {
 }
 
 function generateQuarterlySchedule() {
+  if (!scheduleCalendar) return;
+  
   const currentYear = new Date().getFullYear();
+  
+  // Create year selector
   const yearSelect = document.createElement('div');
   yearSelect.className = 'calendar-year-selector';
   
@@ -330,15 +334,15 @@ function generateQuarterlySchedule() {
   yearSelect.appendChild(yearDropdown);
   scheduleCalendar.appendChild(yearSelect);
   
-  const quartersDiv = document.createElement('div');
-  quartersDiv.className = 'calendar-months';
+  // Create container for all quarters
+  const quartersContainer = document.createElement('div');
+  quartersContainer.style.marginTop = '1rem';
+  quartersContainer.style.display = 'flex';
+  quartersContainer.style.flexDirection = 'column';
+  quartersContainer.style.gap = '1rem';
   
-  const quarters = [
-    { name: 'Q1', months: ['January', 'February', 'March'] },
-    { name: 'Q2', months: ['April', 'May', 'June'] },
-    { name: 'Q3', months: ['July', 'August', 'September'] },
-    { name: 'Q4', months: ['October', 'November', 'December'] }
-  ];
+  // List all quarters Q1, Q2, Q3, Q4 - each with one date picker
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
   
   quarters.forEach(quarter => {
     const quarterDiv = document.createElement('div');
@@ -346,40 +350,32 @@ function generateQuarterlySchedule() {
     
     const quarterLabel = document.createElement('div');
     quarterLabel.className = 'calendar-quarter-label';
-    quarterLabel.textContent = quarter.name;
+    quarterLabel.textContent = quarter;
+    quarterLabel.style.marginBottom = '0.5rem';
     quarterDiv.appendChild(quarterLabel);
     
-    quarter.months.forEach(month => {
-      const monthSelect = document.createElement('select');
-      monthSelect.className = 'calendar-month-select';
-      monthSelect.name = `schedule[${quarter.name}][${month}]`;
-      
-      const option = document.createElement('option');
-      option.value = '';
-      option.textContent = `${month}...`;
-      monthSelect.appendChild(option);
-      
-      // Add date options (simplified - you can expand this)
-      for (let day = 1; day <= 31; day++) {
-        const dayOption = document.createElement('option');
-        dayOption.value = day;
-        dayOption.textContent = `Day ${day}`;
-        monthSelect.appendChild(dayOption);
-      }
-      
-      quarterDiv.appendChild(monthSelect);
-    });
+    // Add one date input for each quarter (like monthly frequency)
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'calendar-date-input';
+    dateInput.name = `schedule[${quarter}]`;
+    dateInput.style.width = '100%';
+    dateInput.style.marginTop = '0.5rem';
+    dateInput.style.maxWidth = '300px';
     
-    quartersDiv.appendChild(quarterDiv);
+    quarterDiv.appendChild(dateInput);
+    quartersContainer.appendChild(quarterDiv);
   });
   
-  scheduleCalendar.appendChild(quartersDiv);
+  scheduleCalendar.appendChild(quartersContainer);
 }
 
 // Form submit handler
 if (addForm) {
   addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    
     const formData = new FormData(addForm);
     
     // Collect schedule data
