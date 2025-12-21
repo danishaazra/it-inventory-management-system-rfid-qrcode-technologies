@@ -43,13 +43,22 @@ try {
     'currentUser' => $data['currentUser'] ?? null,
     'branchCode' => $data['branchCode'] ?? null,
     'no' => $data['no'] ?? null,
+    'rfidTagId' => $data['rfidTagId'] ?? null,
     'updated_at' => new MongoDB\BSON\UTCDateTime(),
   ];
   
   // Remove null values to avoid overwriting with null
-  $updateDoc = array_filter($updateDoc, function($value) {
-    return $value !== null;
-  });
+  // But keep empty strings for rfidTagId (to allow clearing it)
+  $filteredDoc = [];
+  foreach ($updateDoc as $key => $value) {
+    if ($key === 'rfidTagId') {
+      // Always include rfidTagId, even if empty string (to allow clearing)
+      $filteredDoc[$key] = $value === null ? null : trim((string)$value);
+    } else if ($value !== null) {
+      $filteredDoc[$key] = $value;
+    }
+  }
+  $updateDoc = $filteredDoc;
   
   // Build update query
   $bulk = new MongoDB\Driver\BulkWrite();
@@ -75,6 +84,8 @@ try {
   echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
+
 
 
 

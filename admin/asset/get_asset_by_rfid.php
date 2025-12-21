@@ -2,23 +2,23 @@
 header('Content-Type: application/json');
 require '../api/db.php';
 
-// Get assetId from query parameter
-$assetId = $_GET['assetId'] ?? '';
+// Get rfidTagId from query parameter
+$rfidTagId = $_GET['rfidTagId'] ?? '';
 
-if (empty($assetId)) {
+if (empty($rfidTagId)) {
   http_response_code(400);
-  echo json_encode(['ok' => false, 'error' => 'assetId parameter is required']);
+  echo json_encode(['ok' => false, 'error' => 'rfidTagId parameter is required']);
   exit;
 }
 
 try {
-  // Query asset by assetId
-  $filter = ['assetId' => $assetId];
+  // Query asset by rfidTagId
+  $filter = ['rfidTagId' => $rfidTagId];
   $results = mongoFind($mongoManager, $assetsNamespace, $filter, ['limit' => 1]);
   
   if (empty($results)) {
     http_response_code(404);
-    echo json_encode(['ok' => false, 'error' => 'Asset not found']);
+    echo json_encode(['ok' => false, 'error' => 'Asset not found with this RFID tag ID']);
     exit;
   }
   
@@ -56,9 +56,4 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Could not load asset: ' . $e->getMessage()]);
 }
 ?>
-
-
-
-
-
 

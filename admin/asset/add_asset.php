@@ -31,6 +31,7 @@ $doc = [
   'currentUser' => $data['currentUser'] ?? null,
   'branchCode' => $data['branchCode'] ?? null,
   'no' => $data['no'] ?? null,
+  'rfidTagId' => $data['rfidTagId'] ?? null,
   'created_at' => new MongoDB\BSON\UTCDateTime(),
 ];
 
@@ -70,6 +71,8 @@ try {
   echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }
 ?>
+
+
 
 
 
