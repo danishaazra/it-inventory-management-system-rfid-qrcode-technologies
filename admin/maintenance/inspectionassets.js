@@ -180,12 +180,10 @@ function displayAssets() {
             <td class="asset-category">${asset.assetCategoryDescription || asset.assetCategory || '-'}</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>
-              <button class="btn-inspect" onclick="openInspectionModal('${asset.assetId}')" ${inspectionStatus === 'complete' ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
-                ${inspectionStatus === 'complete' ? 'Completed' : 'Inspect'}
-              </button>
               <button class="btn-view-more-asset" onclick="viewAssetDetails('${asset.assetId}')">View Details</button>
               <button class="btn-remove-asset" onclick="removeAsset('${asset.assetId}')">Remove</button>
             </td>
+            <!-- Inspect button removed - use View Details instead -->
           </tr>
         `;
       }).join('')}
@@ -341,7 +339,13 @@ function getDaysUntil(date) {
 
 // View asset details
 window.viewAssetDetails = function(assetId) {
-  window.location.href = `../asset/assetdetails.html?assetId=${encodeURIComponent(assetId)}`;
+  const id = currentMaintenance?._id || maintenanceId;
+  if (id) {
+    window.location.href = `maintenanceassetdetails.html?assetId=${encodeURIComponent(assetId)}&maintenanceId=${encodeURIComponent(id)}`;
+  } else {
+    // Fallback to regular asset details if no maintenanceId
+    window.location.href = `../asset/assetdetails.html?assetId=${encodeURIComponent(assetId)}`;
+  }
 };
 
 // Remove asset from maintenance
