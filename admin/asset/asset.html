@@ -753,9 +753,32 @@
       cursor: not-allowed;
       transform: none;
     }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
   </style>
   <script type="module">
     import '../shared/init.js';
+    import { initRfidScanner } from './rfid_scanner.js';
+    
+    // Initialize RFID scanner for add form when modal opens
+    // Store the init function globally so it can be called when modal opens
+    window.initAddAssetRfidScanner = () => {
+      initRfidScanner('scan-rfid-add-btn', 'add-rfidTagId', 'rfid-connection-status-add');
+    };
+    
+    // Also try to initialize on page load (in case modal is already in DOM)
+    document.addEventListener('DOMContentLoaded', () => {
+      // Small delay to ensure modal elements are ready
+      setTimeout(() => {
+        if (document.getElementById('scan-rfid-add-btn')) {
+          window.initAddAssetRfidScanner();
+        }
+      }, 100);
+    });
   </script>
   <script type="module" src="./asset.js"></script>
 </head>
@@ -940,6 +963,23 @@
           <div class="form-field">
             <label for="add-currentUser">Current User</label>
             <input type="text" id="add-currentUser" name="currentUser">
+          </div>
+          <div class="form-field" style="grid-column: 1 / -1;">
+            <label for="add-rfidTagId">RFID Tag ID</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <input type="text" id="add-rfidTagId" name="rfidTagId" placeholder="Scan or enter RFID tag ID" style="flex: 1;">
+              <button type="button" id="scan-rfid-add-btn" class="btn-scan" style="padding: 0.6rem 1rem; font-size: 0.85rem; white-space: nowrap;">📡 Scan RFID</button>
+            </div>
+            <div id="rfid-connection-status-add" style="margin-top: 0.5rem; font-size: 0.8rem; color: #6b7280;">Not connected - Click "Scan RFID" to connect Arduino, or type the RFID Tag ID manually</div>
+            <!-- Scan result display will be inserted here by JavaScript -->
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af;">
+              💡 <strong>Important:</strong> Before connecting, make sure:<br>
+              • Arduino IDE Serial Monitor is <strong>CLOSED</strong> (it locks the port)<br>
+              • Arduino is connected via USB<br>
+              • The RFID sketch is uploaded<br>
+              • You're using Chrome/Edge browser<br><br>
+              You can also manually enter the RFID Tag ID if needed.
+            </div>
           </div>
         </div>
         <div class="form-actions">

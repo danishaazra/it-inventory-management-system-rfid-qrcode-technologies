@@ -74,6 +74,7 @@ function displayAssetDetails(asset) {
       { label: 'Warranty Period', value: asset.warrantyPeriod },
       { label: 'Branch Code', value: asset.branchCode },
       { label: 'No.', value: asset.no },
+      { label: 'RFID Tag ID', value: asset.rfidTagId },
     ];
 
     specList.innerHTML = specs
@@ -300,6 +301,7 @@ function populateEditForm(asset) {
   document.getElementById('edit-departmentDescription').value = asset.departmentDescription || '';
   document.getElementById('edit-condition').value = asset.condition || '';
   document.getElementById('edit-currentUser').value = asset.currentUser || '';
+  document.getElementById('edit-rfidTagId').value = asset.rfidTagId || '';
 }
 
 // Open edit modal
@@ -384,6 +386,15 @@ if (editForm) {
     if (locationDescCustom.style.display !== 'none' && locationDescCustom.value.trim()) {
       formData.locationDescription = locationDescCustom.value.trim();
     }
+    
+    // Ensure RFID Tag ID is included (in case it was set programmatically)
+    const rfidTagIdField = document.getElementById('edit-rfidTagId');
+    if (rfidTagIdField && rfidTagIdField.value.trim()) {
+      formData.rfidTagId = rfidTagIdField.value.trim();
+    }
+    
+    // Debug: Log form data to console
+    console.log('Submitting form data:', formData);
     
     try {
       const resp = await fetch('./update_asset.php', {

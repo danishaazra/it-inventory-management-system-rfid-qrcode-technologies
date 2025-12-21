@@ -158,6 +158,13 @@ addMenu.addEventListener('click', async (e) => {
     // Load and populate existing locations
     const locations = await loadLocations();
     populateLocationDropdown(locations);
+    
+    // Initialize RFID scanner when modal opens
+    if (window.initAddAssetRfidScanner) {
+      setTimeout(() => {
+        window.initAddAssetRfidScanner();
+      }, 100);
+    }
   }
   if (e.target.dataset.action === 'upload') {
     // Set accept attribute to include Excel and CSV files
@@ -175,6 +182,15 @@ addForm.addEventListener('submit', async (e) => {
   if (customLocationInput.style.display !== 'none' && customLocationInput.value.trim()) {
     formData.locationDescription = customLocationInput.value.trim();
   }
+  
+  // Ensure RFID Tag ID is included (in case it was set programmatically)
+  const rfidTagIdField = document.getElementById('add-rfidTagId');
+  if (rfidTagIdField && rfidTagIdField.value.trim()) {
+    formData.rfidTagId = rfidTagIdField.value.trim();
+  }
+  
+  // Debug: Log form data to console
+  console.log('Submitting form data:', formData);
   
   try {
     const resp = await fetch('./add_asset.php', {

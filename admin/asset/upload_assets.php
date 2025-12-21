@@ -100,7 +100,10 @@ if (!$handle) {
       'location description' => 'locationDescription',
       'department code' => 'departmentCode',
       'department description' => 'departmentDescription',
-      'current user' => 'currentUser'
+      'current user' => 'currentUser',
+      'rfid tag id' => 'rfidTagId',
+      'rfidtagid' => 'rfidTagId',
+      'rfid' => 'rfidTagId'
     ];
     
     $lowerHeader = strtolower($header);
@@ -242,6 +245,8 @@ $requiredCol = 'assetId';
   echo json_encode(['ok' => false, 'error' => 'Upload failed: ' . $e->getMessage()]);
 }
 ?>
+
+
 
 
 
