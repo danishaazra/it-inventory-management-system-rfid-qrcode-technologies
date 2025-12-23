@@ -568,6 +568,108 @@
     .welcome-message p {
       color: rgba(255, 255, 255, 0.9);
     }
+
+    .saved-reports-wrapper {
+      margin-top: 2rem;
+    }
+
+    .saved-report-card {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .saved-report-card:hover {
+      border-color: #140958;
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .saved-report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .saved-report-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+
+    .saved-report-type {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      background: #e5e7eb;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .saved-report-date {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+    }
+
+    .saved-report-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .btn-load {
+      flex: 1;
+      padding: 0.5rem 1rem;
+      background: #140958;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-load:hover {
+      background: #1a0d6b;
+      transform: translateY(-1px);
+    }
+
+    .btn-delete {
+      padding: 0.5rem 1rem;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-delete:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .no-saved-reports {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.95rem;
+      grid-column: 1 / -1;
+    }
   </style>
   <script type="module">
     import './auth-check.js';
@@ -670,6 +772,46 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="maintenance-assignments-wrapper" style="margin-top: 2rem; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.35rem; margin-bottom: 0;">Maintenance Assignments</h2>
+            <a href="../admin/maintenance/maintenance.html" style="color: #140958; font-weight: 600; text-decoration: none;">View All Maintenance →</a>
+          </div>
+          <p style="color: #666; margin-bottom: 1rem;">Maintenance items with assigned staff and their inspection status.</p>
+          <div class="maintenance-assignments-container">
+            <table class="asset-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Location</th>
+                  <th>Branch</th>
+                  <th>Frequency</th>
+                  <th>Assigned Staff</th>
+                  <th>Staff Email</th>
+                  <th>Inspection Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="maintenance-assignments-body">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 2rem; color: #888;">Loading maintenance assignments...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="saved-reports-wrapper" style="margin-top: 2rem; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="font-size: 1.35rem; margin-bottom: 0;">Saved Reports</h2>
+            <a href="../admin/report/report.html" style="color: #140958; font-weight: 600; text-decoration: none;">View All Reports →</a>
+          </div>
+          <p style="color: #666; margin-bottom: 1rem;">Recently saved reports that you can access anytime.</p>
+          <div class="saved-reports-list" id="saved-reports-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+            <div style="text-align: center; padding: 2rem; color: #888;">Loading saved reports...</div>
           </div>
         </div>
       </div>

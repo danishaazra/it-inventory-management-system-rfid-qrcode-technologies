@@ -154,14 +154,41 @@ try {
       continue;
     }
     
-    // Check for duplicate (same branch, location, itemName)
+    // Check for duplicate (same branch, location, itemName, frequency, schedule, and tasks)
     $filter = [
       'branch' => $assoc['branch'],
       'location' => $assoc['location'],
-      'itemName' => $assoc['itemName']
+      'itemName' => $assoc['itemName'],
+      'frequency' => $assoc['frequency'] ?? null
     ];
-    $existing = mongoFind($mongoManager, $maintenanceNamespace, $filter, ['limit' => 1]);
-    if (!empty($existing)) {
+    $existing = mongoFind($mongoManager, $maintenanceNamespace, $filter);
+    
+    // Check if any existing record has the same schedule and inspection tasks
+    $isDuplicate = false;
+    $newSchedule = isset($assoc['maintenanceSchedule']) ? json_decode($assoc['maintenanceSchedule'], true) : null;
+    $newTasks = trim($assoc['inspectionTasks'] ?? '');
+    
+    foreach ($existing as $existingDoc) {
+      // Compare maintenance schedule
+      $existingSchedule = is_object($existingDoc->maintenanceSchedule) 
+        ? json_decode(json_encode($existingDoc->maintenanceSchedule), true)
+        : $existingDoc->maintenanceSchedule;
+      
+      // Normalize schedules for comparison
+      $existingScheduleStr = json_encode($existingSchedule, JSON_SORT_KEYS);
+      $newScheduleStr = json_encode($newSchedule, JSON_SORT_KEYS);
+      
+      // Compare inspection tasks
+      $existingTasks = trim($existingDoc->inspectionTasks ?? '');
+      
+      // If both schedule and tasks match, it's a duplicate
+      if ($existingScheduleStr === $newScheduleStr && $existingTasks === $newTasks) {
+        $isDuplicate = true;
+        break;
+      }
+    }
+    
+    if ($isDuplicate) {
       $duplicates[] = $assoc['itemName'] . ' (' . $assoc['branch'] . ', ' . $assoc['location'] . ')';
       $skipped++;
       continue;
@@ -228,6 +255,7 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Upload failed: ' . $e->getMessage()]);
 }
 ?>
+
 
 
 

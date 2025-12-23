@@ -72,6 +72,8 @@ async function loadMaintenanceAssets() {
 
     currentMaintenance = maintenanceData.maintenance;
     console.log('Current maintenance loaded:', currentMaintenance);
+    console.log('Maintenance schedule:', currentMaintenance?.maintenanceSchedule);
+    console.log('Maintenance frequency:', currentMaintenance?.frequency);
     
     // Ensure maintenanceId is set
     if (!maintenanceId && currentMaintenance._id) {
@@ -192,41 +194,82 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Helper function to parse date from various formats
+function parseDate(dateValue) {
+  if (!dateValue) return null;
+  
+  // Handle MongoDB UTCDateTime format
+  if (typeof dateValue === 'object' && dateValue.$date) {
+    return new Date(dateValue.$date);
+  }
+  
+  // Handle date object
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  // Handle string dates
+  if (typeof dateValue === 'string') {
+    const date = new Date(dateValue);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  // Handle numeric timestamps
+  if (typeof dateValue === 'number') {
+    return new Date(dateValue);
+  }
+  
+  return null;
+}
+
 // Extract all dates from maintenanceSchedule based on frequency
 function extractScheduleDates(schedule, frequency) {
-  if (!schedule || typeof schedule !== 'object') return [];
+  if (!schedule || typeof schedule !== 'object') {
+    console.log('extractScheduleDates: Invalid schedule or not an object', schedule);
+    return [];
+  }
+  
+  if (!frequency) {
+    console.log('extractScheduleDates: No frequency provided');
+    return [];
+  }
   
   const dates = [];
+  const normalizedFrequency = frequency.trim();
   
-  if (frequency === 'Weekly') {
+  console.log('extractScheduleDates: Processing schedule', { schedule, frequency: normalizedFrequency });
+  
+  if (normalizedFrequency === 'Weekly') {
     Object.values(schedule).forEach(monthSchedule => {
-      if (typeof monthSchedule === 'object') {
-        Object.values(monthSchedule).forEach(dateStr => {
-          if (dateStr) {
-            const date = new Date(dateStr);
+      if (typeof monthSchedule === 'object' && monthSchedule !== null) {
+        Object.values(monthSchedule).forEach(dateValue => {
+          if (dateValue) {
+            const date = parseDate(dateValue);
             if (date && !isNaN(date.getTime())) {
+              date.setHours(0, 0, 0, 0);
               dates.push(date);
             }
           }
         });
       }
     });
-  } else if (frequency === 'Monthly') {
-    Object.values(schedule).forEach(dateStr => {
-      if (dateStr) {
-        const date = new Date(dateStr);
+  } else if (normalizedFrequency === 'Monthly') {
+    Object.values(schedule).forEach(dateValue => {
+      if (dateValue) {
+        const date = parseDate(dateValue);
         if (date && !isNaN(date.getTime())) {
+          date.setHours(0, 0, 0, 0);
           dates.push(date);
         }
       }
     });
-  } else if (frequency === 'Quarterly') {
+  } else if (normalizedFrequency === 'Quarterly') {
     const currentYear = new Date().getFullYear();
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                     'July', 'August', 'September', 'October', 'November', 'December'];
     
     Object.entries(schedule).forEach(([quarter, quarterSchedule]) => {
-      if (typeof quarterSchedule === 'object') {
+      if (typeof quarterSchedule === 'object' && quarterSchedule !== null) {
         Object.entries(quarterSchedule).forEach(([monthName, dayStr]) => {
           if (dayStr) {
             const monthIndex = months.indexOf(monthName);
@@ -234,10 +277,12 @@ function extractScheduleDates(schedule, frequency) {
               const day = parseInt(dayStr, 10);
               if (day >= 1 && day <= 31) {
                 const date = new Date(currentYear, monthIndex, day);
+                date.setHours(0, 0, 0, 0);
                 if (date && !isNaN(date.getTime())) {
                   dates.push(date);
                 }
                 const dateNextYear = new Date(currentYear + 1, monthIndex, day);
+                dateNextYear.setHours(0, 0, 0, 0);
                 if (dateNextYear && !isNaN(dateNextYear.getTime())) {
                   dates.push(dateNextYear);
                 }
@@ -247,9 +292,12 @@ function extractScheduleDates(schedule, frequency) {
         });
       }
     });
+  } else {
+    console.log('extractScheduleDates: Unknown frequency:', normalizedFrequency);
   }
   
-  dates.sort((a, b) => a - b);
+  console.log('extractScheduleDates: Extracted dates:', dates);
+  dates.sort((a, b) => a.getTime() - b.getTime());
   return dates;
 }
 
@@ -267,10 +315,25 @@ function updateStats() {
   if (assetsRemainingEl) assetsRemainingEl.textContent = assetsRemaining.toString();
   
   // Calculate days until next maintenance
-  if (daysRemainingEl && currentMaintenance) {
-    const daysUntil = getDaysUntilNextMaintenance(currentMaintenance);
-    if (daysUntil !== null) {
-      daysRemainingEl.textContent = daysUntil >= 0 ? daysUntil.toString() : `Overdue by ${Math.abs(daysUntil)}`;
+  if (daysRemainingEl) {
+    if (currentMaintenance && currentMaintenance.maintenanceSchedule && currentMaintenance.frequency) {
+      try {
+        const daysUntil = getDaysUntilNextMaintenance(currentMaintenance);
+        if (daysUntil !== null && !isNaN(daysUntil)) {
+          if (daysUntil < 0) {
+            daysRemainingEl.textContent = `${Math.abs(daysUntil)} days overdue`;
+          } else if (daysUntil === 0) {
+            daysRemainingEl.textContent = 'Due today';
+          } else {
+            daysRemainingEl.textContent = `${daysUntil} days`;
+          }
+        } else {
+          daysRemainingEl.textContent = '-';
+        }
+      } catch (error) {
+        console.error('Error calculating days until maintenance:', error);
+        daysRemainingEl.textContent = '-';
+      }
     } else {
       daysRemainingEl.textContent = '-';
     }
@@ -279,32 +342,73 @@ function updateStats() {
 
 // Calculate days until next maintenance
 function getDaysUntilNextMaintenance(maintenance) {
-  if (!maintenance || !maintenance.maintenanceSchedule || !maintenance.frequency) {
+  if (!maintenance) {
+    console.log('getDaysUntilNextMaintenance: No maintenance object');
     return null;
   }
   
-  const scheduleDates = extractScheduleDates(maintenance.maintenanceSchedule, maintenance.frequency);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  
-  // Find next upcoming date
-  const nextDate = scheduleDates.find(d => {
-    const date = new Date(d);
-    date.setHours(0, 0, 0, 0);
-    return date >= now;
-  });
-  
-  if (!nextDate) {
+  if (!maintenance.maintenanceSchedule) {
+    console.log('getDaysUntilNextMaintenance: No maintenanceSchedule');
     return null;
   }
   
-  const next = new Date(nextDate);
-  next.setHours(0, 0, 0, 0);
+  if (!maintenance.frequency) {
+    console.log('getDaysUntilNextMaintenance: No frequency');
+    return null;
+  }
   
-  const diffTime = next - now;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  return diffDays;
+  try {
+    console.log('Calculating days until next maintenance...', {
+      schedule: maintenance.maintenanceSchedule,
+      frequency: maintenance.frequency
+    });
+    
+    const scheduleDates = extractScheduleDates(maintenance.maintenanceSchedule, maintenance.frequency);
+    console.log('Extracted schedule dates:', scheduleDates);
+    
+    if (!scheduleDates || scheduleDates.length === 0) {
+      console.log('No schedule dates extracted');
+      return null;
+    }
+    
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    console.log('Current date:', now);
+    
+    // Find next upcoming date
+    let nextDate = null;
+    for (const date of scheduleDates) {
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+      if (normalizedDate >= now) {
+        nextDate = normalizedDate;
+        break;
+      }
+    }
+    
+    // If no future date found, use the last date (most recent past date)
+    if (!nextDate && scheduleDates.length > 0) {
+      const lastDate = scheduleDates[scheduleDates.length - 1];
+      nextDate = new Date(lastDate);
+      nextDate.setHours(0, 0, 0, 0);
+    }
+    
+    if (!nextDate) {
+      console.log('No next date found');
+      return null;
+    }
+    
+    console.log('Next scheduled date:', nextDate);
+    
+    const diffTime = nextDate.getTime() - now.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    console.log('Days until next maintenance:', diffDays);
+    return diffDays;
+  } catch (error) {
+    console.error('Error calculating days until next maintenance:', error);
+    return null;
+  }
 }
 
 // View asset details - Staff version links to inspectionassetdetails.html

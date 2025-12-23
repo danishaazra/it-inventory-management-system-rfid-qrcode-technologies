@@ -73,6 +73,8 @@ async function loadMaintenanceAssets() {
 
     currentMaintenance = maintenanceData.maintenance;
     console.log('Current maintenance loaded:', currentMaintenance);
+    console.log('Maintenance schedule:', currentMaintenance?.maintenanceSchedule);
+    console.log('Maintenance frequency:', currentMaintenance?.frequency);
     
     // Ensure maintenanceId is set
     if (!maintenanceId && currentMaintenance._id) {
@@ -242,6 +244,34 @@ function updateStats() {
   }
 }
 
+// Helper function to parse date from various formats
+function parseDate(dateValue) {
+  if (!dateValue) return null;
+  
+  // Handle MongoDB UTCDateTime format
+  if (typeof dateValue === 'object' && dateValue.$date) {
+    return new Date(dateValue.$date);
+  }
+  
+  // Handle date object
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  // Handle string dates
+  if (typeof dateValue === 'string') {
+    const date = new Date(dateValue);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  // Handle numeric timestamps
+  if (typeof dateValue === 'number') {
+    return new Date(dateValue);
+  }
+  
+  return null;
+}
+
 // Helper functions from inspectiontask.js
 function extractScheduleDates(schedule, frequency) {
   if (!schedule || typeof schedule !== 'object') return [];
@@ -252,10 +282,11 @@ function extractScheduleDates(schedule, frequency) {
     // schedule format: { "January": { "Week1": "2024-01-05", ... }, ... }
     Object.values(schedule).forEach(monthSchedule => {
       if (typeof monthSchedule === 'object') {
-        Object.values(monthSchedule).forEach(dateStr => {
-          if (dateStr) {
-            const date = new Date(dateStr);
+        Object.values(monthSchedule).forEach(dateValue => {
+          if (dateValue) {
+            const date = parseDate(dateValue);
             if (date && !isNaN(date.getTime())) {
+              date.setHours(0, 0, 0, 0);
               dates.push(date);
             }
           }
@@ -264,10 +295,11 @@ function extractScheduleDates(schedule, frequency) {
     });
   } else if (frequency === 'Monthly') {
     // schedule format: { "January": "2024-01-15", "February": "2024-02-15", ... }
-    Object.values(schedule).forEach(dateStr => {
-      if (dateStr) {
-        const date = new Date(dateStr);
+    Object.values(schedule).forEach(dateValue => {
+      if (dateValue) {
+        const date = parseDate(dateValue);
         if (date && !isNaN(date.getTime())) {
+          date.setHours(0, 0, 0, 0);
           dates.push(date);
         }
       }
@@ -287,11 +319,13 @@ function extractScheduleDates(schedule, frequency) {
               const day = parseInt(dayStr, 10);
               if (day >= 1 && day <= 31) {
                 const date = new Date(currentYear, monthIndex, day);
+                date.setHours(0, 0, 0, 0);
                 if (date && !isNaN(date.getTime())) {
                   dates.push(date);
                 }
                 // Also add for next year
                 const dateNextYear = new Date(currentYear + 1, monthIndex, day);
+                dateNextYear.setHours(0, 0, 0, 0);
                 if (dateNextYear && !isNaN(dateNextYear.getTime())) {
                   dates.push(dateNextYear);
                 }
@@ -304,7 +338,7 @@ function extractScheduleDates(schedule, frequency) {
   }
   
   // Sort dates ascending (includes past and future dates)
-  dates.sort((a, b) => a - b);
+  dates.sort((a, b) => a.getTime() - b.getTime());
   return dates;
 }
 
@@ -314,13 +348,24 @@ function findNextScheduledDate(dates) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   
+  // Find the next upcoming date
   for (const date of dates) {
-    if (date >= now) {
-      return date;
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    if (normalizedDate >= now) {
+      return normalizedDate;
     }
   }
   
-  return dates[dates.length - 1];
+  // If no future date found, return the last date (most recent past date)
+  const lastDate = dates[dates.length - 1];
+  if (lastDate) {
+    const normalizedDate = new Date(lastDate);
+    normalizedDate.setHours(0, 0, 0, 0);
+    return normalizedDate;
+  }
+  
+  return null;
 }
 
 function getDaysUntil(date) {
@@ -331,8 +376,8 @@ function getDaysUntil(date) {
   const targetDate = new Date(date);
   targetDate.setHours(0, 0, 0, 0);
   
-  const diffTime = targetDate - now;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffTime = targetDate.getTime() - now.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   
   return diffDays;
 }

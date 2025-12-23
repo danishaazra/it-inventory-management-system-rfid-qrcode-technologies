@@ -90,33 +90,16 @@ function displayAssetDetails(asset) {
   // Store asset data for edit functionality
   window.currentAsset = asset;
   
-  // Generate QR code (only if library is available)
-  // Use window.QRCode to avoid ReferenceError in strict mode
-  try {
-    if (typeof window.QRCode !== 'undefined') {
+  // Generate QR code (library should be available now due to waitForQRCodeLibrary)
+  if (asset.assetId) {
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
       generateQRCode(asset.assetId);
-    } else {
-      // Wait a bit for the library to load, then try again
-      setTimeout(() => {
-        if (typeof window.QRCode !== 'undefined') {
-          generateQRCode(asset.assetId);
-        } else {
-          // Library still not loaded, show message but don't break the page
-          const qrSection = document.getElementById('qr-code-section');
-          const qrContainer = document.getElementById('qr-code-container');
-          if (qrSection && qrContainer) {
-            qrContainer.innerHTML = '<p style="color: #9ca3af; padding: 1rem; font-size: 0.9rem;">QR Code library is loading... Please wait a moment or refresh the page.</p>';
-          }
-        }
-      }, 500);
-    }
-  } catch (error) {
-    console.warn('QR code generation skipped:', error);
-    // Don't break the page if QR code fails
+    }, 50);
   }
 }
 
-// Generate QR code for the asset
+// Generate QR code for the asset (using server-side PHP endpoint)
 function generateQRCode(assetId) {
   const qrSection = document.getElementById('qr-code-section');
   const qrContainer = document.getElementById('qr-code-container');
@@ -127,85 +110,75 @@ function generateQRCode(assetId) {
     return;
   }
   
-  // Check if QRCode library is loaded (use window.QRCode to avoid ReferenceError)
-  const QRCodeLib = window.QRCode;
-  if (typeof QRCodeLib === 'undefined') {
-    console.warn('QRCode library not available');
-    qrContainer.innerHTML = '<p style="color: #9ca3af; padding: 1rem; font-size: 0.9rem;">QR Code library is loading... Please wait or refresh the page.</p>';
-    return;
-  }
-  
   // Create URL that links to this asset details page
   // Use full URL so QR code works when scanned from anywhere
   const assetUrl = `${window.location.origin}${window.location.pathname}?assetId=${encodeURIComponent(assetId)}`;
   
-  // Update container style for canvas
-  qrContainer.style.display = 'inline-block';
-  qrContainer.style.minHeight = 'auto';
-  qrContainer.style.alignItems = 'normal';
-  qrContainer.style.justifyContent = 'normal';
+  // Generate QR code using server-side PHP endpoint
+  const qrCodeImageUrl = `./generate_qrcode.php?data=${encodeURIComponent(assetUrl)}`;
   
-  // Clear previous QR code
+  // Clear container and add image
   qrContainer.innerHTML = '';
+  qrContainer.style.display = 'flex';
+  qrContainer.style.alignItems = 'center';
+  qrContainer.style.justifyContent = 'center';
+  qrContainer.style.minHeight = '256px';
   
-  // Generate QR code using the library
-  QRCodeLib.toCanvas(qrContainer, assetUrl, {
-    width: 256,
-    margin: 2,
-    color: {
-      dark: '#140958',
-      light: '#FFFFFF'
-    }
-  }, function (error) {
-    if (error) {
-      console.error('Error generating QR code:', error);
-      qrContainer.innerHTML = '<p style="color: #ef4444; padding: 1rem;">Failed to generate QR code</p>';
-      return;
-    }
-    
+  const img = document.createElement('img');
+  img.src = qrCodeImageUrl;
+  img.alt = 'QR Code for Asset ' + assetId;
+  img.style.maxWidth = '100%';
+  img.style.height = 'auto';
+  img.style.display = 'block';
+  
+  img.onload = function() {
     // Show QR code section
-    qrSection.style.display = 'block';
+    if (qrSection) {
+      qrSection.style.display = 'block';
+    }
     
-    // Get the canvas element
-    const canvas = qrContainer.querySelector('canvas');
-    if (canvas && downloadBtn) {
-      // Style canvas to center it
-      canvas.style.display = 'block';
-      canvas.style.margin = '0 auto';
-      
-      // Show download button
+    // Show download button
+    if (downloadBtn) {
       downloadBtn.style.display = 'inline-flex';
       
       // Add download functionality
       downloadBtn.onclick = function() {
-        downloadQRCode(canvas, assetId);
+        downloadQRCode(qrCodeImageUrl, assetId);
       };
     }
-  });
+  };
+  
+  img.onerror = function() {
+    qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to load QR code image.</p>';
+  };
+  
+  qrContainer.appendChild(img);
 }
 
 // Download QR code as PNG
-function downloadQRCode(canvas, assetId) {
-  if (!canvas) return;
-  
-  // Create download link
-  const link = document.createElement('a');
-  link.download = `Asset-${assetId}-QRCode.png`;
-  link.href = canvas.toDataURL('image/png');
-  
-  // Trigger download
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+function downloadQRCode(imageUrl, assetId) {
+  // Fetch the image and create download link
+  fetch(imageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `Asset-${assetId}-QRCode.png`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+      console.error('Error downloading QR code:', error);
+      alert('Failed to download QR code');
+    });
 }
 
-// Wait for DOM to be ready, then load asset details
-// QRCode library should be loaded by script tag before this module runs
+// Load asset details when page is ready
 function initPage() {
-  // Wait a moment for QRCode library to be available
-  setTimeout(() => {
-    loadAssetDetails();
-  }, 100);
+  loadAssetDetails();
 }
 
 // Asset actions menu toggle

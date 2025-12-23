@@ -4,10 +4,15 @@ const fileInput = document.getElementById('asset-file-input');
 const addForm = document.getElementById('add-asset-form');
 const assetTableBody = document.getElementById('asset-table-body');
 
-// Load and display assets in the table
-async function loadAssets() {
+// Filter elements
+const searchInput = document.getElementById('asset-search');
+const searchBtn = document.getElementById('asset-search-btn');
+
+// Load and display assets in the table (optionally filtered by query)
+async function loadAssets(query = '') {
   try {
-    const resp = await fetch('./list_assets.php');
+    const params = query ? `?query=${encodeURIComponent(query)}` : '';
+    const resp = await fetch(`./list_assets.php${params}`);
     if (!resp.ok) {
       console.error('Failed to load assets');
       return;
@@ -43,6 +48,23 @@ function displayAssets(assets) {
       <td><a href="assetdetails.html?assetId=${encodeURIComponent(assetId)}" class="action-link">View</a></td>
     `;
     assetTableBody.appendChild(row);
+  });
+}
+
+// Search listeners
+if (searchBtn) {
+  searchBtn.addEventListener('click', () => {
+    const q = searchInput?.value || '';
+    loadAssets(q);
+  });
+}
+if (searchInput) {
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const q = searchInput.value || '';
+      loadAssets(q);
+    }
   });
 }
 
