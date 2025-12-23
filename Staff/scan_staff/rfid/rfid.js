@@ -47,12 +47,30 @@ async function searchAssetByRfid() {
   }
   
   try {
+    // Include staffId so backend can verify assignment to this staff's tasks
+    const staffId = sessionStorage.getItem('userId') || '';
+    let url = `../../../admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}`;
+    if (staffId) {
+      url += `&staffId=${encodeURIComponent(staffId)}`;
+    }
+
     // Search for asset by RFID tag ID
-    const resp = await fetch(`../../../admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}`);
+    const resp = await fetch(url);
     const data = await resp.json();
     
     if (!resp.ok || !data.ok) {
-      throw new Error(data.error || 'Asset not found');
+      // If backend explicitly says this asset is not assigned to the staff,
+      // show a clear popup message.
+      if (data && data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF') {
+        const msg = data.message || 'This asset is not assigned to your maintenance tasks.';
+        alert(msg);
+        showError(msg);
+      } else {
+        const msg = (data && (data.message || data.error)) || 'Asset not found';
+        showError(`Error: ${msg}`);
+      }
+      if (scanResult) scanResult.classList.remove('show');
+      return;
     }
     
     // Display result

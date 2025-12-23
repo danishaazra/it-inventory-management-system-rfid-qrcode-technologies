@@ -3,11 +3,34 @@ header('Content-Type: application/json');
 require '../api/db.php';
 
 try {
-  // Query all assets from MongoDB, sorted by assetId
+  $query = $_GET['query'] ?? '';
+
+  // Build filter if query provided
+  $filter = [];
+  if (!empty($query)) {
+    $regex = new MongoDB\BSON\Regex($query, 'i');
+    $filter = [
+      '$or' => [
+        ['assetId' => $regex],
+        ['assetDescription' => $regex],
+        ['assetCategory' => $regex],
+        ['assetCategoryDescription' => $regex],
+        ['model' => $regex],
+        ['serialNo' => $regex],
+        ['serialNumber' => $regex],
+        ['location' => $regex],
+        ['locationDescription' => $regex],
+        ['area' => $regex],
+        ['locationArea' => $regex],
+      ]
+    ];
+  }
+
+  // Query assets from MongoDB, sorted by assetId
   $options = [
     'sort' => ['assetId' => 1] // Sort ascending by assetId
   ];
-  $results = mongoFind($mongoManager, $assetsNamespace, [], $options);
+  $results = mongoFind($mongoManager, $assetsNamespace, $filter, $options);
   
   // Convert MongoDB documents to arrays
   $assets = [];

@@ -4,6 +4,9 @@ require '../api/db.php';
 
 // Get rfidTagId from query parameter
 $rfidTagId = $_GET['rfidTagId'] ?? '';
+// Optional: staffId is only used when staff are scanning assets. When present,
+// we will verify that the asset is assigned to one of the staff's maintenance tasks.
+$staffId   = $_GET['staffId'] ?? '';
 
 if (empty($rfidTagId)) {
   http_response_code(400);
@@ -18,7 +21,7 @@ try {
   
   if (empty($results)) {
     http_response_code(404);
-    echo json_encode(['ok' => false, 'error' => 'Asset not found with this RFID tag ID']);
+    echo json_encode(['ok' => false, 'error' => 'ASSET_NOT_FOUND', 'message' => 'Asset not found with this RFID tag ID']);
     exit;
   }
   
@@ -49,6 +52,52 @@ try {
     'rfidTagId' => $doc->rfidTagId ?? null,
     'created_at' => $doc->created_at ?? null,
   ];
+
+  // If a staffId is provided, verify that this asset is assigned to one of the
+  // staff member's maintenance tasks. This is used by the Staff scan pages only.
+  if (!empty($staffId) && !empty($asset['assetId'])) {
+    // 1) Find maintenance tasks assigned to this staff member
+    $maintenanceFilter = ['assignedStaffId' => $staffId];
+    $maintenanceResults = mongoFind($mongoManager, $maintenanceNamespace, $maintenanceFilter, ['projection' => ['_id' => 1]]);
+
+    $assignedMaintenanceIds = [];
+    foreach ($maintenanceResults as $mDoc) {
+      if (isset($mDoc->_id)) {
+        $assignedMaintenanceIds[] = (string)$mDoc->_id;
+      }
+    }
+
+    if (empty($assignedMaintenanceIds)) {
+      // Staff has no assigned maintenance tasks at all
+      http_response_code(403);
+      echo json_encode([
+        'ok' => false,
+        'error' => 'ASSET_NOT_ASSIGNED_TO_STAFF',
+        'message' => 'This asset is not assigned to your maintenance tasks.'
+      ]);
+      exit;
+    }
+
+    // 2) Check maintenance_assets for a record linking this asset to any of the staff's maintenance tasks
+    $inspectionsNamespace = $mongoDb . '.maintenance_assets';
+    $inspectionFilter = [
+      'assetId' => $asset['assetId'],
+      'maintenanceId' => ['$in' => $assignedMaintenanceIds],
+    ];
+
+    $inspectionResults = mongoFind($mongoManager, $inspectionsNamespace, $inspectionFilter, ['limit' => 1]);
+
+    if (empty($inspectionResults)) {
+      // Asset is not part of any maintenance task assigned to this staff member
+      http_response_code(403);
+      echo json_encode([
+        'ok' => false,
+        'error' => 'ASSET_NOT_ASSIGNED_TO_STAFF',
+        'message' => 'This asset is not assigned to your maintenance tasks.'
+      ]);
+      exit;
+    }
+  }
   
   echo json_encode(['ok' => true, 'asset' => $asset]);
 } catch (Exception $e) {
@@ -56,4 +105,5 @@ try {
   echo json_encode(['ok' => false, 'error' => 'Could not load asset: ' . $e->getMessage()]);
 }
 ?>
+
 

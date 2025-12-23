@@ -637,6 +637,139 @@
       color: #6b7280;
       font-size: 0.95rem;
     }
+
+    /* Saved Reports Section */
+    .saved-reports-section {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e5e5e5;
+    }
+
+    .saved-reports-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .saved-reports-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .saved-reports-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .saved-report-card {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .saved-report-card:hover {
+      border-color: #140958;
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .saved-report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .saved-report-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+
+    .saved-report-type {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      background: #e5e7eb;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .saved-report-date {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 0.5rem;
+    }
+
+    .saved-report-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .btn-load {
+      flex: 1;
+      padding: 0.5rem 1rem;
+      background: #140958;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-load:hover {
+      background: #1a0d6b;
+      transform: translateY(-1px);
+    }
+
+    .btn-delete {
+      padding: 0.5rem 1rem;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-delete:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .btn-save-report {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-save-report:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .no-saved-reports {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
   </style>
   <script type="module">
     import '../shared/init.js';
@@ -697,6 +830,11 @@
           <div class="report-type-title">Inspection Report</div>
           <div class="report-type-description">Track inspection tasks and completion status</div>
         </div>
+        <div class="report-type-card" data-type="checklist">
+          <div class="report-type-icon">📋</div>
+          <div class="report-type-title">Checklist Report</div>
+          <div class="report-type-description">Generate maintenance checklist with monthly schedule</div>
+        </div>
       </div>
 
       <!-- Criteria Form -->
@@ -720,6 +858,7 @@
           <div class="export-buttons">
             <button type="button" class="btn btn-export" id="export-pdf-btn">Export PDF</button>
             <button type="button" class="btn btn-export" id="export-csv-btn">Export CSV</button>
+            <button type="button" class="btn btn-save-report" id="save-report-btn" style="display: none;">Save Report</button>
           </div>
         </div>
         <div class="report-table-container" id="report-table-container">
@@ -730,12 +869,23 @@
           </table>
         </div>
       </div>
+
+      <!-- Saved Reports Section -->
+      <div class="saved-reports-section" id="saved-reports-section">
+        <div class="saved-reports-header">
+          <h2>Saved Reports</h2>
+        </div>
+        <div class="saved-reports-list" id="saved-reports-list">
+          <div class="loading">Loading saved reports...</div>
+        </div>
+      </div>
     </main>
   </div>
 
   <script type="module" src="./report.js"></script>
 </body>
 </html>
+
 
 
 

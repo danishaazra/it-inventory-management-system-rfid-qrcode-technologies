@@ -537,6 +537,61 @@
       font-size: 0.9rem;
     }
 
+    .asset-filters {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.75rem;
+      flex: 1;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 260px;
+      flex: 1;
+    }
+
+    .filter-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4b5563;
+    }
+
+    .filter-input {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .filter-input:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .btn-search {
+      padding: 0.65rem 1.2rem;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-search:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.25);
+    }
+
     .asset-table-container {
       background: #ffffff;
       border-radius: 12px;
@@ -824,6 +879,13 @@
         <div class="asset-table-header-text">
           <h2>Asset List</h2>
           <p>All registered IT assets with basic information.</p>
+        </div>
+        <div class="asset-filters">
+          <div class="filter-group">
+            <label for="asset-search">Search</label>
+            <input id="asset-search" type="text" class="filter-input" placeholder="Search by ID, description, model, serial, location">
+          </div>
+          <button class="btn-search" id="asset-search-btn">Search</button>
         </div>
         <div class="add-asset-wrapper">
           <button class="add-asset-btn" id="add-asset-btn-table">

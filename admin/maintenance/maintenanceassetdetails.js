@@ -5,24 +5,32 @@ const maintenanceId = urlParams.get('maintenanceId');
 
 // Load asset details
 async function loadAssetDetails() {
-  const contentArea = document.getElementById('content-area');
   const backLink = document.getElementById('back-link');
+  const specList = document.getElementById('asset-spec-list');
+  const inspectionList = document.getElementById('inspection-spec-list');
   
   console.log('Loading asset details...', { assetId, maintenanceId });
   
-  if (!contentArea) {
-    console.error('Content area element not found!');
-    return;
-  }
-  
   if (!assetId || !maintenanceId) {
-    contentArea.innerHTML = `
-      <div class="error">
-        <h2>Missing Parameters</h2>
-        <p>Please provide assetId and maintenanceId in the URL.</p>
-        <p>Current URL params: assetId=${assetId || 'missing'}, maintenanceId=${maintenanceId || 'missing'}</p>
-      </div>
-    `;
+    // Show error in spec list area
+    if (specList) {
+      specList.innerHTML = `
+        <div class="error" style="padding: 2rem; text-align: center; color: #dc2626;">
+          <h2>Missing Parameters</h2>
+          <p>This page requires both <strong>assetId</strong> and <strong>maintenanceId</strong> in the URL.</p>
+          <p style="margin-top: 1rem; color: #666;">Current URL params: assetId=${assetId || 'missing'}, maintenanceId=${maintenanceId || 'missing'}</p>
+          <p style="margin-top: 1rem;">
+            <a href="maintenanceasset.html?maintenanceId=${maintenanceId || ''}" style="color: #140958; font-weight: 600; text-decoration: none;">
+              ← Go to Maintenance Assets
+            </a>
+            <span style="margin: 0 1rem;">|</span>
+            <a href="maintenance.html" style="color: #140958; font-weight: 600; text-decoration: none;">
+              Go to Maintenance Checklist
+            </a>
+          </p>
+        </div>
+      `;
+    }
     return;
   }
 
@@ -42,12 +50,15 @@ async function loadAssetDetails() {
     console.log('Response data:', data);
 
     if (!resp.ok || !data.ok) {
-      contentArea.innerHTML = `
-        <div class="error">
-          <h2>Error Loading Asset</h2>
-          <p>${data.error || 'Could not load asset details.'}</p>
-        </div>
-      `;
+      const specList = document.getElementById('asset-spec-list');
+      if (specList) {
+        specList.innerHTML = `
+          <div class="error" style="padding: 2rem; text-align: center; color: #dc2626;">
+            <h2>Error Loading Asset</h2>
+            <p>${data.error || 'Could not load asset details.'}</p>
+          </div>
+        `;
+      }
       return;
     }
 
@@ -56,9 +67,10 @@ async function loadAssetDetails() {
     displayAssetDetails(asset, maintenance, inspection);
   } catch (error) {
     console.error('Error loading asset details:', error);
-    if (contentArea) {
-      contentArea.innerHTML = `
-        <div class="error">
+    const specList = document.getElementById('asset-spec-list');
+    if (specList) {
+      specList.innerHTML = `
+        <div class="error" style="padding: 2rem; text-align: center; color: #dc2626;">
           <h2>Error</h2>
           <p>${error.message || 'Network error occurred.'}</p>
           <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">Check browser console for more details.</p>
@@ -69,16 +81,10 @@ async function loadAssetDetails() {
 }
 
 function displayAssetDetails(asset, maintenance, inspection) {
-  const contentArea = document.getElementById('content-area');
   const assetIdMeta = document.getElementById('asset-id-meta');
   const assetStatusMeta = document.getElementById('asset-status-meta');
   
-  if (!contentArea) {
-    console.error('Content area not found when trying to display asset details!');
-    return;
-  }
-  
-  console.log('Displaying asset details in content area');
+  console.log('Displaying asset details');
   
   // Update header meta
   if (assetIdMeta) {

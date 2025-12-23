@@ -15,20 +15,47 @@ function updateBackLink() {
 
 // Load asset details
 async function loadAssetDetails() {
-  if (!assetId) {
-    document.body.innerHTML = `<div style="padding: 2rem; text-align: center;"><h1>Asset ID Required</h1><p>Please provide an asset ID in the URL.</p><a href="inspectionasset.html${maintenanceId ? '?maintenanceId=' + encodeURIComponent(maintenanceId) : ''}">← Back to inspection assets</a></div>`;
-    return;
-  }
-
+  const specList = document.getElementById('asset-spec-list');
+  const backLink = document.getElementById('back-link');
+  
   // Update back link before loading
   updateBackLink();
+
+  if (!assetId) {
+    if (specList) {
+      specList.innerHTML = `
+        <div class="error" style="padding: 2rem; text-align: center; color: #dc2626;">
+          <h2>Asset ID Required</h2>
+          <p>Please provide an asset ID in the URL.</p>
+          <p style="margin-top: 1rem;">
+            <a href="inspectionasset.html${maintenanceId ? '?maintenanceId=' + encodeURIComponent(maintenanceId) : ''}" style="color: #140958; font-weight: 600; text-decoration: none;">
+              ← Back to inspection assets
+            </a>
+          </p>
+        </div>
+      `;
+    }
+    return;
+  }
 
   try {
     const resp = await fetch(`../../admin/asset/get_asset.php?assetId=${encodeURIComponent(assetId)}`);
     const data = await resp.json();
 
     if (!resp.ok || !data.ok) {
-      document.body.innerHTML = `<div style="padding: 2rem; text-align: center;"><h1>Asset Not Found</h1><p>${data.error || 'Could not load asset details.'}</p><a href="inspectionasset.html${maintenanceId ? '?maintenanceId=' + encodeURIComponent(maintenanceId) : ''}">← Back to inspection assets</a></div>`;
+      if (specList) {
+        specList.innerHTML = `
+          <div class="error" style="padding: 2rem; text-align: center; color: #dc2626;">
+            <h2>Asset Not Found</h2>
+            <p>${data.error || 'Could not load asset details.'}</p>
+            <p style="margin-top: 1rem;">
+              <a href="inspectionasset.html${maintenanceId ? '?maintenanceId=' + encodeURIComponent(maintenanceId) : ''}" style="color: #140958; font-weight: 600; text-decoration: none;">
+                ← Back to inspection assets
+              </a>
+            </p>
+          </div>
+        `;
+      }
       return;
     }
 
@@ -36,17 +63,35 @@ async function loadAssetDetails() {
     displayAssetDetails(asset);
   } catch (error) {
     console.error('Error loading asset:', error);
-    document.body.innerHTML = `<div style="padding: 2rem; text-align: center;"><h1>Error</h1><p>Could not load asset details: ${error.message}</p><a href="inspectionasset.html${maintenanceId ? '?maintenanceId=' + encodeURIComponent(maintenanceId) : ''}">← Back to inspection assets</a></div>`;
+    if (specList) {
+      specList.innerHTML = `
+        <div class="error" style="padding: 2rem; text-align: center; color: #dc2626;">
+          <h2>Error</h2>
+          <p>Could not load asset details: ${error.message || 'Network error occurred.'}</p>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280;">Check browser console for more details.</p>
+          <p style="margin-top: 1rem;">
+            <a href="inspectionasset.html${maintenanceId ? '?maintenanceId=' + encodeURIComponent(maintenanceId) : ''}" style="color: #140958; font-weight: 600; text-decoration: none;">
+              ← Back to inspection assets
+            </a>
+          </p>
+        </div>
+      `;
+    }
   }
 }
 
 // Display asset details in the page
 function displayAssetDetails(asset) {
   // Update summary cards
-  document.getElementById('summary-asset-id').textContent = asset.assetId || '-';
-  document.getElementById('summary-category').textContent = asset.assetCategory || '-';
-  document.getElementById('summary-location').textContent = asset.location || asset.locationDescription || '-';
-  document.getElementById('summary-owner').textContent = asset.ownerName || asset.ownerCode || '-';
+  const summaryAssetId = document.getElementById('summary-asset-id');
+  const summaryCategory = document.getElementById('summary-category');
+  const summaryLocation = document.getElementById('summary-location');
+  const summaryOwner = document.getElementById('summary-owner');
+  
+  if (summaryAssetId) summaryAssetId.textContent = asset.assetId || '-';
+  if (summaryCategory) summaryCategory.textContent = asset.assetCategory || '-';
+  if (summaryLocation) summaryLocation.textContent = asset.location || asset.locationDescription || '-';
+  if (summaryOwner) summaryOwner.textContent = asset.ownerName || asset.ownerCode || '-';
 
   // Update header meta
   const assetIdMeta = document.getElementById('asset-id-meta');
@@ -64,7 +109,7 @@ function displayAssetDetails(asset) {
       'Retired': '#ef4444'
     };
     const statusColor = statusColors[status] || '#6b7280';
-    statusMeta.innerHTML = `<span style="padding: 0.25rem 0.75rem; border-radius: 999px; background: ${statusColor}20; color: ${statusColor}; font-size: 0.875rem; font-weight: 600;">${status}</span>`;
+    statusMeta.innerHTML = `<span style="padding: 0.25rem 0.75rem; border-radius: 999px; background: ${statusColor}20; color: ${statusColor}; font-size: 0.875rem; font-weight: 600;">${escapeHtml(status)}</span>`;
   }
 
   // Update specifications list
@@ -89,21 +134,23 @@ function displayAssetDetails(asset) {
       { label: 'Current User', value: asset.currentUser }
     ];
 
-    specList.innerHTML = specs.map(spec => `
-      <div class="spec-row">
-        <div class="spec-label">${spec.label}</div>
-        <div class="spec-value ${!spec.value ? 'muted' : ''}">${spec.value || '-'}</div>
-      </div>
-    `).join('');
+    specList.innerHTML = specs
+      .filter(spec => spec.value) // Only show fields with values
+      .map(spec => `
+        <div class="spec-row">
+          <div class="spec-label">${spec.label}</div>
+          <div class="spec-value">${escapeHtml(spec.value)}</div>
+        </div>
+      `).join('');
   }
 
-  // Generate QR code
+  // Generate QR code (using server-side PHP, no library needed)
   if (asset.assetId) {
     generateQRCode(asset.assetId);
   }
 }
 
-// Generate QR code for the asset
+// Generate QR code for the asset (using server-side PHP endpoint)
 function generateQRCode(assetId) {
   const qrSection = document.getElementById('qr-code-section');
   const qrContainer = document.getElementById('qr-code-container');
@@ -114,57 +161,78 @@ function generateQRCode(assetId) {
     return;
   }
   
-  // Check if QRCode library is loaded (use window.QRCode to avoid ReferenceError)
-  const QRCodeLib = window.QRCode;
-  if (typeof QRCodeLib === 'undefined') {
-    console.warn('QRCode library not available');
-    qrContainer.innerHTML = '<p style="color: #9ca3af; padding: 1rem; font-size: 0.9rem;">QR Code library is loading... Please wait or refresh the page.</p>';
-    return;
-  }
-  
   // Create URL that links to this asset details page
   // Use full URL so QR code works when scanned from anywhere
   const assetUrl = `${window.location.origin}${window.location.pathname}?assetId=${encodeURIComponent(assetId)}${maintenanceId ? '&maintenanceId=' + encodeURIComponent(maintenanceId) : ''}`;
   
-  // Update container style for canvas
-  qrContainer.style.display = 'inline-block';
-  qrContainer.style.minHeight = 'auto';
-  qrContainer.style.alignItems = 'normal';
-  qrContainer.style.justifyContent = 'normal';
+  // Generate QR code using server-side PHP endpoint
+  const qrCodeImageUrl = `./generate_qrcode.php?data=${encodeURIComponent(assetUrl)}`;
   
-  // Clear previous QR code
+  // Clear container and add image
   qrContainer.innerHTML = '';
+  qrContainer.style.display = 'flex';
+  qrContainer.style.alignItems = 'center';
+  qrContainer.style.justifyContent = 'center';
+  qrContainer.style.minHeight = '256px';
   
-  // Generate QR code using the library
-  QRCodeLib.toCanvas(qrContainer, assetUrl, {
-    width: 256,
-    margin: 2,
-    color: {
-      dark: '#140958',
-      light: '#ffffff'
-    }
-  }, function(error) {
-    if (error) {
-      console.error('QR code generation error:', error);
-      qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to generate QR code. Please try again.</p>';
-      return;
+  const img = document.createElement('img');
+  img.src = qrCodeImageUrl;
+  img.alt = 'QR Code for Asset ' + assetId;
+  img.style.maxWidth = '100%';
+  img.style.height = 'auto';
+  img.style.display = 'block';
+  
+  img.onload = function() {
+    // Show QR code section
+    if (qrSection) {
+      qrSection.style.display = 'block';
     }
     
     // Show download button
     if (downloadBtn) {
       downloadBtn.style.display = 'inline-flex';
+      
+      // Add download functionality
       downloadBtn.onclick = function() {
-        const canvas = qrContainer.querySelector('canvas');
-        if (canvas) {
-          const url = canvas.toDataURL('image/png');
-          const link = document.createElement('a');
-          link.download = `asset-${assetId}-qrcode.png`;
-          link.href = url;
-          link.click();
-        }
+        downloadQRCode(qrCodeImageUrl, assetId);
       };
     }
-  });
+  };
+  
+  img.onerror = function() {
+    qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to load QR code image.</p>';
+  };
+  
+  qrContainer.appendChild(img);
+}
+
+// Download QR code as PNG
+function downloadQRCode(imageUrl, assetId) {
+  // Fetch the image and create download link
+  fetch(imageUrl)
+    .then(response => response.blob())
+    .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `asset-${assetId}-qrcode.png`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+      console.error('Error downloading QR code:', error);
+      alert('Failed to download QR code');
+    });
+}
+
+// Helper function to escape HTML (prevent XSS)
+function escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Initialize when page loads

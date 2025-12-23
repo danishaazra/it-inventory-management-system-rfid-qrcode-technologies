@@ -123,9 +123,181 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Load saved reports
+async function loadSavedReports() {
+  try {
+    const response = await fetch('../admin/report/list_saved_reports.php');
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || 'Failed to load saved reports');
+    }
+
+    displaySavedReports(data.reports || []);
+  } catch (error) {
+    console.error('Error loading saved reports:', error);
+    const reportsList = document.getElementById('saved-reports-list');
+    if (reportsList) {
+      reportsList.innerHTML = '<div class="no-saved-reports">Error loading saved reports</div>';
+    }
+  }
+}
+
+// Display saved reports
+function displaySavedReports(reports) {
+  const reportsList = document.getElementById('saved-reports-list');
+  if (!reportsList) return;
+
+  // Show only the 6 most recent reports
+  const recentReports = reports.slice(0, 6);
+
+  if (recentReports.length === 0) {
+    reportsList.innerHTML = '<div class="no-saved-reports">No saved reports yet. <a href="../admin/report/report.html" style="color: #140958; font-weight: 600;">Generate a report</a> to get started.</div>';
+    return;
+  }
+
+  reportsList.innerHTML = recentReports.map(report => {
+    const date = report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown date';
+    const typeLabels = {
+      'asset': 'Asset Report',
+      'maintenance': 'Maintenance Report',
+      'inspection': 'Inspection Report',
+      'checklist': 'Checklist Report'
+    };
+    const typeLabel = typeLabels[report.reportType] || report.reportType;
+
+    return `
+      <div class="saved-report-card">
+        <div class="saved-report-header">
+          <div>
+            <div class="saved-report-title">${escapeHtml(report.reportTitle)}</div>
+            <span class="saved-report-type">${escapeHtml(typeLabel)}</span>
+          </div>
+        </div>
+        <div class="saved-report-date">Created: ${date}</div>
+        <div class="saved-report-actions">
+          <a href="../admin/report/report.html?loadReport=${encodeURIComponent(report._id)}" class="btn-load">Load</a>
+          <button class="btn-delete" onclick="deleteSavedReport('${report._id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Delete a saved report
+async function deleteSavedReport(reportId) {
+  if (!confirm('Are you sure you want to delete this saved report?')) {
+    return;
+  }
+
+  try {
+    const response = await fetch('../admin/report/delete_report.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ reportId: reportId })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || 'Failed to delete report');
+    }
+
+    alert('Report deleted successfully!');
+    await loadSavedReports();
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    alert(`Failed to delete report: ${error.message}`);
+  }
+}
+
+// Make deleteSavedReport available globally
+window.deleteSavedReport = deleteSavedReport;
+
+// Load maintenance assignments
+async function loadMaintenanceAssignments() {
+  try {
+    const response = await fetch('../admin/maintenance/list_maintenance.php');
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || 'Failed to load maintenance assignments');
+    }
+
+    displayMaintenanceAssignments(data.maintenance || []);
+  } catch (error) {
+    console.error('Error loading maintenance assignments:', error);
+    const tbody = document.getElementById('maintenance-assignments-body');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #dc2626;">Error loading maintenance assignments</td></tr>';
+    }
+  }
+}
+
+// Display maintenance assignments
+function displayMaintenanceAssignments(maintenanceItems) {
+  const tbody = document.getElementById('maintenance-assignments-body');
+  if (!tbody) return;
+
+  // Filter to show only items with assigned staff, limit to 10 most recent
+  const assignedItems = maintenanceItems
+    .filter(item => item.assignedStaffName && item.assignedStaffEmail)
+    .slice(0, 10);
+
+  if (assignedItems.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #888;">No maintenance items with assigned staff found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = assignedItems.map(item => {
+    const itemName = item.itemName || '-';
+    const location = item.location || '-';
+    const branch = item.branch || '-';
+    const frequency = item.frequency || '-';
+    const staffName = item.assignedStaffName || '-';
+    const staffEmail = item.assignedStaffEmail || '-';
+    const maintenanceId = item._id;
+    const totalInspections = item.totalInspections || 0;
+    const completedInspections = item.completedInspections || 0;
+    const openInspections = item.openInspections || 0;
+    
+    // Format inspection status
+    let inspectionStatus = '';
+    if (totalInspections === 0) {
+      inspectionStatus = '<span style="color: #6b7280;">No inspections</span>';
+    } else {
+      inspectionStatus = `<span style="color: #059669; font-weight: 600;">${completedInspections}/${totalInspections} completed</span>`;
+      if (openInspections > 0) {
+        inspectionStatus += ` <span style="color: #dc2626; font-weight: 600;">(${openInspections} open)</span>`;
+      }
+    }
+
+    const viewLink = maintenanceId 
+      ? `<a class="action-link" href="../admin/maintenance/maintenancetask.html?maintenanceId=${encodeURIComponent(maintenanceId)}">View Details</a>`
+      : '<span style="color: #999;">-</span>';
+
+    return `
+      <tr>
+        <td>${escapeHtml(itemName)}</td>
+        <td>${escapeHtml(location)}</td>
+        <td>${escapeHtml(branch)}</td>
+        <td>${escapeHtml(frequency)}</td>
+        <td>${escapeHtml(staffName)}</td>
+        <td>${escapeHtml(staffEmail)}</td>
+        <td>${inspectionStatus}</td>
+        <td>${viewLink}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
 // Initialize dashboard
 function init() {
   loadDashboardStats();
+  loadSavedReports();
+  loadMaintenanceAssignments();
 }
 
 // Start initialization

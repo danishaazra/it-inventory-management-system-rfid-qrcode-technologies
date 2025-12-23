@@ -1045,16 +1045,6 @@
               <input type="text" id="edit-rfidTagId" name="rfidTagId" placeholder="Scan or enter RFID tag ID" style="flex: 1;">
               <button type="button" id="scan-rfid-edit-btn" class="btn-scan" style="padding: 0.6rem 1rem; font-size: 0.85rem; white-space: nowrap;">📡 Scan RFID</button>
             </div>
-            <div id="rfid-connection-status-edit" style="margin-top: 0.5rem; font-size: 0.8rem; color: #6b7280;">Not connected - Click "Scan RFID" to connect Arduino, or type the RFID Tag ID manually</div>
-            <!-- Scan result display will be inserted here by JavaScript -->
-            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af;">
-              💡 <strong>Important:</strong> Before connecting, make sure:<br>
-              • Arduino IDE Serial Monitor is <strong>CLOSED</strong> (it locks the port)<br>
-              • Arduino is connected via USB<br>
-              • The RFID sketch is uploaded<br>
-              • You're using Chrome/Edge browser<br><br>
-              You can also manually enter the RFID Tag ID if needed.
-            </div>
           </div>
         </div>
         <div class="form-actions">
@@ -1065,8 +1055,7 @@
     </div>
   </div>
   
-  <!-- QR Code Library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- QR Code generation is now handled server-side via generate_qrcode.php - no external library needed -->
   <script type="module">
     import '../shared/init.js';
     import { initRfidScanner } from './rfid_scanner.js';
