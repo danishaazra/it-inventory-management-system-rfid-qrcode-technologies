@@ -1,47 +1,81 @@
 <?php
-require '../../admin/vendor/autoload.php';
+// Prevent any output before image
+ob_start();
 
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
-use Endroid\QrCode\Writer\PngWriter;
+// Turn off error display (but log them)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
-header('Content-Type: image/png');
+// Load vendor autoload (vendor is in project root, 3 levels up from Staff/inspection/)
+$autoloadPath = __DIR__ . '/../../../vendor/autoload.php';
 
-// Get the data to encode from query parameter
-$data = $_GET['data'] ?? '';
-
-if (empty($data)) {
-    // Return a small blank image if no data
+if (!file_exists($autoloadPath)) {
+    ob_end_clean();
+    header('Content-Type: image/png');
     $image = imagecreatetruecolor(256, 256);
     $white = imagecolorallocate($image, 255, 255, 255);
+    $black = imagecolorallocate($image, 0, 0, 0);
     imagefill($image, 0, 0, $white);
+    imagestring($image, 5, 40, 120, 'Library Not Found', $black);
     imagepng($image);
     imagedestroy($image);
     exit;
 }
 
+require_once $autoloadPath;
+
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\Writer\PngWriter;
+
 try {
-    $result = Builder::create()
-        ->writer(new PngWriter())
-        ->data($data)
-        ->encoding(new Encoding('UTF-8'))
-        ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
-        ->size(256)
-        ->margin(10)
-        ->build();
+    // Clean output buffer before setting headers
+    ob_end_clean();
+    header('Content-Type: image/png');
+    
+    // Get the data to encode from query parameter
+    $data = $_GET['data'] ?? '';
+    
+    if (empty($data)) {
+        // Return a small blank image if no data
+        $image = imagecreatetruecolor(256, 256);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        imagefill($image, 0, 0, $white);
+        imagepng($image);
+        imagedestroy($image);
+        exit;
+    }
+    
+    // Create Builder instance with constructor (version 6 API)
+    $builder = new Builder(
+        writer: new PngWriter(),
+        data: $data,
+        encoding: new Encoding('UTF-8'),
+        errorCorrectionLevel: ErrorCorrectionLevel::High,
+        size: 256,
+        margin: 10
+    );
+    
+    $result = $builder->build();
     
     echo $result->getString();
-} catch (Exception $e) {
-    // On error, return a blank image
-    error_log('QR Code generation error: ' . $e->getMessage());
+    
+} catch (Throwable $e) {
+    // On any error, return an error image
+    ob_end_clean();
+    error_log('QR Code error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    header('Content-Type: image/png');
     $image = imagecreatetruecolor(256, 256);
     $white = imagecolorallocate($image, 255, 255, 255);
     $black = imagecolorallocate($image, 0, 0, 0);
     imagefill($image, 0, 0, $white);
-    imagestring($image, 5, 50, 120, 'QR Code Error', $black);
+    $errorMsg = 'Error: ' . substr($e->getMessage(), 0, 20);
+    imagestring($image, 3, 10, 120, $errorMsg, $black);
     imagepng($image);
     imagedestroy($image);
+    exit;
 }
 ?>
 

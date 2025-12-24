@@ -133,50 +133,95 @@ function displayScanResult(assetId) {
 // Fetch asset details from API
 async function fetchAssetDetails(assetId) {
   try {
-    const resp = await fetch(`../../../admin/asset/get_asset.php?assetId=${encodeURIComponent(assetId)}`);
+    console.log('🔍 Searching for asset with Asset ID:', assetId);
+    
+    // Search for asset by Asset ID (admin version - no staffId)
+    const resp = await fetch(`../../../admin/asset/get_asset_by_assetid.php?assetId=${encodeURIComponent(assetId)}`);
     const data = await resp.json();
+    
+    console.log('📦 Response received:', data);
     
     if (!resp.ok || !data.ok) {
       throw new Error(data.error || 'Asset not found');
     }
     
+    // Display result
     const asset = data.asset;
+    console.log('✅ Asset found:', asset);
     displayAssetResult(asset);
     
   } catch (error) {
-    console.error('Error fetching asset:', error);
+    console.error('❌ Error fetching asset:', error);
     if (scanResultData) {
       scanResultData.innerHTML = `
         <div style="font-weight: 600; margin-bottom: 0.5rem; color: #dc2626;">Asset Not Found</div>
         <div style="color: #6b7280;">${escapeHtml(error.message || 'Could not find asset with this QR code')}</div>
       `;
     }
+    if (scanResult) scanResult.classList.remove('show');
   }
 }
 
 // Display asset result
 function displayAssetResult(asset) {
-  if (!scanResult || !scanResultData) return;
+  console.log('📊 Displaying asset result:', asset);
+  
+  if (!scanResult || !scanResultData) {
+    console.error('❌ Scan result elements not found!');
+    return;
+  }
   
   scanResultData.innerHTML = `
-    <div style="font-weight: 600; margin-bottom: 0.5rem;">Asset ID: ${escapeHtml(asset.assetId || '-')}</div>
-    <div style="color: #6b7280; margin-bottom: 0.5rem;">${escapeHtml(asset.assetDescription || 'No description')}</div>
-    <div style="color: #6b7280; font-size: 0.9rem;">Category: ${escapeHtml(asset.assetCategoryDescription || asset.assetCategory || '-')}</div>
+    <div style="margin-bottom: 1rem;">
+      <div style="font-weight: 700; font-size: 1.1rem; color: #1a1a1a; margin-bottom: 0.75rem;">Asset Found</div>
+      <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <div style="display: grid; gap: 0.75rem;">
+          <div>
+            <span style="font-weight: 600; color: #374151;">Asset ID:</span>
+            <span style="color: #1a1a1a; margin-left: 0.5rem;">${escapeHtml(asset.assetId || '-')}</span>
+          </div>
+          <div>
+            <span style="font-weight: 600; color: #374151;">Description:</span>
+            <span style="color: #1a1a1a; margin-left: 0.5rem;">${escapeHtml(asset.assetDescription || 'No description')}</span>
+          </div>
+          <div>
+            <span style="font-weight: 600; color: #374151;">Category:</span>
+            <span style="color: #1a1a1a; margin-left: 0.5rem;">${escapeHtml(asset.assetCategoryDescription || asset.assetCategory || '-')}</span>
+          </div>
+          ${asset.model ? `<div>
+            <span style="font-weight: 600; color: #374151;">Model:</span>
+            <span style="color: #1a1a1a; margin-left: 0.5rem;">${escapeHtml(asset.model)}</span>
+          </div>` : ''}
+          ${asset.locationDescription || asset.location ? `<div>
+            <span style="font-weight: 600; color: #374151;">Location:</span>
+            <span style="color: #1a1a1a; margin-left: 0.5rem;">${escapeHtml(asset.locationDescription || asset.location || '-')}</span>
+          </div>` : ''}
+          ${asset.status ? `<div>
+            <span style="font-weight: 600; color: #374151;">Status:</span>
+            <span style="color: #1a1a1a; margin-left: 0.5rem;">${escapeHtml(asset.status)}</span>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>
   `;
   
-  // Set up action buttons
+  // Set up action buttons - Admin version: Show View Details only
   if (viewDetailsBtn && asset.assetId) {
     viewDetailsBtn.href = `../../../admin/asset/assetdetails.html?assetId=${encodeURIComponent(asset.assetId)}`;
     viewDetailsBtn.style.display = 'inline-flex';
   }
   
-  if (inspectBtn && asset.assetId) {
-    // Link to inspection if needed
-    inspectBtn.href = `#`;
-    inspectBtn.style.display = 'inline-flex';
+  // Hide inspect button for admin (admin uses View Details instead)
+  if (inspectBtn) {
+    inspectBtn.style.display = 'none';
   }
   
   scanResult.classList.add('show');
+  
+  // Scroll to result
+  scanResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  
+  console.log('✅ Asset result displayed successfully');
 }
 
 // Show error message

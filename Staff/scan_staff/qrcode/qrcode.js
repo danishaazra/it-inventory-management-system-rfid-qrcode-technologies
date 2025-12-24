@@ -11,8 +11,16 @@ const qrReader = document.getElementById('qr-reader');
 const errorMessage = document.getElementById('error-message');
 const scanResult = document.getElementById('scan-result');
 const scanResultData = document.getElementById('scan-result-data');
-const viewDetailsBtn = document.getElementById('view-details-btn');
 const inspectBtn = document.getElementById('inspect-btn');
+
+// Inspection modal elements
+const inspectionModal = document.getElementById('inspection-modal-overlay');
+const inspectionForm = document.getElementById('inspection-form');
+const closeInspectionModalBtn = document.getElementById('close-inspection-modal-btn');
+const cancelInspectionBtn = document.getElementById('cancel-inspection-btn');
+
+// Store current asset ID for inspection
+let currentAssetId = null;
 
 // Check if HTML5-QRCode library is loaded
 if (typeof Html5Qrcode === 'undefined') {
@@ -130,14 +138,32 @@ function displayScanResult(assetId) {
   scanResult.classList.add('show');
 }
 
-// Fetch asset details from API
+// Fetch asset details from API (with staff assignment check)
 async function fetchAssetDetails(assetId) {
   try {
-    const resp = await fetch(`../../../admin/asset/get_asset.php?assetId=${encodeURIComponent(assetId)}`);
+    // Include staffId so backend can verify assignment to this staff's tasks
+    const staffId = sessionStorage.getItem('userId') || '';
+    let url = `../../../admin/asset/get_asset_by_assetid.php?assetId=${encodeURIComponent(assetId)}`;
+    if (staffId) {
+      url += `&staffId=${encodeURIComponent(staffId)}`;
+    }
+
+    const resp = await fetch(url);
     const data = await resp.json();
     
     if (!resp.ok || !data.ok) {
-      throw new Error(data.error || 'Asset not found');
+      // If backend explicitly says this asset is not assigned to the staff,
+      // show a clear popup message.
+      if (data && data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF') {
+        const msg = data.message || 'This asset is not assigned to your maintenance tasks.';
+        alert(msg);
+        showError(msg);
+      } else {
+        const msg = (data && (data.message || data.error)) || 'Asset not found';
+        showError(`Error: ${msg}`);
+      }
+      if (scanResult) scanResult.classList.remove('show');
+      return;
     }
     
     const asset = data.asset;
@@ -164,15 +190,16 @@ function displayAssetResult(asset) {
     <div style="color: #6b7280; font-size: 0.9rem;">Category: ${escapeHtml(asset.assetCategoryDescription || asset.assetCategory || '-')}</div>
   `;
   
-  // Set up action buttons
-  if (viewDetailsBtn && asset.assetId) {
-    viewDetailsBtn.href = `../../../admin/asset/assetdetails.html?assetId=${encodeURIComponent(asset.assetId)}`;
-    viewDetailsBtn.style.display = 'inline-flex';
-  }
+  // Store current asset ID for inspection
+  currentAssetId = asset.assetId;
   
+  // Set up action buttons - Staff version: Show Inspect only (hide View Details)
   if (inspectBtn && asset.assetId) {
-    // Link to staff inspection page
-    inspectBtn.href = `../../inspection/inspection.html`;
+    // Set up inspect button click handler to open modal
+    inspectBtn.onclick = (e) => {
+      e.preventDefault();
+      openInspectionModal();
+    };
     inspectBtn.style.display = 'inline-flex';
   }
   
@@ -202,6 +229,77 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Inspection Modal Functions
+function openInspectionModal() {
+  if (!currentAssetId) {
+    showError('No asset selected for inspection');
+    return;
+  }
+  
+  if (inspectionModal) {
+    // Reset form
+    if (inspectionForm) {
+      inspectionForm.reset();
+    }
+    inspectionModal.classList.add('open');
+  }
+}
+
+function closeInspectionModal() {
+  if (inspectionModal) {
+    inspectionModal.classList.remove('open');
+    if (inspectionForm) {
+      inspectionForm.reset();
+    }
+  }
+}
+
+// Save inspection
+async function saveInspection(formData) {
+  if (!currentAssetId) {
+    alert('Cannot save inspection: No asset selected');
+    return;
+  }
+
+  if (!formData.notes || !formData.notes.trim()) {
+    alert('Please enter inspection notes');
+    return;
+  }
+
+  if (!formData.solved) {
+    alert('Please select inspection status (Solved or Not Solved)');
+    return;
+  }
+
+  try {
+    const url = './save_inspection.php';
+    const body = {
+      assetId: currentAssetId,
+      notes: formData.notes.trim(),
+      solved: formData.solved === 'yes'
+    };
+    
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || !data.ok) {
+      alert(`Save failed: ${data.error || 'Unknown error'}`);
+      return;
+    }
+
+    alert('Inspection saved successfully!');
+    closeInspectionModal();
+  } catch (error) {
+    console.error('Error saving inspection:', error);
+    alert(`Save failed: ${error.message || 'Network error'}`);
+  }
+}
+
 // Event listeners
 if (startScanBtn) {
   startScanBtn.addEventListener('click', startScanning);
@@ -211,10 +309,54 @@ if (stopScanBtn) {
   stopScanBtn.addEventListener('click', stopScanning);
 }
 
+// Inspection modal event listeners
+if (inspectionForm) {
+  inspectionForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Get form values
+    const notes = document.getElementById('inspection-notes')?.value?.trim() || '';
+    const solved = document.querySelector('input[name="solved"]:checked')?.value || '';
+    
+    // Validate form
+    if (!notes) {
+      alert('Please enter inspection notes');
+      document.getElementById('inspection-notes')?.focus();
+      return;
+    }
+    
+    if (!solved) {
+      alert('Please select inspection status (Solved or Not Solved)');
+      return;
+    }
+    
+    await saveInspection({
+      notes: notes,
+      solved: solved
+    });
+  });
+}
+
+if (closeInspectionModalBtn) {
+  closeInspectionModalBtn.addEventListener('click', closeInspectionModal);
+}
+
+if (cancelInspectionBtn) {
+  cancelInspectionBtn.addEventListener('click', closeInspectionModal);
+}
+
+// Close modal when clicking outside
+if (inspectionModal) {
+  inspectionModal.addEventListener('click', (e) => {
+    if (e.target === inspectionModal) {
+      closeInspectionModal();
+    }
+  });
+}
+
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {
   if (isScanning && html5QrcodeScanner) {
     stopScanning();
   }
 });
-

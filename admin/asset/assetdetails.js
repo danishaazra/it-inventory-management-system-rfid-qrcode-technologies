@@ -90,12 +90,9 @@ function displayAssetDetails(asset) {
   // Store asset data for edit functionality
   window.currentAsset = asset;
   
-  // Generate QR code (library should be available now due to waitForQRCodeLibrary)
+  // Generate QR code (using server-side PHP, no library needed)
   if (asset.assetId) {
-    // Small delay to ensure DOM is ready
-    setTimeout(() => {
-      generateQRCode(asset.assetId);
-    }, 50);
+    generateQRCode(asset.assetId);
   }
 }
 
@@ -110,12 +107,16 @@ function generateQRCode(assetId) {
     return;
   }
   
+  console.log('Generating QR code for asset:', assetId);
+  
   // Create URL that links to this asset details page
   // Use full URL so QR code works when scanned from anywhere
   const assetUrl = `${window.location.origin}${window.location.pathname}?assetId=${encodeURIComponent(assetId)}`;
   
   // Generate QR code using server-side PHP endpoint
   const qrCodeImageUrl = `./generate_qrcode.php?data=${encodeURIComponent(assetUrl)}`;
+  
+  console.log('QR code image URL:', qrCodeImageUrl);
   
   // Clear container and add image
   qrContainer.innerHTML = '';
@@ -132,6 +133,7 @@ function generateQRCode(assetId) {
   img.style.display = 'block';
   
   img.onload = function() {
+    console.log('QR code image loaded successfully');
     // Show QR code section
     if (qrSection) {
       qrSection.style.display = 'block';
@@ -148,8 +150,9 @@ function generateQRCode(assetId) {
     }
   };
   
-  img.onerror = function() {
-    qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to load QR code image.</p>';
+  img.onerror = function(e) {
+    console.error('Failed to load QR code image:', e);
+    qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to load QR code image. Check console for details.</p>';
   };
   
   qrContainer.appendChild(img);
