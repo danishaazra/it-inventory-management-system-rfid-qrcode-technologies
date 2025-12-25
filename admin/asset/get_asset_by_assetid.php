@@ -1,6 +1,26 @@
 <?php
+// Prevent any output before JSON
+ob_start();
+
+// Turn off error display (but log them)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Set JSON header
 header('Content-Type: application/json');
-require '../api/db.php';
+
+try {
+  require '../api/db.php';
+} catch (Throwable $e) {
+  ob_end_clean();
+  http_response_code(500);
+  echo json_encode(['ok' => false, 'error' => 'Database connection failed: ' . $e->getMessage()]);
+  exit;
+}
+
+// Clean output buffer before processing
+ob_end_clean();
 
 // Get assetId from query parameter
 $assetId = $_GET['assetId'] ?? '';
@@ -100,9 +120,12 @@ try {
   }
   
   echo json_encode(['ok' => true, 'asset' => $asset]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
+  ob_end_clean();
   http_response_code(500);
+  error_log('get_asset_by_assetid error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
   echo json_encode(['ok' => false, 'error' => 'Could not load asset: ' . $e->getMessage()]);
+  exit;
 }
 ?>
 

@@ -1,6 +1,26 @@
 <?php
+// Prevent any output before JSON
+ob_start();
+
+// Turn off error display (but log them)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Set JSON header
 header('Content-Type: application/json');
-require '../api/db.php';
+
+try {
+  require '../api/db.php';
+} catch (Throwable $e) {
+  ob_end_clean();
+  http_response_code(500);
+  echo json_encode(['ok' => false, 'error' => 'Database connection failed: ' . $e->getMessage()]);
+  exit;
+}
+
+// Clean output buffer before processing
+ob_end_clean();
 
 // Get rfidTagId from query parameter
 $rfidTagId = $_GET['rfidTagId'] ?? '';
@@ -21,7 +41,7 @@ try {
   
   if (empty($results)) {
     http_response_code(404);
-    echo json_encode(['ok' => false, 'error' => 'ASSET_NOT_FOUND', 'message' => 'Asset not found with this RFID tag ID']);
+    echo json_encode(['ok' => false, 'error' => 'ASSET_NOT_FOUND', 'message' => 'Asset not found with this RFID Tag ID']);
     exit;
   }
   
@@ -55,6 +75,7 @@ try {
 
   // If a staffId is provided, verify that this asset is assigned to one of the
   // staff member's maintenance tasks. This is used by the Staff scan pages only.
+  // IMPORTANT: For staff scanning, staffId should always be provided to enforce assignment checking.
   if (!empty($staffId) && !empty($asset['assetId'])) {
     // 1) Find maintenance tasks assigned to this staff member
     $maintenanceFilter = ['assignedStaffId' => $staffId];
@@ -100,10 +121,11 @@ try {
   }
   
   echo json_encode(['ok' => true, 'asset' => $asset]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
+  ob_end_clean();
   http_response_code(500);
+  error_log('get_asset_by_rfid error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
   echo json_encode(['ok' => false, 'error' => 'Could not load asset: ' . $e->getMessage()]);
+  exit;
 }
 ?>
-
-

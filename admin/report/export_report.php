@@ -305,26 +305,26 @@ function generateChecklistTable($data, $criteria) {
   $months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   $monthAbbr = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
-  $html = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">';
+  $html = '<table style="width: 100%; border-collapse: collapse; font-size: 10px;">';
   
   // Header row
   $html .= '<thead><tr>';
-  $html .= '<th style="border: 1px solid #000; padding: 8px; text-align: center; background: #f1f3f5; width: 40px;">NO</th>';
-  $html .= '<th style="border: 1px solid #000; padding: 8px; text-align: left; background: #f1f3f5; width: 200px;">INSPECTION HARDWARE</th>';
+  $html .= '<th style="border: 1px solid #000; padding: 6px; text-align: center; background: #f1f3f5; width: 35px;">NO</th>';
+  $html .= '<th style="border: 1px solid #000; padding: 6px; text-align: left; background: #f1f3f5; width: 180px;">INSPECTION HARDWARE</th>';
   
   // Month headers with 4 sub-columns each
   foreach ($months as $idx => $month) {
-    $html .= '<th colspan="4" style="border: 1px solid #000; padding: 4px; text-align: center; background: #f1f3f5;">' . strtoupper($monthAbbr[$idx]) . '</th>';
+    $html .= '<th colspan="4" style="border: 1px solid #000; padding: 3px; text-align: center; background: #f1f3f5; max-width: 80px;">' . strtoupper($monthAbbr[$idx]) . '</th>';
   }
   $html .= '</tr>';
   
   // Sub-header row for periods (1, 2, 3, 4)
   $html .= '<tr>';
-  $html .= '<th style="border: 1px solid #000; padding: 4px;"></th>';
-  $html .= '<th style="border: 1px solid #000; padding: 4px;"></th>';
+  $html .= '<th style="border: 1px solid #000; padding: 3px;"></th>';
+  $html .= '<th style="border: 1px solid #000; padding: 3px;"></th>';
   for ($i = 0; $i < 12; $i++) {
     for ($p = 1; $p <= 4; $p++) {
-      $html .= '<th style="border: 1px solid #000; padding: 4px; text-align: center; background: #f8f9fa; font-weight: normal; width: 30px;">' . $p . '</th>';
+      $html .= '<th style="border: 1px solid #000; padding: 2px; text-align: center; background: #f8f9fa; font-weight: normal; width: 18px; font-size: 9px;">' . $p . '</th>';
     }
   }
   $html .= '</tr></thead><tbody>';
@@ -355,7 +355,7 @@ function generateChecklistTable($data, $criteria) {
               $cellContent = implode(', ', $dates);
             }
           }
-          $html .= '<td style="border: 1px solid #000; padding: 4px; text-align: center; min-width: 30px;">' . htmlspecialchars($cellContent) . '</td>';
+          $html .= '<td style="border: 1px solid #000; padding: 2px; text-align: center; width: 18px; font-size: 9px;">' . htmlspecialchars($cellContent) . '</td>';
         }
       }
       

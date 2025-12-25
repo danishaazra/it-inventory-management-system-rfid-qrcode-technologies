@@ -142,22 +142,37 @@ function displayScanResult(assetId) {
 async function fetchAssetDetails(assetId) {
   try {
     // Include staffId so backend can verify assignment to this staff's tasks
-    const staffId = sessionStorage.getItem('userId') || '';
-    let url = `../../../admin/asset/get_asset_by_assetid.php?assetId=${encodeURIComponent(assetId)}`;
-    if (staffId) {
-      url += `&staffId=${encodeURIComponent(staffId)}`;
+    // Use 'staffId' from session storage (not 'userId')
+    const staffId = sessionStorage.getItem('staffId') || '';
+    
+    if (!staffId) {
+      showAssignmentError('Staff ID not found. Please log in again.');
+      return;
     }
+    
+    // ALWAYS include staffId to enforce assignment checking
+    const url = `../../../admin/asset/get_asset_by_assetid.php?assetId=${encodeURIComponent(assetId)}&staffId=${encodeURIComponent(staffId)}`;
 
     const resp = await fetch(url);
+    
+    // Check if response is JSON
+    const contentType = resp.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await resp.text();
+      console.error('❌ Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server error: Received HTML instead of JSON. (Status: ${resp.status})`);
+    }
+    
     const data = await resp.json();
     
     if (!resp.ok || !data.ok) {
       // If backend explicitly says this asset is not assigned to the staff,
       // show a clear popup message.
-      if (data && data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF') {
+      if (data && (data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF' || resp.status === 403)) {
         const msg = data.message || 'This asset is not assigned to your maintenance tasks.';
-        alert(msg);
-        showError(msg);
+        showAssignmentError(msg);
+        if (scanResult) scanResult.classList.remove('show');
+        return;
       } else {
         const msg = (data && (data.message || data.error)) || 'Asset not found';
         showError(`Error: ${msg}`);
@@ -220,6 +235,134 @@ function hideError() {
     errorMessage.classList.remove('show');
     errorMessage.textContent = '';
   }
+}
+
+// Show assignment error popup (more prominent)
+function showAssignmentError(message) {
+  // Remove any existing popup
+  const existingPopup = document.getElementById('assignment-error-popup');
+  if (existingPopup) {
+    existingPopup.remove();
+  }
+  
+  // Create popup overlay
+  const popup = document.createElement('div');
+  popup.id = 'assignment-error-popup';
+  popup.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+  `;
+  
+  popup.innerHTML = `
+    <div style="
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: slideUp 0.3s ease-out;
+    ">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+      <h3 style="
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #dc2626;
+        margin-bottom: 1rem;
+      ">Access Denied</h3>
+      <p style="
+        font-size: 1rem;
+        color: #374151;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      ">${escapeHtml(message)}</p>
+      <button id="close-assignment-popup-btn" style="
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">OK, I Understand</button>
+    </div>
+  `;
+  
+  // Add animations if not exists
+  if (!document.getElementById('assignment-popup-animations')) {
+    const style = document.createElement('style');
+    style.id = 'assignment-popup-animations';
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(popup);
+  
+  // Close button handler
+  const closeBtn = document.getElementById('close-assignment-popup-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    });
+    
+    // Add hover effect
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.transform = 'translateY(-1px)';
+      closeBtn.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.3)';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.transform = '';
+      closeBtn.style.boxShadow = '';
+    });
+  }
+  
+  // Close on overlay click
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    }
+  });
+  
+  // Also show in error message area
+  showError(message);
 }
 
 // Helper function to escape HTML

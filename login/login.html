@@ -320,6 +320,11 @@
             sessionStorage.setItem('userEmail', result.user.email);
             sessionStorage.setItem('userRole', result.user.role);
             sessionStorage.setItem('userId', result.user.id);
+            
+            // For staff users, also store staffId (same as userId for staff role)
+            if (result.user.role === 'staff') {
+              sessionStorage.setItem('staffId', result.user.id);
+            }
 
             // Redirect to appropriate dashboard based on role
             // Use the role from the API result, but fallback to sessionStorage role
