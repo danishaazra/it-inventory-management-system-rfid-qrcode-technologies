@@ -2,9 +2,13 @@
   "name": "it-inventory-management-system-rfid-qrcode-technologies",
   "version": "1.0.0",
   "description": "A web-based system designed to streamline IT asset tracking using RFID and QR code technology.",
-  "main": "server.js",
+  "main": "backend/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "node backend/server.js"
   },
   "keywords": [],
   "author": "",
