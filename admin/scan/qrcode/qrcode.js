@@ -136,7 +136,7 @@ async function fetchAssetDetails(assetId) {
     console.log('🔍 Searching for asset with Asset ID:', assetId);
     
     // Search for asset by Asset ID (admin version - no staffId)
-    const resp = await fetch(`../../../admin/asset/get_asset_by_assetid.php?assetId=${encodeURIComponent(assetId)}`);
+    const resp = await fetch(`/api/assets/get-by-assetid?assetId=${encodeURIComponent(assetId)}`);
     const data = await resp.json();
     
     console.log('📦 Response received:', data);

@@ -6,7 +6,7 @@ async function loadDashboardStats() {
     console.log('Loading dashboard statistics...');
     
     // Load assets count
-    const assetsResp = await fetch('../admin/asset/list_assets.php');
+    const assetsResp = await fetch('/api/assets/list');
     if (!assetsResp.ok) {
       throw new Error(`Assets API returned ${assetsResp.status}`);
     }
@@ -14,7 +14,7 @@ async function loadDashboardStats() {
     console.log('Assets data:', assetsData);
     
     // Load maintenance count
-    const maintenanceResp = await fetch('../admin/maintenance/list_maintenance.php');
+    const maintenanceResp = await fetch('/api/maintenance/list');
     if (!maintenanceResp.ok) {
       throw new Error(`Maintenance API returned ${maintenanceResp.status}`);
     }
@@ -219,7 +219,7 @@ window.deleteSavedReport = deleteSavedReport;
 // Load maintenance assignments
 async function loadMaintenanceAssignments() {
   try {
-    const response = await fetch('../admin/maintenance/list_maintenance.php');
+    const response = await fetch('/api/maintenance/list');
     const data = await response.json();
 
     if (!response.ok || !data.ok) {

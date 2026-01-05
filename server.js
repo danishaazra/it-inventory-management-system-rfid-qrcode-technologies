@@ -24,16 +24,13 @@ app.use(express.static(path.join(__dirname)));
 const MONGO_URI = process.env.MONGO_URI;
 const MONGO_DB = process.env.MONGO_DB || 'it_inventory';
 
-// User Schema
-const userSchema = new mongoose.Schema({
-    name: String,
-    email: { type: String, required: true, unique: true },
-    role: { type: String, enum: ['admin', 'staff'], required: true },
-    created_at: { type: Date, default: Date.now },
-    lastLogin: { type: Date, default: Date.now }
-}, { collection: 'users' });
+// Load models
+const { User } = require('./models');
 
-const User = mongoose.model('User', userSchema, 'users');
+// Load API routes
+const assetRoutes = require('./routes/assets');
+const maintenanceRoutes = require('./routes/maintenance');
+const inspectionRoutes = require('./routes/inspections');
 
 if (!MONGO_URI) {
     console.warn('WARNING: MONGO_URI environment variable is not set');
@@ -82,6 +79,11 @@ app.get('/health', (req, res) => {
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Backend is running!' });
 });
+
+// API Routes
+app.use('/api/assets', assetRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/inspections', inspectionRoutes);
 
 // Login endpoint (replaces login.php)
 app.post('/api/login', async (req, res) => {

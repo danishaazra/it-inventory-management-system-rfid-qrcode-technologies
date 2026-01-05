@@ -159,7 +159,7 @@ async function fetchAssetDetails(assetId) {
     }
     
     // ALWAYS include staffId to enforce assignment checking
-    const url = `../../../admin/asset/get_asset_by_assetid.php?assetId=${encodeURIComponent(assetId)}&staffId=${encodeURIComponent(staffId)}`;
+    const url = `/api/assets/get-by-assetid?assetId=${encodeURIComponent(assetId)}`;
 
     const resp = await fetch(url);
     
@@ -423,7 +423,7 @@ async function saveInspection(formData) {
   }
 
   try {
-    const url = './save_inspection.php';
+    const url = '/api/inspections/save-standalone';
     const body = {
       assetId: currentAssetId,
       notes: formData.notes.trim(),
