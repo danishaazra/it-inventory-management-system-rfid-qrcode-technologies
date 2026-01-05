@@ -368,7 +368,19 @@ router.get('/load', async (req, res) => {
 // Export report (CSV or PDF)
 router.post('/export', async (req, res) => {
     try {
-        const { reportType, format, reportData, criteria } = req.body;
+        // Handle both JSON and form data
+        let reportType, format, reportData, criteria;
+        
+        if (req.body.reportData && typeof req.body.reportData === 'string') {
+            // Form data - parse JSON strings
+            reportType = req.body.reportType;
+            format = req.body.format;
+            reportData = JSON.parse(req.body.reportData);
+            criteria = req.body.criteria ? JSON.parse(req.body.criteria) : {};
+        } else {
+            // JSON data
+            ({ reportType, format, reportData, criteria } = req.body);
+        }
 
         if (!reportType || !format || !reportData) {
             return res.status(400).json({ ok: false, error: 'reportType, format, and reportData are required' });

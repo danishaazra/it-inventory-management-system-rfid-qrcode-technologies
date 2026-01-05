@@ -126,7 +126,7 @@ function escapeHtml(text) {
 // Load saved reports
 async function loadSavedReports() {
   try {
-    const response = await fetch('../admin/report/list_saved_reports.php');
+    const response = await fetch('/api/reports/saved');
     const data = await response.json();
 
     if (!response.ok || !data.ok) {
@@ -170,7 +170,7 @@ function displaySavedReports(reports) {
       <div class="saved-report-card">
         <div class="saved-report-header">
           <div>
-            <div class="saved-report-title">${escapeHtml(report.reportTitle)}</div>
+            <div class="saved-report-title">${escapeHtml(report.reportName || report.reportTitle || 'Untitled Report')}</div>
             <span class="saved-report-type">${escapeHtml(typeLabel)}</span>
           </div>
         </div>
@@ -191,7 +191,7 @@ async function deleteSavedReport(reportId) {
   }
 
   try {
-    const response = await fetch('../admin/report/delete_report.php', {
+    const response = await fetch('/api/reports/delete', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
