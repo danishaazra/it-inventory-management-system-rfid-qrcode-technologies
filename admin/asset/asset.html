@@ -447,6 +447,33 @@
 
     .add-asset-wrapper {
       position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .info-icon-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #6b7280;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .info-icon-btn:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+      color: #374151;
+      transform: translateY(-1px);
     }
 
     .add-asset-btn {
@@ -519,11 +546,62 @@
 
     .asset-table-header {
       margin-bottom: 1.5rem;
+    }
+
+    .asset-table-header-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+      padding-right: 0;
+    }
+
+    .asset-table-header-row .add-asset-wrapper {
+      margin-left: auto;
+    }
+
+    .pagination-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #374151;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+      transform: translateY(-1px);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .pagination-info {
+      font-size: 0.85rem;
+      color: #6b7280;
+      padding: 0 0.5rem;
+      white-space: nowrap;
     }
 
     .asset-table-header-text h2 {
@@ -657,6 +735,78 @@
 
     .add-modal-overlay.open {
       display: flex;
+    }
+
+    .info-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .info-modal-overlay.open {
+      display: flex;
+    }
+
+    .info-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .info-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .info-modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .info-modal-content {
+      margin-bottom: 1.5rem;
+    }
+
+    .info-modal-content p {
+      font-size: 0.95rem;
+      color: #374151;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .info-modal-image {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid #e5e5e5;
+      margin-top: 1rem;
+    }
+
+    .info-modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e5e5;
     }
 
     .add-modal {
@@ -876,26 +1026,34 @@
       </div>
 
       <section class="asset-table-header">
-        <div class="asset-table-header-text">
-          <h2>Asset List</h2>
-          <p>All registered IT assets with basic information.</p>
-        </div>
-        <div class="asset-filters">
-          <div class="filter-group">
-            <label for="asset-search">Search</label>
-            <input id="asset-search" type="text" class="filter-input" placeholder="Search by ID, description, model, serial, location">
+        <div class="asset-table-header-row">
+          <div class="asset-table-header-text">
+            <h2>Asset List</h2>
+            <p>All registered IT assets with basic information.</p>
           </div>
-          <button class="btn-search" id="asset-search-btn">Search</button>
-        </div>
-        <div class="add-asset-wrapper">
-          <button class="add-asset-btn" id="add-asset-btn-table">
-            <span class="icon">＋</span>
-            <span>Add assets</span>
-          </button>
-          <div class="add-asset-menu" id="add-asset-menu-table">
-            <button type="button" data-action="manual">Add manually</button>
-            <button type="button" data-action="upload">Upload file</button>
+          <div class="asset-filters">
+            <div class="filter-group">
+              <label for="asset-search">Search</label>
+              <input id="asset-search" type="text" class="filter-input" placeholder="Search by ID, description, model, serial, location">
+            </div>
+            <button class="btn-search" id="asset-search-btn">Search</button>
           </div>
+          <div class="add-asset-wrapper">
+            <button class="add-asset-btn" id="add-asset-btn-table">
+              <span class="icon">＋</span>
+              <span>Add assets</span>
+            </button>
+            <button class="info-icon-btn" id="info-icon-btn" title="File format information">ℹ</button>
+            <div class="add-asset-menu" id="add-asset-menu-table">
+              <button type="button" data-action="manual">Add manually</button>
+              <button type="button" data-action="upload">Upload file</button>
+            </div>
+          </div>
+        </div>
+        <div class="pagination-controls">
+          <button class="pagination-btn" id="prev-page-btn" title="Previous page">‹</button>
+          <span class="pagination-info" id="page-info">Page 1</span>
+          <button class="pagination-btn" id="next-page-btn" title="Next page">›</button>
         </div>
       </section>
 
@@ -1040,6 +1198,24 @@
           <button type="submit" class="btn-save" id="save-add-btn">Add Asset</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Info Modal -->
+  <div class="info-modal-overlay" id="info-modal-overlay">
+    <div class="info-modal">
+      <div class="info-modal-header">
+        <h2>File Upload Format</h2>
+        <button class="close-modal-btn" id="close-info-modal-btn">×</button>
+      </div>
+      <div class="info-modal-content">
+        <p>Upload file can only be <strong>column</strong> and <strong>rows</strong> format (Excel).</p>
+        <p>Please ensure your file follows the required format:</p>
+        <img src="../../images/file_format.png" alt="File Format Example" class="info-modal-image">
+      </div>
+      <div class="info-modal-actions">
+        <button type="button" class="btn-save" id="ok-info-modal-btn">OK</button>
+      </div>
     </div>
   </div>
 

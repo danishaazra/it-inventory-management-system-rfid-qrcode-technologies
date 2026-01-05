@@ -12,12 +12,6 @@ const connectArduinoBtn = document.getElementById('connect-arduino-btn');
 const disconnectArduinoBtn = document.getElementById('disconnect-arduino-btn');
 const connectionStatus = document.getElementById('connection-status');
 
-// Inspection modal elements
-const inspectionModal = document.getElementById('inspection-modal-overlay');
-const inspectionForm = document.getElementById('inspection-form');
-const closeInspectionModalBtn = document.getElementById('close-inspection-modal-btn');
-const cancelInspectionBtn = document.getElementById('cancel-inspection-btn');
-
 // Store current asset ID for inspection
 let currentAssetId = null;
 
@@ -47,30 +41,51 @@ async function searchAssetByRfid() {
   }
   
   try {
-    // Include staffId so backend can verify assignment to this staff's tasks
-    const staffId = sessionStorage.getItem('userId') || '';
-    let url = `../../../admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}`;
-    if (staffId) {
-      url += `&staffId=${encodeURIComponent(staffId)}`;
+    // Get staff ID from session storage - REQUIRED for staff scanning
+    // For staff users, staffId should be the same as userId
+    let staffId = sessionStorage.getItem('staffId') || '';
+    
+    // Fallback: if staffId not found but user is staff, use userId
+    if (!staffId) {
+      const userRole = sessionStorage.getItem('userRole');
+      if (userRole === 'staff') {
+        staffId = sessionStorage.getItem('userId') || '';
+      }
     }
-
-    // Search for asset by RFID tag ID
+    
+    if (!staffId) {
+      showAssignmentError('Staff ID not found. Please log in again.');
+      return;
+    }
+    
+    // Search for asset by RFID tag ID with staff assignment check
+    // ALWAYS include staffId to enforce assignment checking
+    const url = `../../../admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}&staffId=${encodeURIComponent(staffId)}`;
+    console.log('🔍 Searching for asset with RFID Tag ID:', rfidTagId);
+    console.log('👤 Staff ID:', staffId);
+    console.log('📡 Fetching URL:', url);
     const resp = await fetch(url);
+    
+    // Check if response is JSON
+    const contentType = resp.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await resp.text();
+      console.error('❌ Non-JSON response received:', text.substring(0, 200));
+      throw new Error(`Server error: Received HTML instead of JSON. The endpoint may not exist. (Status: ${resp.status})`);
+    }
+    
     const data = await resp.json();
+    console.log('📦 Response received:', data);
     
     if (!resp.ok || !data.ok) {
-      // If backend explicitly says this asset is not assigned to the staff,
-      // show a clear popup message.
-      if (data && data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF') {
-        const msg = data.message || 'This asset is not assigned to your maintenance tasks.';
-        alert(msg);
-        showError(msg);
-      } else {
-        const msg = (data && (data.message || data.error)) || 'Asset not found';
-        showError(`Error: ${msg}`);
+      // Check if it's an assignment error
+      if (data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF' || resp.status === 403) {
+        const message = data.message || 'This asset is not assigned to your maintenance tasks.';
+        showAssignmentError(message);
+        if (scanResult) scanResult.classList.remove('show');
+        return;
       }
-      if (scanResult) scanResult.classList.remove('show');
-      return;
+      throw new Error(data.error || 'Asset not found');
     }
     
     // Display result
@@ -92,29 +107,32 @@ async function searchAssetByRfid() {
 
 // Display RFID scan result
 function displayRfidScanResult(asset) {
-  if (!scanResult || !scanResultData) return;
+  console.log('📊 Displaying asset result:', asset);
   
-  scanResultData.innerHTML = `
-    <div style="font-weight: 600; margin-bottom: 0.5rem;">Asset ID: ${escapeHtml(asset.assetId || '-')}</div>
-    <div style="color: #6b7280; margin-bottom: 0.5rem;">${escapeHtml(asset.assetDescription || 'No description')}</div>
-    <div style="color: #6b7280; font-size: 0.9rem;">Category: ${escapeHtml(asset.assetCategoryDescription || asset.assetCategory || '-')}</div>
-  `;
-  
-  // Store current asset ID for inspection
-  currentAssetId = asset.assetId;
-  
-  // Set up action buttons - Staff version: Show Inspect only (hide View Details)
-  if (viewDetailsBtn) {
-    viewDetailsBtn.style.display = 'none';
+  if (!scanResult || !scanResultData) {
+    console.error('❌ Scan result elements not found!');
+    return;
   }
   
+  // Store current asset ID
+  currentAssetId = asset.assetId || null;
+  
+  scanResultData.innerHTML = `
+    <div style="margin-bottom: 1rem;">
+      <div style="font-weight: 700; font-size: 1.1rem; color: #1a1a1a; margin-bottom: 0.75rem;">Asset Found</div>
+      <div style="font-weight: 600; margin-bottom: 0.5rem;">Asset ID: ${escapeHtml(asset.assetId || '-')}</div>
+      <div style="color: #6b7280; margin-bottom: 0.5rem;">${escapeHtml(asset.assetDescription || 'No description')}</div>
+      <div style="color: #6b7280; font-size: 0.9rem;">Category: ${escapeHtml(asset.assetCategoryDescription || asset.assetCategory || '-')}</div>
+    </div>
+  `;
+  
+  // Set up action buttons
   if (inspectBtn && asset.assetId) {
-    // Set up inspect button click handler to open modal
+    inspectBtn.style.display = 'inline-flex';
     inspectBtn.onclick = (e) => {
       e.preventDefault();
       openInspectionModal();
     };
-    inspectBtn.style.display = 'inline-flex';
   }
   
   scanResult.classList.add('show');
@@ -131,6 +149,124 @@ function showError(message) {
     errorMessage.textContent = message;
     errorMessage.classList.add('show');
   }
+}
+
+// Show assignment error popup (more prominent)
+function showAssignmentError(message) {
+  // Remove any existing popup
+  const existingPopup = document.getElementById('assignment-error-popup');
+  if (existingPopup) {
+    existingPopup.remove();
+  }
+  
+  // Create popup overlay
+  const popup = document.createElement('div');
+  popup.id = 'assignment-error-popup';
+  popup.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+  `;
+  
+  popup.innerHTML = `
+    <div style="
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: slideUp 0.3s ease-out;
+    ">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+      <h3 style="
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #dc2626;
+        margin-bottom: 1rem;
+      ">Access Denied</h3>
+      <p style="
+        font-size: 1rem;
+        color: #374151;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      ">${escapeHtml(message)}</p>
+      <button id="close-assignment-popup-btn" style="
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">OK, I Understand</button>
+    </div>
+  `;
+  
+  // Add animations if not exists
+  if (!document.getElementById('assignment-popup-animations')) {
+    const style = document.createElement('style');
+    style.id = 'assignment-popup-animations';
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(popup);
+  
+  // Close button handler
+  const closeBtn = document.getElementById('close-assignment-popup-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    });
+  }
+  
+  // Close on overlay click
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    }
+  });
+  
+  // Also show in error message area
+  showError(message);
 }
 
 // Hide error message
@@ -268,31 +404,44 @@ async function startReadingSerial() {
         // Handle "UID: XX XX XX XX" format from Arduino
         let rfidTagId = null;
         
-        if (trimmedLine.startsWith('UID:')) {
+        console.log('🔍 Processing line:', trimmedLine);
+        
+        if (trimmedLine.startsWith('UID:') || trimmedLine.startsWith('uid:')) {
+          console.log('📋 Detected UID: prefix');
           // Extract hex values after "UID:"
           const hexValues = trimmedLine.replace(/UID:\s*/i, '').trim();
+          console.log('📋 Extracted hex values:', hexValues);
           // Remove spaces and combine hex values
           const combinedHex = hexValues.replace(/\s+/g, '');
+          console.log('📋 Combined hex:', combinedHex);
           if (/^[0-9A-F]{8,16}$/i.test(combinedHex)) {
             rfidTagId = combinedHex.toUpperCase();
+            console.log('✅ Parsed RFID UID from UID: format:', rfidTagId);
+          } else {
+            console.log('❌ Combined hex does not match pattern:', combinedHex);
           }
         }
         // Check if it's already a valid RFID UID (continuous hex)
         else if (/^[0-9A-F]{8,16}$/i.test(trimmedLine)) {
           rfidTagId = trimmedLine.toUpperCase();
+          console.log('✅ Direct RFID UID format:', rfidTagId);
         }
         // Handle space-separated hex format "XX XX XX XX"
         else if (/^([0-9A-F]{2}\s*)+$/i.test(trimmedLine)) {
           const combinedHex = trimmedLine.replace(/\s+/g, '');
           if (/^[0-9A-F]{8,16}$/i.test(combinedHex)) {
             rfidTagId = combinedHex.toUpperCase();
+            console.log('✅ Parsed RFID UID from space-separated format:', rfidTagId);
           }
         }
         
         // Process valid RFID UID
         if (rfidTagId) {
-          console.log('✅ Valid RFID UID detected:', rfidTagId);
+          console.log('✅✅✅ Valid RFID UID detected:', rfidTagId);
+          console.log('📞 Calling handleRfidScan with:', rfidTagId);
           handleRfidScan(rfidTagId);
+        } else {
+          console.log('⚠️ Could not parse RFID UID from line:', trimmedLine);
         }
       }
     }
@@ -310,11 +459,17 @@ async function startReadingSerial() {
 
 // Handle RFID tag scan from Arduino
 function handleRfidScan(rfidTagId) {
-  console.log('RFID Tag scanned:', rfidTagId);
+  console.log('🎯 RFID Tag scanned:', rfidTagId);
+  
+  if (!rfidTagId || !rfidTagId.trim()) {
+    console.error('❌ Invalid RFID Tag ID:', rfidTagId);
+    return;
+  }
   
   // Update input field with visual feedback
   if (rfidInput) {
-    rfidInput.value = rfidTagId;
+    rfidInput.value = rfidTagId.trim();
+    console.log('✅ Input field updated with:', rfidInput.value);
     rfidInput.style.borderColor = '#16a34a';
     rfidInput.style.borderWidth = '2px';
     rfidInput.style.background = '#f0fdf4';
@@ -327,12 +482,15 @@ function handleRfidScan(rfidTagId) {
       rfidInput.style.background = '';
       rfidInput.style.fontWeight = '';
     }, 2000);
+  } else {
+    console.error('❌ RFID input field not found!');
   }
   
   // Show scan confirmation
   showScanConfirmation(rfidTagId);
   
   // Automatically search for the asset
+  console.log('🔍 Starting automatic asset search...');
   searchAssetByRfid();
 }
 
@@ -472,97 +630,30 @@ function openInspectionModal() {
     return;
   }
   
+  const inspectionModal = document.getElementById('inspection-modal-overlay');
   if (inspectionModal) {
-    // Reset form
-    if (inspectionForm) {
-      inspectionForm.reset();
-    }
     inspectionModal.classList.add('open');
   }
 }
 
 function closeInspectionModal() {
+  const inspectionModal = document.getElementById('inspection-modal-overlay');
   if (inspectionModal) {
     inspectionModal.classList.remove('open');
-    if (inspectionForm) {
-      inspectionForm.reset();
-    }
+  }
+  
+  // Reset form
+  const inspectionForm = document.getElementById('inspection-form');
+  if (inspectionForm) {
+    inspectionForm.reset();
   }
 }
 
-// Save inspection
-async function saveInspection(formData) {
-  if (!currentAssetId) {
-    alert('Cannot save inspection: No asset selected');
-    return;
-  }
-
-  if (!formData.notes || !formData.notes.trim()) {
-    alert('Please enter inspection notes');
-    return;
-  }
-
-  if (!formData.solved) {
-    alert('Please select inspection status (Solved or Not Solved)');
-    return;
-  }
-
-  try {
-    const url = './save_inspection.php';
-    const body = {
-      assetId: currentAssetId,
-      notes: formData.notes.trim(),
-      solved: formData.solved === 'yes'
-    };
-    
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
-
-    const data = await resp.json();
-
-    if (!resp.ok || !data.ok) {
-      alert(`Save failed: ${data.error || 'Unknown error'}`);
-      return;
-    }
-
-    alert('Inspection saved successfully!');
-    closeInspectionModal();
-  } catch (error) {
-    console.error('Error saving inspection:', error);
-    alert(`Save failed: ${error.message || 'Network error'}`);
-  }
-}
-
-// Inspection modal event listeners
-if (inspectionForm) {
-  inspectionForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // Get form values
-    const notes = document.getElementById('inspection-notes')?.value?.trim() || '';
-    const solved = document.querySelector('input[name="solved"]:checked')?.value || '';
-    
-    // Validate form
-    if (!notes) {
-      alert('Please enter inspection notes');
-      document.getElementById('inspection-notes')?.focus();
-      return;
-    }
-    
-    if (!solved) {
-      alert('Please select inspection status (Solved or Not Solved)');
-      return;
-    }
-    
-    await saveInspection({
-      notes: notes,
-      solved: solved
-    });
-  });
-}
+// Set up inspection modal event listeners
+const inspectionModal = document.getElementById('inspection-modal-overlay');
+const inspectionForm = document.getElementById('inspection-form');
+const closeInspectionModalBtn = document.getElementById('close-inspection-modal-btn');
+const cancelInspectionBtn = document.getElementById('cancel-inspection-btn');
 
 if (closeInspectionModalBtn) {
   closeInspectionModalBtn.addEventListener('click', closeInspectionModal);
@@ -572,19 +663,84 @@ if (cancelInspectionBtn) {
   cancelInspectionBtn.addEventListener('click', closeInspectionModal);
 }
 
-// Close modal when clicking outside
 if (inspectionModal) {
-  inspectionModal.addEventListener('click', (e) => {
+  inspectionModal.addEventListener('click', function(e) {
     if (e.target === inspectionModal) {
       closeInspectionModal();
     }
   });
 }
 
-// Cleanup on page unload
-window.addEventListener('beforeunload', async () => {
-  if (isConnected) {
-    await disconnectFromArduino();
-  }
-});
-
+if (inspectionForm) {
+  inspectionForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentAssetId) {
+      showError('No asset selected for inspection');
+      return;
+    }
+    
+    const notes = document.getElementById('inspection-notes')?.value.trim() || '';
+    const solved = document.querySelector('input[name="solved"]:checked')?.value || '';
+    
+    if (!notes) {
+      showError('Please enter inspection notes');
+      return;
+    }
+    
+    if (!solved) {
+      showError('Please select a status (Solved/Not Solved)');
+      return;
+    }
+    
+    const saveBtn = document.getElementById('save-inspection-btn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+    
+    try {
+      const staffId = sessionStorage.getItem('staffId') || '';
+      const response = await fetch('../../../admin/scan/rfid/save_inspection.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assetId: currentAssetId,
+          staffId: staffId,
+          notes: notes,
+          solved: solved === 'yes'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to save inspection');
+      }
+      
+      alert('Inspection saved successfully!');
+      closeInspectionModal();
+      hideError();
+      
+      // Clear scan result
+      if (scanResult) {
+        scanResult.classList.remove('show');
+      }
+      if (rfidInput) {
+        rfidInput.value = '';
+        rfidInput.focus();
+      }
+      
+    } catch (error) {
+      console.error('Error saving inspection:', error);
+      showError(`Failed to save inspection: ${error.message}`);
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Inspection';
+      }
+    }
+  });
+}

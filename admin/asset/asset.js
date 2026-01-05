@@ -8,6 +8,16 @@ const assetTableBody = document.getElementById('asset-table-body');
 const searchInput = document.getElementById('asset-search');
 const searchBtn = document.getElementById('asset-search-btn');
 
+// Pagination elements
+const prevPageBtn = document.getElementById('prev-page-btn');
+const nextPageBtn = document.getElementById('next-page-btn');
+const pageInfo = document.getElementById('page-info');
+
+// Pagination state
+let allAssets = [];
+let currentPage = 1;
+const itemsPerPage = 10; // Number of items per page
+
 // Load and display assets in the table (optionally filtered by query)
 async function loadAssets(query = '') {
   try {
@@ -19,22 +29,33 @@ async function loadAssets(query = '') {
     }
     const data = await resp.json();
     if (data.ok && data.assets) {
-      displayAssets(data.assets);
+      allAssets = data.assets;
+      currentPage = 1; // Reset to first page when loading new data
+      displayAssets();
     }
   } catch (error) {
     console.error('Error loading assets:', error);
   }
 }
 
-// Display assets in the table
-function displayAssets(assets) {
+// Display assets in the table (with pagination)
+function displayAssets() {
   assetTableBody.innerHTML = '';
-  if (assets.length === 0) {
+  
+  if (allAssets.length === 0) {
     assetTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #888;">No assets found</td></tr>';
+    updatePaginationControls();
     return;
   }
   
-  assets.forEach(asset => {
+  // Calculate pagination
+  const totalPages = Math.ceil(allAssets.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, allAssets.length);
+  const pageAssets = allAssets.slice(startIndex, endIndex);
+  
+  // Display assets for current page
+  pageAssets.forEach(asset => {
     const row = document.createElement('tr');
     const assetId = asset.assetId || '';
     row.innerHTML = `
@@ -48,6 +69,51 @@ function displayAssets(assets) {
       <td><a href="assetdetails.html?assetId=${encodeURIComponent(assetId)}" class="action-link">View</a></td>
     `;
     assetTableBody.appendChild(row);
+  });
+  
+  // Update pagination controls
+  updatePaginationControls();
+}
+
+// Update pagination controls (buttons and info)
+function updatePaginationControls() {
+  const totalPages = Math.ceil(allAssets.length / itemsPerPage);
+  
+  // Update page info
+  if (allAssets.length === 0) {
+    pageInfo.textContent = 'page 0 of 0';
+  } else {
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(currentPage * itemsPerPage, allAssets.length);
+    pageInfo.textContent = `page ${currentPage} of ${totalPages} (${startIndex}-${endIndex})`;
+  }
+  
+  // Enable/disable navigation buttons
+  prevPageBtn.disabled = currentPage === 1;
+  nextPageBtn.disabled = currentPage >= totalPages || totalPages === 0;
+}
+
+// Pagination event listeners
+if (prevPageBtn) {
+  prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      displayAssets();
+      // Scroll to top of table
+      assetTableBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+}
+
+if (nextPageBtn) {
+  nextPageBtn.addEventListener('click', () => {
+    const totalPages = Math.ceil(allAssets.length / itemsPerPage);
+    if (currentPage < totalPages) {
+      currentPage++;
+      displayAssets();
+      // Scroll to top of table
+      assetTableBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   });
 }
 
@@ -287,3 +353,50 @@ fileInput.addEventListener('change', async () => {
     alert(`Upload failed: ${error.message || 'Network error. Please try again.'}`);
   }
 });
+
+// Info modal elements
+const infoIconBtn = document.getElementById('info-icon-btn');
+const infoModalOverlay = document.getElementById('info-modal-overlay');
+const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+const okInfoModalBtn = document.getElementById('ok-info-modal-btn');
+
+// Function to open info modal
+function openInfoModal() {
+  if (infoModalOverlay) {
+    infoModalOverlay.classList.add('open');
+  }
+}
+
+// Function to close info modal
+function closeInfoModal() {
+  if (infoModalOverlay) {
+    infoModalOverlay.classList.remove('open');
+  }
+}
+
+// Info icon click handler
+if (infoIconBtn) {
+  infoIconBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openInfoModal();
+  });
+}
+
+// Close modal when clicking X button
+if (closeInfoModalBtn) {
+  closeInfoModalBtn.addEventListener('click', closeInfoModal);
+}
+
+// Close modal when clicking OK button
+if (okInfoModalBtn) {
+  okInfoModalBtn.addEventListener('click', closeInfoModal);
+}
+
+// Close modal when clicking outside (on overlay)
+if (infoModalOverlay) {
+  infoModalOverlay.addEventListener('click', (e) => {
+    if (e.target === infoModalOverlay) {
+      closeInfoModal();
+    }
+  });
+}

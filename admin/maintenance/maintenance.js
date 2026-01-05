@@ -1,6 +1,12 @@
 // Wait for DOM to be ready
 let addMenu, addBtn, fileInput, addForm, maintenanceTableBody;
 let addModalOverlay, closeAddModalBtn, cancelAddBtn, frequencySelect, scheduleContainer, scheduleCalendar;
+let searchInput, searchBtn, prevPageBtn, nextPageBtn, pageInfo;
+
+// Pagination state
+let allMaintenanceItems = [];
+let currentPage = 1;
+const itemsPerPage = 10; // Number of items per page
 
 function initElements() {
   addMenu = document.getElementById('add-maintenance-menu');
@@ -14,6 +20,11 @@ function initElements() {
   frequencySelect = document.getElementById('add-frequency');
   scheduleContainer = document.getElementById('add-schedule-container');
   scheduleCalendar = document.getElementById('add-schedule-calendar');
+  searchInput = document.getElementById('maintenance-search');
+  searchBtn = document.getElementById('maintenance-search-btn');
+  prevPageBtn = document.getElementById('prev-page-btn');
+  nextPageBtn = document.getElementById('next-page-btn');
+  pageInfo = document.getElementById('page-info');
   
   console.log('Elements initialized:', { addBtn, addMenu });
   
@@ -25,32 +36,44 @@ function initElements() {
   }
 }
 
-// Load and display maintenance items in the table
-async function loadMaintenance() {
+// Load and display maintenance items in the table (optionally filtered by query)
+async function loadMaintenance(query = '') {
   try {
-    const resp = await fetch('./list_maintenance.php');
+    const params = query ? `?query=${encodeURIComponent(query)}` : '';
+    const resp = await fetch(`./list_maintenance.php${params}`);
     if (!resp.ok) {
       console.error('Failed to load maintenance items');
       return;
     }
     const data = await resp.json();
     if (data.ok && data.maintenance) {
-      displayMaintenance(data.maintenance);
+      allMaintenanceItems = data.maintenance;
+      currentPage = 1; // Reset to first page when loading new data
+      displayMaintenance();
     }
   } catch (error) {
     console.error('Error loading maintenance:', error);
   }
 }
 
-// Display maintenance items in the table
-function displayMaintenance(maintenanceItems) {
+// Display maintenance items in the table (with pagination)
+function displayMaintenance() {
   maintenanceTableBody.innerHTML = '';
-  if (maintenanceItems.length === 0) {
+  
+  if (allMaintenanceItems.length === 0) {
     maintenanceTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #888;">No maintenance items found</td></tr>';
+    updatePaginationControls();
     return;
   }
   
-  maintenanceItems.forEach(item => {
+  // Calculate pagination
+  const totalPages = Math.ceil(allMaintenanceItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, allMaintenanceItems.length);
+  const pageItems = allMaintenanceItems.slice(startIndex, endIndex);
+  
+  // Display items for current page
+  pageItems.forEach(item => {
     const row = document.createElement('tr');
     const frequency = item.frequency || '';
     const frequencyClass = frequency.toLowerCase();
@@ -64,6 +87,27 @@ function displayMaintenance(maintenanceItems) {
     `;
     maintenanceTableBody.appendChild(row);
   });
+  
+  // Update pagination controls
+  updatePaginationControls();
+}
+
+// Update pagination controls (buttons and info)
+function updatePaginationControls() {
+  const totalPages = Math.ceil(allMaintenanceItems.length / itemsPerPage);
+  
+  // Update page info
+  if (allMaintenanceItems.length === 0) {
+    pageInfo.textContent = 'page 0 of 0';
+  } else {
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(currentPage * itemsPerPage, allMaintenanceItems.length);
+    pageInfo.textContent = `page ${currentPage} of ${totalPages} (${startIndex}-${endIndex})`;
+  }
+  
+  // Enable/disable navigation buttons
+  if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+  if (nextPageBtn) nextPageBtn.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
 
@@ -122,6 +166,47 @@ function setupEventListeners() {
       addMenu.classList.remove('open');
     }
   });
+
+  // Search listeners
+  if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+      const q = searchInput?.value || '';
+      loadMaintenance(q);
+    });
+  }
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = searchInput.value || '';
+        loadMaintenance(q);
+      }
+    });
+  }
+
+  // Pagination event listeners
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        displayMaintenance();
+        // Scroll to top of table
+        maintenanceTableBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+      const totalPages = Math.ceil(allMaintenanceItems.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        displayMaintenance();
+        // Scroll to top of table
+        maintenanceTableBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
 
   // Menu click handlers
   if (addMenu) {
@@ -474,5 +559,81 @@ if (fileInput) {
       alert(`Upload failed: ${error.message || 'Network error. Please try again.'}`);
     }
   });
+}
+
+// Info modal elements
+const infoIconBtn = document.getElementById('info-icon-btn');
+const infoModalOverlay = document.getElementById('info-modal-overlay');
+const closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+const okInfoModalBtn = document.getElementById('ok-info-modal-btn');
+
+// Function to open info modal
+function openInfoModal() {
+  if (infoModalOverlay) {
+    infoModalOverlay.classList.add('open');
+  }
+}
+
+// Function to close info modal
+function closeInfoModal() {
+  if (infoModalOverlay) {
+    infoModalOverlay.classList.remove('open');
+  }
+}
+
+// Wait for DOM to be ready before adding event listeners
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    // Info icon click handler
+    if (infoIconBtn) {
+      infoIconBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openInfoModal();
+      });
+    }
+
+    // Close modal when clicking X button
+    if (closeInfoModalBtn) {
+      closeInfoModalBtn.addEventListener('click', closeInfoModal);
+    }
+
+    // Close modal when clicking OK button
+    if (okInfoModalBtn) {
+      okInfoModalBtn.addEventListener('click', closeInfoModal);
+    }
+
+    // Close modal when clicking outside (on overlay)
+    if (infoModalOverlay) {
+      infoModalOverlay.addEventListener('click', (e) => {
+        if (e.target === infoModalOverlay) {
+          closeInfoModal();
+        }
+      });
+    }
+  });
+} else {
+  // DOM already loaded
+  if (infoIconBtn) {
+    infoIconBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openInfoModal();
+    });
+  }
+
+  if (closeInfoModalBtn) {
+    closeInfoModalBtn.addEventListener('click', closeInfoModal);
+  }
+
+  if (okInfoModalBtn) {
+    okInfoModalBtn.addEventListener('click', closeInfoModal);
+  }
+
+  if (infoModalOverlay) {
+    infoModalOverlay.addEventListener('click', (e) => {
+      if (e.target === infoModalOverlay) {
+        closeInfoModal();
+      }
+    });
+  }
 }
 }

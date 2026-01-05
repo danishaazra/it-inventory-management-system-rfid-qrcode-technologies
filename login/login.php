@@ -1,6 +1,26 @@
 <?php
+// Prevent any output before JSON
+ob_start();
+
+// Turn off error display (but log them)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Set JSON header
 header('Content-Type: application/json');
-require '../admin/api/db.php';
+
+try {
+  require '../admin/api/db.php';
+} catch (Throwable $e) {
+  ob_end_clean();
+  http_response_code(500);
+  echo json_encode(['ok' => false, 'error' => 'Database connection failed: ' . $e->getMessage()]);
+  exit;
+}
+
+// Clean output buffer before processing
+ob_end_clean();
 
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -87,9 +107,12 @@ try {
       ]
     ]);
   }
-} catch (Exception $e) {
+} catch (Throwable $e) {
+  ob_end_clean();
   http_response_code(500);
+  error_log('Login error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
   echo json_encode(['ok' => false, 'error' => 'Login failed: ' . $e->getMessage()]);
+  exit;
 }
 ?>
 
