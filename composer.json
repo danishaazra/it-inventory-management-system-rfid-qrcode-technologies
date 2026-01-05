@@ -3,7 +3,8 @@
     "description": "IT Inventory Management System",
     "require": {
         "php": ">=7.4",
-        "phpoffice/phpspreadsheet": "^1.29"
+        "phpoffice/phpspreadsheet": "^1.29",
+        "endroid/qr-code": "^6.0"
     }
 }
 

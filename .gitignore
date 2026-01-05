@@ -1,0 +1,45 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+# vendor/ - Commented out because vendor is already tracked in this repo
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Build files
+dist/
+build/
+
+# PowerShell scripts (if not needed for deployment)
+*.ps1
+
+# Test files
+test/
+tests/
+*.test.php
+
+# Backup files
+*.bak
+*.backup
