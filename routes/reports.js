@@ -313,7 +313,8 @@ router.post('/generate-checklist', async (req, res) => {
                 if (!monthlySchedule[month][period]) {
                     monthlySchedule[month][period] = [];
                 }
-                monthlySchedule[month][period].push(String(day).padStart(2, '0'));
+                // Store just the day number (e.g., "17", "14", "20")
+                monthlySchedule[month][period].push(String(day));
             });
 
             // If no tasks, create one entry
