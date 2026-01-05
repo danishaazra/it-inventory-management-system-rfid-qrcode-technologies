@@ -23,9 +23,21 @@ The application was exiting early because:
 
 ### 1. Environment Variables
 In your Render dashboard, add these environment variables:
+
+**REQUIRED:**
 - `MONGO_URI` - Your MongoDB connection string (mongodb+srv://...)
-- `NODE_ENV` - Set to `production`
-- `PORT` - Render automatically sets this, but you can override if needed
+  - This is **essential** - without it, MongoDB won't connect
+
+**OPTIONAL (but recommended):**
+- `NODE_ENV` - Set to `production` 
+  - **What it does**: Tells Node.js this is a production environment
+  - **Benefits**: Enables production optimizations, better error handling, some libraries behave differently
+  - **Is it required?**: No, your app will work without it, but it's a best practice
+  - **When to use**: Always set to `production` for live/deployed servers
+  - **When NOT to use**: Local development (leave unset or set to `development`)
+
+**AUTO-SET by Render:**
+- `PORT` - Render automatically sets this, you don't need to set it manually
 
 ### 2. Service Type
 - **Service Type**: Web Service
