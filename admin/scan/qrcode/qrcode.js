@@ -12,7 +12,6 @@ const errorMessage = document.getElementById('error-message');
 const scanResult = document.getElementById('scan-result');
 const scanResultData = document.getElementById('scan-result-data');
 const viewDetailsBtn = document.getElementById('view-details-btn');
-const inspectBtn = document.getElementById('inspect-btn');
 
 // Check if HTML5-QRCode library is loaded
 if (typeof Html5Qrcode === 'undefined') {
@@ -209,11 +208,6 @@ function displayAssetResult(asset) {
   if (viewDetailsBtn && asset.assetId) {
     viewDetailsBtn.href = `../../../admin/asset/assetdetails.html?assetId=${encodeURIComponent(asset.assetId)}`;
     viewDetailsBtn.style.display = 'inline-flex';
-  }
-  
-  // Hide inspect button for admin (admin uses View Details instead)
-  if (inspectBtn) {
-    inspectBtn.style.display = 'none';
   }
   
   scanResult.classList.add('show');

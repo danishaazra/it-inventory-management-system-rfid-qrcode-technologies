@@ -57,21 +57,38 @@ function initLogout() {
       // Clear session storage
       sessionStorage.clear();
       
-      // Always redirect to login/index.html with project folder
-      const projectName = 'it-inventory-management-system-rfid-qrcode-technologies';
-      const origin = window.location.origin;
-      const redirectUrl = origin + '/' + projectName + '/login/index.html';
+      // Calculate relative path to login/index.html based on current page location
+      const currentPath = window.location.pathname;
+      
+      // Remove leading slash and split into parts
+      const pathParts = currentPath.split('/').filter(part => part && part !== '');
+      
+      // Remove the filename (last part if it contains .html)
+      const directories = pathParts.filter(part => !part.includes('.html'));
+      
+      // Calculate how many levels up we need to go
+      // Examples:
+      // /admin/asset/asset.html -> directories = ['admin', 'asset'] -> go up 2 levels -> ../../login/index.html
+      // /dashboard/dashboard_admin.html -> directories = ['dashboard'] -> go up 1 level -> ../login/index.html
+      // /login/login.html -> directories = ['login'] -> go up 1 level -> ../login/index.html (but we're already there)
+      
+      let redirectPath;
+      if (directories.length === 0) {
+        // We're at root
+        redirectPath = 'login/index.html';
+      } else {
+        // Go up N levels, then to login/index.html
+        redirectPath = '../'.repeat(directories.length) + 'login/index.html';
+      }
       
       console.log('=== LOGOUT DEBUG ===');
-      console.log('Current URL:', window.location.href);
-      console.log('Current pathname:', window.location.pathname);
-      console.log('Origin:', origin);
-      console.log('Project name:', projectName);
-      console.log('Redirecting to:', redirectUrl);
+      console.log('Current pathname:', currentPath);
+      console.log('Directory levels:', directories.length);
+      console.log('Redirecting to:', redirectPath);
       console.log('===================');
       
-      // Force redirect
-      window.location.href = redirectUrl;
+      // Use relative path for redirect
+      window.location.href = redirectPath;
     }
     
     return false;
