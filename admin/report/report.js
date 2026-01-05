@@ -434,6 +434,7 @@ function exportReport(format) {
   form.method = 'POST';
   form.action = '/api/reports/export';
   form.target = '_blank';
+  form.enctype = 'application/x-www-form-urlencoded';
   
   // Add report type
   const typeInput = document.createElement('input');

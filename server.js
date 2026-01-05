@@ -15,6 +15,7 @@ console.log('✓ Dependencies loaded');
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // For form data
 app.use(cors());
 
 // Serve static files from root directory
