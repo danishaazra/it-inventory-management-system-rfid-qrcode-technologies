@@ -63,16 +63,30 @@ try {
     echo $result->getString();
     
 } catch (Throwable $e) {
-    // On any error, return an error image
+    // On any error, return an error image with full error message
     ob_end_clean();
-    error_log('QR Code error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    $errorMessage = $e->getMessage();
+    $errorFile = $e->getFile();
+    $errorLine = $e->getLine();
+    error_log('QR Code error: ' . $errorMessage . ' in ' . $errorFile . ':' . $errorLine);
+    error_log('Stack trace: ' . $e->getTraceAsString());
+    
     header('Content-Type: image/png');
-    $image = imagecreatetruecolor(256, 256);
+    $image = imagecreatetruecolor(512, 256);
     $white = imagecolorallocate($image, 255, 255, 255);
     $black = imagecolorallocate($image, 0, 0, 0);
+    $red = imagecolorallocate($image, 220, 38, 38);
     imagefill($image, 0, 0, $white);
-    $errorMsg = 'Error: ' . substr($e->getMessage(), 0, 20);
-    imagestring($image, 3, 10, 120, $errorMsg, $black);
+    
+    // Display full error message (split into multiple lines if needed)
+    $errorMsg = 'Error: ' . $errorMessage;
+    $lines = str_split($errorMsg, 50); // Split into 50 char lines
+    $y = 50;
+    foreach ($lines as $line) {
+        imagestring($image, 3, 10, $y, $line, $red);
+        $y += 20;
+    }
+    
     imagepng($image);
     imagedestroy($image);
     exit;
