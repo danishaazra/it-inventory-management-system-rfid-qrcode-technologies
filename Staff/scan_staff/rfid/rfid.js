@@ -42,7 +42,16 @@ async function searchAssetByRfid() {
   
   try {
     // Get staff ID from session storage - REQUIRED for staff scanning
-    const staffId = sessionStorage.getItem('staffId') || '';
+    // For staff users, staffId should be the same as userId
+    let staffId = sessionStorage.getItem('staffId') || '';
+    
+    // Fallback: if staffId not found but user is staff, use userId
+    if (!staffId) {
+      const userRole = sessionStorage.getItem('userRole');
+      if (userRole === 'staff') {
+        staffId = sessionStorage.getItem('userId') || '';
+      }
+    }
     
     if (!staffId) {
       showAssignmentError('Staff ID not found. Please log in again.');
@@ -735,4 +744,3 @@ if (inspectionForm) {
     }
   });
 }
-

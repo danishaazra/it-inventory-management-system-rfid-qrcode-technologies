@@ -3,11 +3,27 @@ header('Content-Type: application/json');
 require '../api/db.php';
 
 try {
-  // Query all maintenance items from MongoDB, sorted by itemName
+  $query = $_GET['query'] ?? '';
+
+  // Build filter if query provided
+  $filter = [];
+  if (!empty($query)) {
+    $regex = new MongoDB\BSON\Regex($query, 'i');
+    $filter = [
+      '$or' => [
+        ['branch' => $regex],
+        ['location' => $regex],
+        ['itemName' => $regex],
+        ['frequency' => $regex],
+      ]
+    ];
+  }
+
+  // Query maintenance items from MongoDB, sorted by itemName
   $options = [
     'sort' => ['itemName' => 1] // Sort ascending by itemName
   ];
-  $results = mongoFind($mongoManager, $maintenanceNamespace, [], $options);
+  $results = mongoFind($mongoManager, $maintenanceNamespace, $filter, $options);
   
   // Get inspection counts from maintenance_assets collection
   $inspectionsNamespace = $mongoDb . '.maintenance_assets';

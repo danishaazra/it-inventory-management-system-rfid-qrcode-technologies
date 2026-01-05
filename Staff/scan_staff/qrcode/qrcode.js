@@ -142,8 +142,16 @@ function displayScanResult(assetId) {
 async function fetchAssetDetails(assetId) {
   try {
     // Include staffId so backend can verify assignment to this staff's tasks
-    // Use 'staffId' from session storage (not 'userId')
-    const staffId = sessionStorage.getItem('staffId') || '';
+    // For staff users, staffId should be the same as userId
+    let staffId = sessionStorage.getItem('staffId') || '';
+    
+    // Fallback: if staffId not found but user is staff, use userId
+    if (!staffId) {
+      const userRole = sessionStorage.getItem('userRole');
+      if (userRole === 'staff') {
+        staffId = sessionStorage.getItem('userId') || '';
+      }
+    }
     
     if (!staffId) {
       showAssignmentError('Staff ID not found. Please log in again.');
