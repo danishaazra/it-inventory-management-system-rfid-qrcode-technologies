@@ -770,6 +770,81 @@
       color: #6b7280;
       font-size: 0.95rem;
     }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+      .app-shell {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 1rem;
+      }
+
+      .sidebar {
+        width: 100%;
+        order: 2;
+      }
+
+      .main-content {
+        width: 100%;
+        order: 1;
+      }
+
+      .report-type-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .report-criteria {
+        padding: 1.5rem;
+      }
+
+      .report-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .report-table {
+        min-width: 1000px;
+        font-size: 0.85rem;
+      }
+
+      .report-table th,
+      .report-table td {
+        padding: 0.5rem;
+      }
+
+      .export-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .export-buttons .btn {
+        width: 100%;
+      }
+
+      .saved-reports-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .app-shell {
+        padding: 0.5rem;
+      }
+
+      .report-criteria {
+        padding: 1rem;
+      }
+
+      .report-table {
+        min-width: 800px;
+        font-size: 0.75rem;
+      }
+
+      .report-table th,
+      .report-table td {
+        padding: 0.4rem;
+      }
+    }
   </style>
   <script type="module">
     import '../shared/init.js';

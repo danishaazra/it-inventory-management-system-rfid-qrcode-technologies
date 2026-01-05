@@ -243,34 +243,97 @@ router.post('/generate-checklist', async (req, res) => {
         const criteria = req.body;
         const filter = {};
 
+        // Year filter
+        const year = criteria.year ? parseInt(criteria.year) : new Date().getFullYear();
+
         if (criteria.branch) filter.branch = criteria.branch;
         if (criteria.location) filter.location = criteria.location;
         if (criteria.frequency) filter.frequency = criteria.frequency;
         if (criteria.itemName) filter.itemName = { $regex: criteria.itemName, $options: 'i' };
 
-        const maintenance = await Maintenance.find(filter).sort({ itemName: 1 }).lean();
+        const maintenance = await Maintenance.find(filter)
+            .sort({ branch: 1, location: 1, itemName: 1 })
+            .lean();
 
-        // Get year from criteria or use current year
-        const year = criteria.year || new Date().getFullYear();
+        // Build checklist format matching PHP structure
+        const checklist = [];
+        
+        for (const item of maintenance) {
+            // Parse inspection tasks
+            const tasks = [];
+            if (item.inspectionTasks) {
+                const taskLines = String(item.inspectionTasks).split('\n');
+                taskLines.forEach(task => {
+                    const trimmed = task.trim();
+                    if (trimmed) {
+                        tasks.push(trimmed);
+                    }
+                });
+            }
 
-        // Build checklist format
-        const checklist = maintenance.map((item, index) => {
-            const row = {
-                'NO': index + 1,
-                'INSPECTION HARDWARE': item.itemName || '-'
-            };
+            // Extract schedule dates for the specified year
+            const scheduleDates = [];
+            if (item.maintenanceSchedule) {
+                const schedule = typeof item.maintenanceSchedule === 'object' 
+                    ? item.maintenanceSchedule 
+                    : JSON.parse(item.maintenanceSchedule || '{}');
+                
+                // Recursively find all date strings in the schedule
+                const findDates = (obj) => {
+                    if (typeof obj === 'string' && /^\d{4}-\d{2}-\d{2}/.test(obj)) {
+                        const dateYear = parseInt(obj.substring(0, 4));
+                        if (dateYear === year) {
+                            scheduleDates.push(obj);
+                        }
+                    } else if (Array.isArray(obj)) {
+                        obj.forEach(findDates);
+                    } else if (typeof obj === 'object' && obj !== null) {
+                        Object.values(obj).forEach(findDates);
+                    }
+                };
+                findDates(schedule);
+            }
 
-            // Add months (JAN-DEC) with 4 sub-columns each
-            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-            months.forEach(month => {
-                row[`${month}_1`] = '';
-                row[`${month}_2`] = '';
-                row[`${month}_3`] = '';
-                row[`${month}_4`] = '';
+            // Organize dates by month and period
+            const monthlySchedule = {};
+            scheduleDates.forEach(dateStr => {
+                const date = new Date(dateStr);
+                const month = date.getMonth() + 1; // 1-12
+                const day = date.getDate(); // 1-31
+                
+                // Determine period: 1-7 (1), 8-14 (2), 15-21 (3), 22-31 (4)
+                let period = 1;
+                if (day >= 22) period = 4;
+                else if (day >= 15) period = 3;
+                else if (day >= 8) period = 2;
+                
+                if (!monthlySchedule[month]) {
+                    monthlySchedule[month] = {};
+                }
+                if (!monthlySchedule[month][period]) {
+                    monthlySchedule[month][period] = [];
+                }
+                monthlySchedule[month][period].push(String(day).padStart(2, '0'));
             });
 
-            return row;
-        });
+            // If no tasks, create one entry
+            if (tasks.length === 0) {
+                tasks.push('No tasks defined');
+            }
+
+            // Create checklist entry
+            checklist.push({
+                branch: item.branch || '-',
+                location: item.location || '-',
+                itemName: item.itemName || '-',
+                frequency: item.frequency || '-',
+                inspectionTasks: tasks,
+                schedule: monthlySchedule,
+                year: year,
+                assignedStaffName: item.assignedStaffName || '-',
+                assignedStaffEmail: item.assignedStaffEmail || '-'
+            });
+        }
 
         res.json({ ok: true, report: checklist });
     } catch (error) {

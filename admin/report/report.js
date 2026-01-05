@@ -330,6 +330,13 @@ function displayReport(data) {
 
 // Display checklist report
 function displayChecklistReport(checklistData) {
+  console.log('Displaying checklist report, data:', checklistData);
+  
+  if (!checklistData || !Array.isArray(checklistData) || checklistData.length === 0) {
+    reportTableBody.innerHTML = '<tr><td colspan="100%" class="no-results">No checklist data available</td></tr>';
+    return;
+  }
+
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
   // Create header row
@@ -372,11 +379,21 @@ function displayChecklistReport(checklistData) {
   // Create data rows
   let rowNum = 1;
   checklistData.forEach(item => {
-    const tasks = item.inspectionTasks || [];
+    console.log('Processing checklist item:', item);
+    
+    // Handle inspectionTasks - can be array or string
+    let tasks = [];
+    if (Array.isArray(item.inspectionTasks)) {
+      tasks = item.inspectionTasks;
+    } else if (typeof item.inspectionTasks === 'string' && item.inspectionTasks.trim()) {
+      // Split by newlines if it's a string
+      tasks = item.inspectionTasks.split('\n').map(t => t.trim()).filter(t => t);
+    }
+    
     const schedule = item.schedule || {};
     
     if (tasks.length === 0) {
-      tasks.push('');
+      tasks.push(item.itemName || 'No tasks defined');
     }
     
     tasks.forEach(task => {
@@ -400,7 +417,11 @@ function displayChecklistReport(checklistData) {
           cell.style.textAlign = 'center';
           if (schedule[month] && schedule[month][period]) {
             const dates = schedule[month][period];
-            cell.textContent = dates.join(', ');
+            if (Array.isArray(dates)) {
+              cell.textContent = dates.join(', ');
+            } else {
+              cell.textContent = String(dates);
+            }
           }
           tr.appendChild(cell);
         }
@@ -410,6 +431,8 @@ function displayChecklistReport(checklistData) {
       rowNum++;
     });
   });
+  
+  console.log('Checklist report displayed, total rows:', rowNum - 1);
 }
 
 // Format header text
