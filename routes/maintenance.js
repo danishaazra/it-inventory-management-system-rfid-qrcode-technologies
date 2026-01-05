@@ -427,6 +427,59 @@ router.post('/remove-asset', async (req, res) => {
     }
 });
 
+// Get maintenance asset details (for maintenance asset details page)
+router.get('/asset-details', async (req, res) => {
+    try {
+        if (!checkDBConnection(res)) return;
+
+        const { assetId, maintenanceId } = req.query;
+
+        if (!assetId || !maintenanceId) {
+            return res.status(400).json({ ok: false, error: 'assetId and maintenanceId are required' });
+        }
+
+        // Get asset details
+        const asset = await Asset.findOne({ assetId }).lean();
+        if (!asset) {
+            return res.status(404).json({ ok: false, error: 'Asset not found' });
+        }
+
+        // Get maintenance details
+        const maintenance = await Maintenance.findById(maintenanceId)
+            .select('assignedStaffName assignedStaffEmail')
+            .lean();
+
+        // Get inspection data
+        const inspection = await MaintenanceAsset.findOne({
+            maintenanceId,
+            assetId
+        }).lean();
+
+        let inspectionDate = null;
+        if (inspection && inspection.inspectionDate) {
+            inspectionDate = new Date(inspection.inspectionDate).getTime();
+        }
+
+        res.json({
+            ok: true,
+            asset,
+            maintenance: maintenance ? {
+                assignedStaffName: maintenance.assignedStaffName,
+                assignedStaffEmail: maintenance.assignedStaffEmail
+            } : null,
+            inspection: inspection ? {
+                inspectionStatus: inspection.inspectionStatus || 'open',
+                inspectionNotes: inspection.inspectionNotes,
+                solved: inspection.solved || false,
+                inspectionDate: inspectionDate
+            } : null
+        });
+    } catch (error) {
+        console.error('Error getting maintenance asset details:', error);
+        res.status(500).json({ ok: false, error: 'Could not load asset details: ' + error.message });
+    }
+});
+
 // Upload maintenance (bulk import) - simplified
 router.post('/upload', async (req, res) => {
     try {
