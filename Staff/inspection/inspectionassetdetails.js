@@ -39,7 +39,7 @@ async function loadAssetDetails() {
   }
 
   try {
-    const resp = await fetch(`../../admin/asset/get_asset.php?assetId=${encodeURIComponent(assetId)}`);
+    const resp = await fetch(`/api/assets/get?assetId=${encodeURIComponent(assetId)}`);
     const data = await resp.json();
 
     if (!resp.ok || !data.ok) {

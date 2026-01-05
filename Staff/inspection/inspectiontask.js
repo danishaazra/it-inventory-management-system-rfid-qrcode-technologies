@@ -18,8 +18,8 @@ async function loadMaintenanceDetails() {
 
   try {
     const url = maintenanceId 
-      ? `../../admin/maintenance/get_maintenance.php?maintenanceId=${encodeURIComponent(maintenanceId)}`
-      : `../../admin/maintenance/get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+      ? `/api/maintenance/get?maintenanceId=${encodeURIComponent(maintenanceId)}`
+      : `/api/maintenance/get?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
     
     const resp = await fetch(url);
     const data = await resp.json();

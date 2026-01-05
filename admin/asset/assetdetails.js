@@ -114,7 +114,7 @@ function generateQRCode(assetId) {
   const assetUrl = `${window.location.origin}${window.location.pathname}?assetId=${encodeURIComponent(assetId)}`;
   
   // Generate QR code using server-side PHP endpoint
-  const qrCodeImageUrl = `./generate_qrcode.php?data=${encodeURIComponent(assetUrl)}`;
+  const qrCodeImageUrl = `/api/qrcode/generate?data=${encodeURIComponent(assetUrl)}`;
   
   console.log('QR code image URL:', qrCodeImageUrl);
   

@@ -50,7 +50,7 @@ async function searchAssetByRfid() {
     console.log('🔍 Searching for asset with RFID Tag ID:', rfidTagId);
     
     // Search for asset by RFID tag ID
-    const resp = await fetch(`../../../admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}`);
+    const resp = await fetch(`/api/assets/get-by-rfid?rfidTagId=${encodeURIComponent(rfidTagId)}`);
     const data = await resp.json();
     
     console.log('📦 Response received:', data);
@@ -635,4 +635,3 @@ window.addEventListener('beforeunload', async () => {
     await disconnectFromArduino();
   }
 });
-

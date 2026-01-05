@@ -71,7 +71,7 @@ const reportConfigs = {
 // Load report options (locations and branches)
 async function loadReportOptions() {
   try {
-    const resp = await fetch('./get_report_options.php');
+    const resp = await fetch('/api/reports/options');
     if (!resp.ok) {
       console.warn('Failed to load report options');
       return;
@@ -229,16 +229,16 @@ async function generateReport() {
     let endpoint = '';
     switch(selectedReportType) {
       case 'asset':
-        endpoint = './generate_asset_report.php';
+        endpoint = '/api/reports/generate-asset';
         break;
       case 'maintenance':
-        endpoint = './generate_maintenance_report.php';
+        endpoint = '/api/reports/generate-maintenance';
         break;
       case 'inspection':
-        endpoint = './generate_inspection_report.php';
+        endpoint = '/api/reports/generate-inspection';
         break;
       case 'checklist':
-        endpoint = './generate_checklist_report.php';
+        endpoint = '/api/reports/generate-checklist';
         break;
     }
     
@@ -502,7 +502,7 @@ async function saveReport() {
   }
 
   try {
-    const response = await fetch('./save_report.php', {
+    const response = await fetch('/api/reports/save', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -532,7 +532,7 @@ async function saveReport() {
 // Load saved reports
 async function loadSavedReports() {
   try {
-    const response = await fetch('./list_saved_reports.php');
+    const response = await fetch('/api/reports/saved');
     const data = await response.json();
 
     if (!response.ok || !data.ok) {
@@ -584,7 +584,7 @@ function displaySavedReports(reports) {
 // Load a saved report
 window.loadSavedReport = async function(reportId) {
   try {
-    const response = await fetch(`./load_saved_report.php?reportId=${encodeURIComponent(reportId)}`);
+    const response = await fetch(`/api/reports/load?reportId=${encodeURIComponent(reportId)}`);
     const data = await response.json();
 
     if (!response.ok || !data.ok) {
@@ -638,7 +638,7 @@ window.deleteSavedReport = async function(reportId) {
   }
 
   try {
-    const response = await fetch('./delete_report.php', {
+    const response = await fetch('/api/reports/delete', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
