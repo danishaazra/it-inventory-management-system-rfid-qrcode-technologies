@@ -22,13 +22,25 @@ app.use(express.static(path.join(__dirname)));
 
 // MongoDB connection with better error handling
 const MONGO_URI = process.env.MONGO_URI;
+const MONGO_DB = process.env.MONGO_DB || 'it_inventory';
+
+// User Schema
+const userSchema = new mongoose.Schema({
+    name: String,
+    email: { type: String, required: true, unique: true },
+    role: { type: String, enum: ['admin', 'staff'], required: true },
+    created_at: { type: Date, default: Date.now },
+    lastLogin: { type: Date, default: Date.now }
+}, { collection: 'users' });
+
+const User = mongoose.model('User', userSchema, 'users');
 
 if (!MONGO_URI) {
     console.warn('WARNING: MONGO_URI environment variable is not set');
     console.warn('MongoDB connection will be skipped. Set MONGO_URI in Render environment variables to enable database connection.');
 } else {
     // Only attempt connection if MONGO_URI is provided
-    mongoose.connect(MONGO_URI)
+    mongoose.connect(MONGO_URI, { dbName: MONGO_DB })
       .then(() => {
           console.log('✓ MongoDB Connected successfully');
       })
@@ -69,6 +81,94 @@ app.get('/health', (req, res) => {
 // Test endpoint
 app.get('/api/test', (req, res) => {
     res.json({ message: 'Backend is running!' });
+});
+
+// Login endpoint (replaces login.php)
+app.post('/api/login', async (req, res) => {
+    try {
+        const { name, email, role } = req.body;
+
+        // Validation
+        if (!name || !email || !role) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'Name, email, and role are required' 
+            });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'Invalid email address' 
+            });
+        }
+
+        // Validate role
+        if (!['admin', 'staff'].includes(role)) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'Invalid role' 
+            });
+        }
+
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(500).json({ 
+                ok: false, 
+                error: 'Database connection not available' 
+            });
+        }
+
+        // Check if user exists
+        let user = await User.findOne({ email: email.trim() });
+
+        if (user) {
+            // User exists, update last login time and role
+            user.name = name.trim();
+            user.role = role;
+            user.lastLogin = new Date();
+            await user.save();
+
+            return res.json({
+                ok: true,
+                user: {
+                    id: user._id.toString(),
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                }
+            });
+        } else {
+            // User doesn't exist, create new user
+            const newUser = new User({
+                name: name.trim(),
+                email: email.trim(),
+                role: role,
+                created_at: new Date(),
+                lastLogin: new Date()
+            });
+
+            await newUser.save();
+
+            return res.json({
+                ok: true,
+                user: {
+                    id: newUser._id.toString(),
+                    name: newUser.name,
+                    email: newUser.email,
+                    role: newUser.role
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        return res.status(500).json({ 
+            ok: false, 
+            error: 'Login failed: ' + error.message 
+        });
+    }
 });
 
 // Listen on PORT
