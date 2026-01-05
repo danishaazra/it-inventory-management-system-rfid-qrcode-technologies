@@ -418,7 +418,9 @@ function displayChecklistReport(checklistData) {
           if (schedule[month] && schedule[month][period]) {
             const dates = schedule[month][period];
             if (Array.isArray(dates)) {
-              cell.textContent = dates.join(', ');
+              // Dates are now in format DD/MM/YYYY, join with line breaks for better display
+              cell.innerHTML = dates.join('<br>');
+              cell.style.fontSize = '0.75rem';
             } else {
               cell.textContent = String(dates);
             }
