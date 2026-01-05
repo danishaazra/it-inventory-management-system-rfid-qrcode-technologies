@@ -56,8 +56,8 @@ async function loadMaintenanceAssets() {
     
     // Load maintenance details
     const url = maintenanceId 
-      ? `../../admin/maintenance/get_maintenance.php?maintenanceId=${encodeURIComponent(maintenanceId)}`
-      : `../../admin/maintenance/get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+      ? `/api/maintenance/get?maintenanceId=${encodeURIComponent(maintenanceId)}`
+      : `/api/maintenance/get?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
     
     const maintenanceResp = await fetch(url);
     const maintenanceData = await maintenanceResp.json();

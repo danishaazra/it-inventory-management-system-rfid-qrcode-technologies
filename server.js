@@ -31,6 +31,8 @@ const { User } = require('./models');
 const assetRoutes = require('./routes/assets');
 const maintenanceRoutes = require('./routes/maintenance');
 const inspectionRoutes = require('./routes/inspections');
+const qrcodeRoutes = require('./routes/qrcode');
+const reportRoutes = require('./routes/reports');
 
 if (!MONGO_URI) {
     console.warn('WARNING: MONGO_URI environment variable is not set');
@@ -84,6 +86,8 @@ app.get('/api/test', (req, res) => {
 app.use('/api/assets', assetRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/inspections', inspectionRoutes);
+app.use('/api/qrcode', qrcodeRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Login endpoint (replaces login.php)
 app.post('/api/login', async (req, res) => {
