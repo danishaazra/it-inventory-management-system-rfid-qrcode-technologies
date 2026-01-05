@@ -365,6 +365,150 @@ router.get('/load', async (req, res) => {
     }
 });
 
+// Export report (CSV or PDF)
+router.post('/export', async (req, res) => {
+    try {
+        const { reportType, format, reportData, criteria } = req.body;
+
+        if (!reportType || !format || !reportData) {
+            return res.status(400).json({ ok: false, error: 'reportType, format, and reportData are required' });
+        }
+
+        const titles = {
+            'asset': 'Asset Report',
+            'maintenance': 'Maintenance Report',
+            'inspection': 'Inspection Report',
+            'checklist': 'Checklist Report'
+        };
+        const title = titles[reportType] || 'Report';
+
+        if (format === 'csv') {
+            // Generate CSV
+            const csvRows = [];
+            
+            if (Array.isArray(reportData) && reportData.length > 0) {
+                // Headers
+                const headers = Object.keys(reportData[0]);
+                csvRows.push(headers.join(','));
+                
+                // Data rows
+                reportData.forEach(row => {
+                    const values = headers.map(header => {
+                        const value = row[header] ?? '';
+                        // Escape quotes and wrap in quotes if contains comma
+                        const escaped = String(value).replace(/"/g, '""');
+                        return escaped.includes(',') ? `"${escaped}"` : escaped;
+                    });
+                    csvRows.push(values.join(','));
+                });
+            }
+
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="${title}_${new Date().toISOString().split('T')[0]}.csv"`);
+            res.send('\ufeff' + csvRows.join('\n')); // BOM for Excel compatibility
+        } else if (format === 'pdf') {
+            // For PDF, return HTML that can be printed
+            // In production, you might want to use a library like puppeteer or pdfkit
+            const html = generatePDFHTML(reportData, title, reportType, criteria || {});
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.send(html);
+        } else {
+            return res.status(400).json({ ok: false, error: 'Invalid format. Use "csv" or "pdf"' });
+        }
+    } catch (error) {
+        console.error('Error exporting report:', error);
+        res.status(500).json({ ok: false, error: 'Could not export report: ' + error.message });
+    }
+});
+
+function generatePDFHTML(data, title, reportType, criteria) {
+    const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) + ' MYT';
+    const logoPath = '/images/pkt_logo.png';
+    
+    let html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    @media print {
+      @page { margin: 20mm; }
+    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #140958; }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .header-logo { width: 80px; height: 80px; object-fit: contain; }
+    .header-text { display: flex; flex-direction: column; }
+    .company-name { font-size: 18px; font-weight: bold; color: #140958; margin-bottom: 5px; }
+    .report-type { font-size: 14px; color: #333; font-weight: 600; }
+    .header-right { text-align: right; }
+    .report-date { font-size: 12px; color: #666; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background: #f1f3f5; padding: 10px; text-align: left; border: 1px solid #ddd; font-weight: 600; }
+    td { padding: 8px; border: 1px solid #ddd; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <img src="${logoPath}" alt="PKT Logo" class="header-logo" onerror="this.style.display='none'">
+      <div class="header-text">
+        <div class="company-name">PKT LOGISTICS (M) SDN BHD</div>
+        <div class="report-type">ICT - PREVENTIVE MAINTENANCE CHECKLIST</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="report-date"><strong>Report Date:</strong><br>${escapeHtml(currentDate)}</div>
+    </div>
+  </div>
+  <h1>${escapeHtml(title)}</h1>`;
+
+    if (Array.isArray(data) && data.length > 0) {
+        html += '<table><thead><tr>';
+        const headers = Object.keys(data[0]);
+        headers.forEach(header => {
+            html += `<th>${escapeHtml(header)}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+        
+        data.forEach(row => {
+            html += '<tr>';
+            headers.forEach(header => {
+                html += `<td>${escapeHtml(String(row[header] ?? ''))}</td>`;
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+    } else {
+        html += '<p>No data available</p>';
+    }
+
+    html += `<div class="footer">Total Records: ${Array.isArray(data) ? data.length : 0}</div>
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>`;
+
+    return html;
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = { textContent: text };
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Delete saved report
 router.post('/delete', async (req, res) => {
     try {

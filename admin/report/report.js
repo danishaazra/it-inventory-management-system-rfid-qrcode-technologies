@@ -432,7 +432,7 @@ function exportReport(format) {
   // Create form for export
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = './export_report.php';
+  form.action = '/api/reports/export';
   form.target = '_blank';
   
   // Add report type
@@ -509,7 +509,7 @@ async function saveReport() {
       },
       body: JSON.stringify({
         reportType: selectedReportType,
-        reportTitle: reportTitle.trim(),
+        reportName: reportTitle.trim(),
         criteria: criteria,
         reportData: currentReportData.report
       })

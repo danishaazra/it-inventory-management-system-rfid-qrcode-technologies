@@ -40,7 +40,7 @@ async function loadAssetDetails() {
   }
 
   try {
-    const url = `./get_maintenance_asset_details.php?assetId=${encodeURIComponent(assetId)}&maintenanceId=${encodeURIComponent(maintenanceId)}`;
+    const url = `/api/maintenance/asset-details?assetId=${encodeURIComponent(assetId)}&maintenanceId=${encodeURIComponent(maintenanceId)}`;
     console.log('Fetching from:', url);
     
     const resp = await fetch(url);
