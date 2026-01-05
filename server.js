@@ -9,11 +9,10 @@ app.use(express.json());
 app.use(cors());
 
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB Connected'))
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB Connected'))
   .catch(err => console.log(err));
+
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
