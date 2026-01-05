@@ -271,27 +271,66 @@ router.post('/generate-checklist', async (req, res) => {
                 });
             }
 
-            // Extract schedule dates for the specified year
+            // Extract schedule dates for the specified year based on frequency
             const scheduleDates = [];
             if (item.maintenanceSchedule) {
                 const schedule = typeof item.maintenanceSchedule === 'object' 
                     ? item.maintenanceSchedule 
                     : JSON.parse(item.maintenanceSchedule || '{}');
                 
-                // Recursively find all date strings in the schedule
-                const findDates = (obj) => {
-                    if (typeof obj === 'string' && /^\d{4}-\d{2}-\d{2}/.test(obj)) {
-                        const dateYear = parseInt(obj.substring(0, 4));
-                        if (dateYear === year) {
-                            scheduleDates.push(obj);
+                const frequency = item.frequency || 'Monthly';
+                
+                // Extract dates based on frequency type
+                if (frequency === 'Weekly') {
+                    // Format: { "January": { "Week1": "2024-01-05", "Week2": "2024-01-12", ... }, ... }
+                    Object.values(schedule).forEach(monthSchedule => {
+                        if (typeof monthSchedule === 'object' && monthSchedule !== null) {
+                            Object.values(monthSchedule).forEach(dateStr => {
+                                if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+                                    const dateYear = parseInt(dateStr.substring(0, 4));
+                                    if (dateYear === year) {
+                                        scheduleDates.push(dateStr);
+                                    }
+                                }
+                            });
                         }
-                    } else if (Array.isArray(obj)) {
-                        obj.forEach(findDates);
-                    } else if (typeof obj === 'object' && obj !== null) {
-                        Object.values(obj).forEach(findDates);
-                    }
-                };
-                findDates(schedule);
+                    });
+                } else if (frequency === 'Monthly') {
+                    // Format: { "January": "2024-01-15", "February": "2024-02-15", ... }
+                    Object.values(schedule).forEach(dateStr => {
+                        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+                            const dateYear = parseInt(dateStr.substring(0, 4));
+                            if (dateYear === year) {
+                                scheduleDates.push(dateStr);
+                            }
+                        }
+                    });
+                } else if (frequency === 'Quarterly') {
+                    // Format: { "Q1": "2024-01-15", "Q2": "2024-04-20", ... }
+                    Object.values(schedule).forEach(dateStr => {
+                        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+                            const dateYear = parseInt(dateStr.substring(0, 4));
+                            if (dateYear === year) {
+                                scheduleDates.push(dateStr);
+                            }
+                        }
+                    });
+                } else {
+                    // Fallback: recursively find all date strings
+                    const findDates = (obj) => {
+                        if (typeof obj === 'string' && /^\d{4}-\d{2}-\d{2}/.test(obj)) {
+                            const dateYear = parseInt(obj.substring(0, 4));
+                            if (dateYear === year) {
+                                scheduleDates.push(obj);
+                            }
+                        } else if (Array.isArray(obj)) {
+                            obj.forEach(findDates);
+                        } else if (typeof obj === 'object' && obj !== null) {
+                            Object.values(obj).forEach(findDates);
+                        }
+                    };
+                    findDates(schedule);
+                }
             }
 
             // Organize dates by month and period
