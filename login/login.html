@@ -236,7 +236,6 @@
       }
     }
   </style>
-  <script type="module" src="./script.js"></script>
   <script>
     // Handle role parameter and store it for later use
     const urlParams = new URLSearchParams(window.location.search);
@@ -294,7 +293,7 @@
 
           try {
             // Call login API
-            const response = await fetch('login.php', {
+            const response = await fetch('/api/login', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
