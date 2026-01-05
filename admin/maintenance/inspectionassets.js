@@ -57,8 +57,8 @@ async function loadMaintenanceAssets() {
     
     // Load maintenance details
     const url = maintenanceId 
-      ? `./get_maintenance.php?maintenanceId=${encodeURIComponent(maintenanceId)}`
-      : `./get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+      ? `/api/maintenance/get?maintenanceId=${encodeURIComponent(maintenanceId)}`
+      : `/api/maintenance/get?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
     
     const maintenanceResp = await fetch(url);
     const maintenanceData = await maintenanceResp.json();
@@ -121,8 +121,8 @@ async function loadAssets() {
   try {
     const id = currentMaintenance?._id || maintenanceId;
     const url = id
-      ? `./get_maintenance_assets.php?maintenanceId=${encodeURIComponent(id)}`
-      : `./get_maintenance_assets.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+      ? `/api/maintenance/assets?maintenanceId=${encodeURIComponent(id)}`
+      : `/api/maintenance/assets?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
     
     const resp = await fetch(url);
     const data = await resp.json();
@@ -400,7 +400,7 @@ window.removeAsset = async function(assetId) {
   }
 
   try {
-    const resp = await fetch('./remove_maintenance_asset.php', {
+    const resp = await fetch('/api/maintenance/remove-asset', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -445,7 +445,7 @@ async function loadAllAssetsForSelection() {
   container.innerHTML = '<p style="padding: 2rem; text-align: center; color: #6b7280;">Loading assets...</p>';
   
   try {
-    const resp = await fetch('../asset/list_assets.php');
+    const resp = await fetch('/api/assets/list');
     const data = await resp.json();
 
     if (resp.ok && data.ok) {
@@ -534,7 +534,7 @@ async function addSelectedAssets() {
       payload.itemName = itemName;
     }
     
-    const resp = await fetch('./add_maintenance_assets.php', {
+    const resp = await fetch('/api/maintenance/add-assets', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
@@ -694,7 +694,7 @@ function setupEventListeners() {
       }
 
       try {
-        const resp = await fetch('./save_inspection.php', {
+        const resp = await fetch('/api/inspections/save', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(inspectionData)

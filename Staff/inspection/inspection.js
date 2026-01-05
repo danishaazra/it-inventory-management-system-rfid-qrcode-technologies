@@ -26,7 +26,7 @@ async function loadAssignedMaintenance() {
   
   try {
     // Build URL with staffId or staffEmail
-    let url = '../../admin/maintenance/get_assigned_maintenance.php?';
+    let url = '/api/maintenance/assigned?';
     if (staff.id) {
       url += 'staffId=' + encodeURIComponent(staff.id);
     } else if (staff.email) {

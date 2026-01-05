@@ -120,8 +120,8 @@ async function loadAssets() {
   try {
     const id = currentMaintenance?._id || maintenanceId;
     const url = id
-      ? `../../admin/maintenance/get_maintenance_assets.php?maintenanceId=${encodeURIComponent(id)}`
-      : `../../admin/maintenance/get_maintenance_assets.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+      ? `/api/maintenance/assets?maintenanceId=${encodeURIComponent(id)}`
+      : `/api/maintenance/assets?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
     
     const resp = await fetch(url);
     const data = await resp.json();
@@ -455,7 +455,7 @@ async function saveInspection(formData) {
   }
 
   try {
-    const url = '../../admin/maintenance/save_inspection.php';
+    const url = '/api/inspections/save';
     const body = {
       assetId: currentInspectingAssetId,
       notes: formData.notes,

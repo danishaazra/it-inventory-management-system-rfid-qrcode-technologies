@@ -18,8 +18,8 @@ async function loadMaintenanceDetails() {
 
   try {
     const url = maintenanceId 
-      ? `./get_maintenance.php?maintenanceId=${encodeURIComponent(maintenanceId)}`
-      : `./get_maintenance.php?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
+      ? `/api/maintenance/get?maintenanceId=${encodeURIComponent(maintenanceId)}`
+      : `/api/maintenance/get?branch=${encodeURIComponent(branch)}&location=${encodeURIComponent(location)}&itemName=${encodeURIComponent(itemName)}`;
     
     const resp = await fetch(url);
     const data = await resp.json();
@@ -355,7 +355,7 @@ async function updateMaintenanceTasks() {
   currentMaintenance.inspectionTasks = tasksText;
   
   try {
-    const resp = await fetch('./update_maintenance.php', {
+    const resp = await fetch('/api/maintenance/update', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -509,7 +509,7 @@ function setupEventListeners() {
       }
       
       try {
-        const resp = await fetch('./delete_maintenance.php', {
+        const resp = await fetch('/api/maintenance/delete', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
@@ -628,7 +628,7 @@ function setupEditMaintenanceModal() {
       }
       
       try {
-        const resp = await fetch('./update_maintenance.php', {
+        const resp = await fetch('/api/maintenance/update', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(updatedMaintenance)
@@ -942,7 +942,7 @@ async function loadStaffList() {
   staffListEl.innerHTML = '<div style="text-align: center; padding: 2rem; color: #9ca3af;">Loading staff...</div>';
   
   try {
-    const resp = await fetch('./list_staff.php');
+    const resp = await fetch('/api/maintenance/staff');
     const data = await resp.json();
     
     if (!resp.ok || !data.ok) {
@@ -997,7 +997,7 @@ async function loadStaffList() {
 async function checkStaffDateConflicts(staffId, currentMaintenance) {
   try {
     // Get all maintenance tasks assigned to this staff member
-    const resp = await fetch(`./get_assigned_maintenance.php?staffId=${encodeURIComponent(staffId)}`);
+    const resp = await fetch(`/api/maintenance/assigned?staffId=${encodeURIComponent(staffId)}`);
     const data = await resp.json();
     
     if (!resp.ok || !data.ok || !data.maintenance) {
@@ -1086,7 +1086,7 @@ async function assignStaffToMaintenance(staffId, staffName) {
   }
   
   try {
-    const resp = await fetch('./assign_staff.php', {
+    const resp = await fetch('/api/maintenance/assign-staff', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

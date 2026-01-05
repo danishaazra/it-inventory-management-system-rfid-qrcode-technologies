@@ -40,7 +40,7 @@ function initElements() {
 async function loadMaintenance(query = '') {
   try {
     const params = query ? `?query=${encodeURIComponent(query)}` : '';
-    const resp = await fetch(`./list_maintenance.php${params}`);
+    const resp = await fetch(`/api/maintenance/list${params}`);
     if (!resp.ok) {
       console.error('Failed to load maintenance items');
       return;
@@ -488,7 +488,7 @@ if (addForm) {
     }
     
     try {
-      const resp = await fetch('./add_maintenance.php', {
+      const resp = await fetch('/api/maintenance/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)

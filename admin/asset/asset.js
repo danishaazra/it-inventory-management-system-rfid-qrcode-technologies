@@ -22,7 +22,7 @@ const itemsPerPage = 10; // Number of items per page
 async function loadAssets(query = '') {
   try {
     const params = query ? `?query=${encodeURIComponent(query)}` : '';
-    const resp = await fetch(`./list_assets.php${params}`);
+    const resp = await fetch(`/api/assets/list${params}`);
     if (!resp.ok) {
       console.error('Failed to load assets');
       return;
@@ -204,7 +204,7 @@ document.addEventListener('click', (e) => {
 // Load existing locations for dropdown
 async function loadLocations() {
   try {
-    const resp = await fetch('./get_locations.php');
+    const resp = await fetch('/api/assets/locations');
     if (!resp.ok) {
       console.warn('Failed to load locations');
       return [];
@@ -281,7 +281,7 @@ addForm.addEventListener('submit', async (e) => {
   console.log('Submitting form data:', formData);
   
   try {
-    const resp = await fetch('./add_asset.php', {
+    const resp = await fetch('/api/assets/add', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(formData)

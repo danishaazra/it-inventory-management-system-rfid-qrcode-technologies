@@ -27,7 +27,7 @@ async function loadDashboardStats() {
     console.log('Loading staff dashboard statistics...');
     
     // Fetch assigned maintenance tasks
-    let url = '../admin/maintenance/get_assigned_maintenance.php?';
+    let url = '/api/maintenance/assigned?';
     if (staff.id) {
       url += 'staffId=' + encodeURIComponent(staff.id);
     } else if (staff.email) {
