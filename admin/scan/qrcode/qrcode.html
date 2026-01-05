@@ -545,8 +545,7 @@
       word-break: break-all;
     }
 
-    .btn-view-asset,
-    .btn-inspect {
+    .btn-view-asset {
       padding: 0.6rem 1.5rem;
       border-radius: 8px;
       font-size: 0.9rem;
@@ -558,9 +557,6 @@
       justify-content: center;
       transition: all 0.2s;
       min-width: 120px;
-    }
-
-    .btn-view-asset {
       background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
       color: white;
       border: none;
@@ -569,17 +565,6 @@
     .btn-view-asset:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
-    }
-
-    .btn-inspect {
-      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
-      color: #1a1a1a;
-      border: none;
-    }
-
-    .btn-inspect:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(246, 201, 69, 0.4);
     }
 
     .scan-result-actions {
@@ -660,19 +645,67 @@
     @media (max-width: 768px) {
       .app-shell {
         flex-direction: column;
-        padding: 1rem;
+        padding: 0;
+        gap: 0;
       }
 
       .sidebar {
         width: 100%;
+        order: -1;
+        border-radius: 0;
+        padding: 1rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .sidebar-brand {
+        margin-bottom: 0;
+        padding-right: 0;
+      }
+
+      .sidebar-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        flex: 1;
+      }
+
+      .nav-item {
+        white-space: nowrap;
+        word-break: keep-all;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+
+      .sidebar-footer {
+        margin-top: 0;
+        margin-left: auto;
       }
 
       .dashboard-container {
-        padding: 1.5rem;
+        width: 100%;
+        order: 2;
+        padding: 1rem;
       }
 
       .scanner-wrapper {
         max-width: 100%;
+      }
+
+      /* Prevent text breaking */
+      * {
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        hyphens: none;
+      }
+
+      .nav-item,
+      .btn,
+      h1, h2, h3 {
+        word-break: keep-all;
+        white-space: normal;
+        overflow-wrap: break-word;
       }
     }
   </style>
@@ -755,7 +788,6 @@
           <div class="scan-result-data" id="scan-result-data"></div>
           <div class="scan-result-actions">
             <a href="#" class="btn-view-asset" id="view-details-btn" style="display: none;">View Details</a>
-            <a href="#" class="btn-inspect" id="inspect-btn" style="display: none;">Inspect</a>
           </div>
         </div>
       </div>

@@ -150,8 +150,8 @@ function displayAssetDetails(asset) {
   }
 }
 
-// Generate QR code for the asset (using server-side PHP endpoint)
-function generateQRCode(assetId) {
+// Generate QR code for the asset (using Node.js API endpoint)
+async function generateQRCode(assetId) {
   const qrSection = document.getElementById('qr-code-section');
   const qrContainer = document.getElementById('qr-code-container');
   const downloadBtn = document.getElementById('download-qr-btn');
@@ -165,66 +165,94 @@ function generateQRCode(assetId) {
   // Use full URL so QR code works when scanned from anywhere
   const assetUrl = `${window.location.origin}${window.location.pathname}?assetId=${encodeURIComponent(assetId)}${maintenanceId ? '&maintenanceId=' + encodeURIComponent(maintenanceId) : ''}`;
   
-  // Generate QR code using server-side PHP endpoint
-  const qrCodeImageUrl = `./generate_qrcode.php?data=${encodeURIComponent(assetUrl)}`;
-  
-  // Clear container and add image
-  qrContainer.innerHTML = '';
-  qrContainer.style.display = 'flex';
-  qrContainer.style.alignItems = 'center';
-  qrContainer.style.justifyContent = 'center';
-  qrContainer.style.minHeight = '256px';
-  
-  const img = document.createElement('img');
-  img.src = qrCodeImageUrl;
-  img.alt = 'QR Code for Asset ' + assetId;
-  img.style.maxWidth = '100%';
-  img.style.height = 'auto';
-  img.style.display = 'block';
-  
-  img.onload = function() {
-    // Show QR code section
-    if (qrSection) {
-      qrSection.style.display = 'block';
+  try {
+    // Generate QR code using Node.js API endpoint
+    const response = await fetch('/api/qrcode/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: assetUrl })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to generate QR code');
     }
     
-    // Show download button
-    if (downloadBtn) {
-      downloadBtn.style.display = 'inline-flex';
+    const blob = await response.blob();
+    const qrCodeImageUrl = URL.createObjectURL(blob);
+    
+    // Clear container and add image
+    qrContainer.innerHTML = '';
+    qrContainer.style.display = 'flex';
+    qrContainer.style.alignItems = 'center';
+    qrContainer.style.justifyContent = 'center';
+    qrContainer.style.minHeight = '256px';
+    
+    const img = document.createElement('img');
+    img.src = qrCodeImageUrl;
+    img.alt = 'QR Code for Asset ' + assetId;
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.display = 'block';
+    
+    img.onload = function() {
+      // Show QR code section
+      if (qrSection) {
+        qrSection.style.display = 'block';
+      }
       
-      // Add download functionality
-      downloadBtn.onclick = function() {
-        downloadQRCode(qrCodeImageUrl, assetId);
-      };
-    }
-  };
-  
-  img.onerror = function() {
-    qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to load QR code image.</p>';
-  };
-  
-  qrContainer.appendChild(img);
+      // Show download button
+      if (downloadBtn) {
+        downloadBtn.style.display = 'inline-flex';
+        
+        // Add download functionality
+        downloadBtn.onclick = function() {
+          downloadQRCode(qrCodeImageUrl, assetId);
+        };
+      }
+    };
+    
+    img.onerror = function() {
+      qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to load QR code image.</p>';
+    };
+    
+    qrContainer.appendChild(img);
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    qrContainer.innerHTML = '<p style="color: #dc2626; padding: 1rem; font-size: 0.9rem;">Failed to generate QR code: ' + escapeHtml(error.message) + '</p>';
+  }
 }
 
 // Download QR code as PNG
 function downloadQRCode(imageUrl, assetId) {
-  // Fetch the image and create download link
-  fetch(imageUrl)
-    .then(response => response.blob())
-    .then(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = `asset-${assetId}-qrcode.png`;
-      link.href = url;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    })
-    .catch(error => {
-      console.error('Error downloading QR code:', error);
-      alert('Failed to download QR code');
-    });
+  // If it's already a blob URL, use it directly
+  if (imageUrl.startsWith('blob:')) {
+    const link = document.createElement('a');
+    link.download = `asset-${assetId}-qrcode.png`;
+    link.href = imageUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else {
+    // Fetch the image and create download link
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `asset-${assetId}-qrcode.png`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Error downloading QR code:', error);
+        alert('Failed to download QR code');
+      });
+  }
 }
 
 // Helper function to escape HTML (prevent XSS)
