@@ -5,6 +5,7 @@ console.log('Current working directory:', process.cwd());
 
 // Load environment variables
 require('dotenv').config();
+const path = require('path');
 
 console.log('Loading dependencies...');
 const express = require('express');
@@ -15,6 +16,9 @@ console.log('✓ Dependencies loaded');
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Serve static files from root directory
+app.use(express.static(path.join(__dirname)));
 
 // MongoDB connection with better error handling
 const MONGO_URI = process.env.MONGO_URI;
@@ -35,8 +39,13 @@ if (!MONGO_URI) {
       });
 }
 
-// Root endpoint
+// Root endpoint - redirect to login page
 app.get('/', (req, res) => {
+    res.redirect('/login/index.html');
+});
+
+// API info endpoint (for checking API status)
+app.get('/api', (req, res) => {
     res.json({ 
         message: 'IT Inventory Management System API',
         status: 'running',
