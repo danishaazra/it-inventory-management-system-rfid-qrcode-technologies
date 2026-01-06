@@ -361,15 +361,34 @@ router.post('/generate-checklist', async (req, res) => {
                 tasks.push('No tasks defined');
             }
 
-            // Create checklist entry
+            // Find latest maintenance date for month display
+            let latestDate = null;
+            let latestMonth = 'NOV'; // Default
+            if (scheduleDates.length > 0) {
+                const sortedDates = scheduleDates.map(d => new Date(d)).sort((a, b) => b - a);
+                latestDate = sortedDates[0];
+                // Get month name from latest date
+                const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                latestMonth = monthNames[latestDate.getMonth()];
+            } else {
+                // If no dates, use current month
+                const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                latestMonth = monthNames[new Date().getMonth()];
+            }
+
+            // Create checklist entry with header information
             checklist.push({
+                // Header information
+                companyName: 'PKT LOGISTICS (M) SDN BHD',
                 branch: item.branch || '-',
                 location: item.location || '-',
                 itemName: item.itemName || '-',
+                month: latestMonth,
+                year: year,
                 frequency: item.frequency || '-',
+                // Data
                 inspectionTasks: tasks,
                 schedule: monthlySchedule,
-                year: year,
                 assignedStaffName: item.assignedStaffName || '-',
                 assignedStaffEmail: item.assignedStaffEmail || '-'
             });
@@ -540,6 +559,21 @@ function generatePDFHTML(data, title, reportType, criteria) {
     const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) + ' MYT';
     const logoPath = '/images/pkt_logo.png';
     
+    // Get header info for checklist reports
+    let headerInfo = null;
+    if (reportType === 'checklist' && Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0];
+        headerInfo = {
+            companyName: firstItem.companyName || 'PKT LOGISTICS (M) SDN BHD',
+            branch: firstItem.branch || '-',
+            location: firstItem.location || '-',
+            itemName: firstItem.itemName || '-',
+            month: firstItem.month || 'NOV',
+            year: firstItem.year || new Date().getFullYear(),
+            frequency: firstItem.frequency || 'Monthly'
+        };
+    }
+    
     let html = `<!DOCTYPE html>
 <html>
 <head>
@@ -558,6 +592,14 @@ function generatePDFHTML(data, title, reportType, criteria) {
     .report-type { font-size: 14px; color: #333; font-weight: 600; }
     .header-right { text-align: right; }
     .report-date { font-size: 12px; color: #666; }
+    .checklist-info { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+    .checklist-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+    .checklist-info-item { display: flex; gap: 5px; }
+    .checklist-info-label { font-weight: 600; }
+    .checklist-check { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
+    .check-option { display: flex; align-items: center; gap: 5px; }
+    .check-box { width: 18px; height: 18px; border: 2px solid #333; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; }
+    .check-box.checked { background: #140958; border-color: #140958; color: white; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th { background: #f1f3f5; padding: 10px; text-align: left; border: 1px solid #ddd; font-weight: 600; }
     td { padding: 8px; border: 1px solid #ddd; }
@@ -577,26 +619,130 @@ function generatePDFHTML(data, title, reportType, criteria) {
     <div class="header-right">
       <div class="report-date"><strong>Report Date:</strong><br>${escapeHtml(currentDate)}</div>
     </div>
-  </div>
-  <h1>${escapeHtml(title)}</h1>`;
+  </div>`;
+    
+    // Add checklist header info if available
+    if (headerInfo) {
+        html += `
+  <div class="checklist-info">
+    <div class="checklist-info-grid">
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">COMPANY NAME:</span>
+        <span>${escapeHtml(headerInfo.companyName)}</span>
+      </div>
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">BRANCH:</span>
+        <span>${escapeHtml(headerInfo.branch)}</span>
+      </div>
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">LOCATION:</span>
+        <span>${escapeHtml(headerInfo.location)}</span>
+      </div>
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">ITEM NAME:</span>
+        <span>${escapeHtml(headerInfo.itemName)}</span>
+      </div>
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">MONTH:</span>
+        <span>${escapeHtml(headerInfo.month)}</span>
+      </div>
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">YEAR:</span>
+        <span>${escapeHtml(headerInfo.year)}</span>
+      </div>
+    </div>
+    <div class="checklist-check">
+      <span class="checklist-info-label">CHECK:</span>
+      <div class="check-option">
+        <span class="check-box ${headerInfo.frequency === 'Weekly' ? 'checked' : ''}">${headerInfo.frequency === 'Weekly' ? '✓' : ''}</span>
+        <span>Weekly</span>
+      </div>
+      <div class="check-option">
+        <span class="check-box ${headerInfo.frequency === 'Monthly' ? 'checked' : ''}">${headerInfo.frequency === 'Monthly' ? '✓' : ''}</span>
+        <span>Monthly</span>
+      </div>
+      <div class="check-option">
+        <span class="check-box ${headerInfo.frequency === 'Quarterly' ? 'checked' : ''}">${headerInfo.frequency === 'Quarterly' ? '✓' : ''}</span>
+        <span>Quarterly</span>
+      </div>
+    </div>
+  </div>`;
+    }
+    
+    html += `  <h1>${escapeHtml(title)}</h1>`;
 
     if (Array.isArray(data) && data.length > 0) {
-        html += '<table><thead><tr>';
-        const headers = Object.keys(data[0]);
-        headers.forEach(header => {
-            html += `<th>${escapeHtml(header)}</th>`;
-        });
-        html += '</tr></thead><tbody>';
-        
-        data.forEach(row => {
-            html += '<tr>';
-            headers.forEach(header => {
-                html += `<td>${escapeHtml(String(row[header] ?? ''))}</td>`;
+        if (reportType === 'checklist') {
+            // Special formatting for checklist report
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            html += '<table><thead><tr>';
+            html += '<th>NO</th><th>INSPECTION HARDWARE</th>';
+            months.forEach(month => {
+                html += `<th colspan="4">${month}</th>`;
             });
-            html += '</tr>';
-        });
-        
-        html += '</tbody></table>';
+            html += '</tr><tr><th></th><th></th>';
+            for (let i = 0; i < 12; i++) {
+                for (let p = 1; p <= 4; p++) {
+                    html += `<th>${p}</th>`;
+                }
+            }
+            html += '</tr></thead><tbody>';
+            
+            let rowNum = 1;
+            data.forEach(item => {
+                const tasks = Array.isArray(item.inspectionTasks) 
+                    ? item.inspectionTasks 
+                    : (typeof item.inspectionTasks === 'string' ? item.inspectionTasks.split('\n').map(t => t.trim()).filter(t => t) : []);
+                const schedule = item.schedule || {};
+                
+                if (tasks.length === 0) {
+                    tasks.push(item.itemName || 'No tasks defined');
+                }
+                
+                tasks.forEach(task => {
+                    html += '<tr>';
+                    html += `<td>${rowNum}</td>`;
+                    html += `<td>${escapeHtml(task || '-')}</td>`;
+                    
+                    for (let month = 1; month <= 12; month++) {
+                        for (let period = 1; period <= 4; period++) {
+                            if (schedule[month] && schedule[month][period]) {
+                                const dates = schedule[month][period];
+                                if (Array.isArray(dates)) {
+                                    html += `<td>${escapeHtml(dates.join(', '))}</td>`;
+                                } else {
+                                    html += `<td>${escapeHtml(String(dates))}</td>`;
+                                }
+                            } else {
+                                html += '<td></td>';
+                            }
+                        }
+                    }
+                    html += '</tr>';
+                    rowNum++;
+                });
+            });
+            
+            html += '</tbody></table>';
+        } else {
+            // Standard table format for other reports
+            html += '<table><thead><tr>';
+            const headers = Object.keys(data[0]);
+            headers.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    html += `<td>${escapeHtml(String(row[header] ?? ''))}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+        }
     } else {
         html += '<p>No data available</p>';
     }
