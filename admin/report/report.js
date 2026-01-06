@@ -692,13 +692,6 @@ window.deleteSavedReport = async function(reportId) {
   }
 };
 
-// Helper function to escape HTML
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 // Check if we need to load a report from URL parameter
 function checkUrlForReport() {
   const urlParams = new URLSearchParams(window.location.search);
