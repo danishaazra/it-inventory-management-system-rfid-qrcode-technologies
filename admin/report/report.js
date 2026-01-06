@@ -3,23 +3,11 @@ let selectedReportType = null;
 let currentReportData = null;
 let reportOptions = { locations: [], branches: [], staff: [] };
 
-const reportTypes = document.querySelectorAll('.report-type-card');
-const criteriaForm = document.getElementById('criteria-form');
-const criteriaFields = document.getElementById('criteria-fields');
-const criteriaTitle = document.getElementById('criteria-title');
-const reportResults = document.getElementById('report-results');
-const reportTable = document.getElementById('report-table');
-const reportTableHead = document.getElementById('report-table-head');
-const reportTableBody = document.getElementById('report-table-body');
-const reportTitle = document.getElementById('report-title');
-const loadingMessage = document.getElementById('loading-message');
-const reportCriteriaForm = document.getElementById('report-criteria-form');
-const cancelBtn = document.getElementById('cancel-btn');
-const generateBtn = document.getElementById('generate-btn');
-const exportPdfBtn = document.getElementById('export-pdf-btn');
-const exportCsvBtn = document.getElementById('export-csv-btn');
-const saveReportBtn = document.getElementById('save-report-btn');
-const savedReportsList = document.getElementById('saved-reports-list');
+// Element references - will be initialized in init()
+let reportTypes, criteriaForm, criteriaFields, criteriaTitle, reportResults;
+let reportTable, reportTableHead, reportTableBody, reportTitle, loadingMessage;
+let reportCriteriaForm, cancelBtn, generateBtn, exportPdfBtn, exportCsvBtn;
+let saveReportBtn, savedReportsList;
 
 // Report type configurations
 const reportConfigs = {
@@ -89,44 +77,91 @@ async function loadReportOptions() {
 
 // Initialize
 async function init() {
+  // Initialize element references
+  reportTypes = document.querySelectorAll('.report-type-card');
+  criteriaForm = document.getElementById('criteria-form');
+  criteriaFields = document.getElementById('criteria-fields');
+  criteriaTitle = document.getElementById('criteria-title');
+  reportResults = document.getElementById('report-results');
+  reportTable = document.getElementById('report-table');
+  reportTableHead = document.getElementById('report-table-head');
+  reportTableBody = document.getElementById('report-table-body');
+  reportTitle = document.getElementById('report-title');
+  loadingMessage = document.getElementById('loading-message');
+  reportCriteriaForm = document.getElementById('report-criteria-form');
+  cancelBtn = document.getElementById('cancel-btn');
+  generateBtn = document.getElementById('generate-btn');
+  exportPdfBtn = document.getElementById('export-pdf-btn');
+  exportCsvBtn = document.getElementById('export-csv-btn');
+  saveReportBtn = document.getElementById('save-report-btn');
+  savedReportsList = document.getElementById('saved-reports-list');
+
+  // Check if all required elements exist
+  if (!reportCriteriaForm || !cancelBtn || !generateBtn || !exportPdfBtn || !exportCsvBtn || !saveReportBtn) {
+    console.error('Some required elements are missing from the DOM');
+    console.error('Missing elements:', {
+      reportCriteriaForm: !reportCriteriaForm,
+      cancelBtn: !cancelBtn,
+      generateBtn: !generateBtn,
+      exportPdfBtn: !exportPdfBtn,
+      exportCsvBtn: !exportCsvBtn,
+      saveReportBtn: !saveReportBtn
+    });
+    return;
+  }
+
+  console.log('All elements found, initializing...');
   await loadReportOptions();
   setupEventListeners();
+  console.log('Event listeners attached successfully');
 }
 
 // Setup event listeners
 function setupEventListeners() {
   // Report type selection
-  reportTypes.forEach(card => {
-    card.addEventListener('click', () => {
-      const type = card.dataset.type;
-      selectReportType(type);
+  if (reportTypes && reportTypes.length > 0) {
+    reportTypes.forEach(card => {
+      card.addEventListener('click', () => {
+        const type = card.dataset.type;
+        selectReportType(type);
+      });
     });
-  });
+  }
 
   // Cancel button
-  cancelBtn.addEventListener('click', () => {
-    resetForm();
-  });
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      resetForm();
+    });
+  }
 
   // Generate report
-  reportCriteriaForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await generateReport();
-  });
+  if (reportCriteriaForm) {
+    reportCriteriaForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await generateReport();
+    });
+  }
 
   // Export buttons
-  exportPdfBtn.addEventListener('click', () => {
-    exportReport('pdf');
-  });
+  if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', () => {
+      exportReport('pdf');
+    });
+  }
 
-  exportCsvBtn.addEventListener('click', () => {
-    exportReport('csv');
-  });
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', () => {
+      exportReport('csv');
+    });
+  }
 
   // Save report button
-  saveReportBtn.addEventListener('click', async () => {
-    await saveReport();
-  });
+  if (saveReportBtn) {
+    saveReportBtn.addEventListener('click', async () => {
+      await saveReport();
+    });
+  }
 }
 
 // Select report type
@@ -134,26 +169,31 @@ function selectReportType(type) {
   selectedReportType = type;
   
   // Update UI
-  reportTypes.forEach(card => {
-    card.classList.remove('selected');
-    if (card.dataset.type === type) {
-      card.classList.add('selected');
-    }
-  });
+  if (reportTypes && reportTypes.length > 0) {
+    reportTypes.forEach(card => {
+      card.classList.remove('selected');
+      if (card.dataset.type === type) {
+        card.classList.add('selected');
+      }
+    });
+  }
 
   // Show criteria form
   const config = reportConfigs[type];
-  criteriaTitle.textContent = `${config.title} - Criteria`;
+  if (criteriaTitle) criteriaTitle.textContent = `${config.title} - Criteria`;
   renderCriteriaFields(config.fields);
-  criteriaForm.classList.add('active');
-  reportResults.classList.remove('active');
+  if (criteriaForm) criteriaForm.classList.add('active');
+  if (reportResults) reportResults.classList.remove('active');
   
   // Scroll to form
-  criteriaForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (criteriaForm) {
+    criteriaForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 // Render criteria fields
 function renderCriteriaFields(fields) {
+  if (!criteriaFields) return;
   criteriaFields.innerHTML = '';
   
   fields.forEach(field => {
@@ -213,6 +253,10 @@ function renderCriteriaFields(fields) {
 // Generate report
 async function generateReport() {
   if (!selectedReportType) return;
+  if (!reportResults || !reportTable || !loadingMessage || !reportTitle || !reportCriteriaForm) {
+    console.error('Required elements not found');
+    return;
+  }
   
   // Show loading
   reportResults.classList.add('active');
@@ -271,13 +315,18 @@ async function generateReport() {
     
   } catch (error) {
     console.error('Error generating report:', error);
-    loadingMessage.textContent = `Error: ${error.message}`;
+    if (loadingMessage) loadingMessage.textContent = `Error: ${error.message}`;
     alert(`Failed to generate report: ${error.message}`);
   }
 }
 
 // Display report
 function displayReport(data) {
+  if (!loadingMessage || !reportTable || !reportTableHead || !reportTableBody) {
+    console.error('Required elements not found for display');
+    return;
+  }
+  
   loadingMessage.style.display = 'none';
   reportTable.style.display = 'table';
   
