@@ -649,6 +649,135 @@
       background: #f8f9fa;
     }
 
+    /* Print Styles */
+    @media print {
+      body {
+        background: #ffffff;
+        padding: 0;
+        margin: 0;
+      }
+
+      .app-shell {
+        padding: 0;
+        gap: 0;
+      }
+
+      .sidebar,
+      .report-type-selection,
+      .criteria-form,
+      .report-actions,
+      .saved-reports-section,
+      .sidebar-toggle-btn,
+      .logout-btn {
+        display: none !important;
+      }
+
+      .dashboard {
+        width: 100%;
+        max-width: 100%;
+        padding: 0.5rem;
+        box-shadow: none;
+        background: #ffffff;
+      }
+
+      .report-results {
+        width: 100%;
+        padding: 0;
+      }
+
+      .report-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      #checklist-header-section {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        page-break-inside: avoid;
+      }
+
+      #checklist-header-section h2 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+      }
+
+      #checklist-header-section h3 {
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .report-table-container {
+        max-height: none;
+        overflow: visible;
+        border: none;
+        border-radius: 0;
+      }
+
+      .report-table {
+        font-size: 0.65rem;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .report-table th,
+      .report-table td {
+        padding: 0.25rem 0.3rem;
+        border: 1px solid #d1d5db;
+        text-align: center;
+      }
+
+      .report-table th:first-child,
+      .report-table td:first-child {
+        width: 30px;
+        min-width: 30px;
+        max-width: 30px;
+        text-align: center;
+      }
+
+      .report-table th:nth-child(2),
+      .report-table td:nth-child(2) {
+        width: 120px;
+        min-width: 120px;
+        max-width: 120px;
+        text-align: left;
+        font-size: 0.6rem;
+      }
+
+      /* Month columns - make them smaller */
+      .report-table th[colspan="4"],
+      .report-table th:not(:first-child):not(:nth-child(2)) {
+        width: auto;
+        min-width: 0;
+        padding: 0.2rem 0.15rem;
+        font-size: 0.6rem;
+      }
+
+      .report-table td:not(:first-child):not(:nth-child(2)) {
+        width: auto;
+        min-width: 0;
+        padding: 0.2rem 0.15rem;
+        font-size: 0.6rem;
+      }
+
+      .report-table thead {
+        position: static;
+        background: #f3f4f6;
+      }
+
+      .report-table tbody tr {
+        page-break-inside: avoid;
+      }
+
+      .report-table tbody tr:hover {
+        background: transparent;
+      }
+
+      @page {
+        size: landscape;
+        margin: 0.5cm;
+      }
+    }
+
     .no-results {
       text-align: center;
       padding: 3rem;
@@ -880,6 +1009,12 @@
       .report-table th,
       .report-table td {
         padding: 0.5rem;
+      }
+
+      /* Ensure table doesn't overflow on mobile */
+      .report-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
       .export-buttons {
