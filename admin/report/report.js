@@ -337,6 +337,25 @@ function displayChecklistReport(checklistData) {
     return;
   }
 
+  // Clear existing table headers
+  reportTableHead.innerHTML = '';
+  reportTableBody.innerHTML = '';
+
+  // Get the first item for header information (assuming all items in report have same branch/location/itemName)
+  const firstItem = checklistData[0];
+  const headerInfo = {
+    companyName: firstItem.companyName || 'PKT LOGISTICS (M) SDN BHD',
+    branch: firstItem.branch || '-',
+    location: firstItem.location || '-',
+    itemName: firstItem.itemName || '-',
+    month: firstItem.month || 'NOV',
+    year: firstItem.year || new Date().getFullYear(),
+    frequency: firstItem.frequency || 'Monthly'
+  };
+
+  // Create and display header section
+  createChecklistHeader(headerInfo);
+
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
   // Create header row
@@ -434,6 +453,113 @@ function displayChecklistReport(checklistData) {
   });
   
   console.log('Checklist report displayed, total rows:', rowNum - 1);
+}
+
+// Create checklist header section
+function createChecklistHeader(headerInfo) {
+  const reportTableContainer = document.getElementById('report-table-container');
+  if (!reportTableContainer) return;
+
+  // Remove existing header if any
+  const existingHeader = document.getElementById('checklist-header-section');
+  if (existingHeader) {
+    existingHeader.remove();
+  }
+
+  // Create header section
+  const headerSection = document.createElement('div');
+  headerSection.id = 'checklist-header-section';
+  headerSection.style.cssText = `
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-family: 'Inter', sans-serif;
+  `;
+
+  // Company name and title
+  const titleSection = document.createElement('div');
+  titleSection.style.cssText = 'text-align: center; margin-bottom: 1.5rem;';
+  titleSection.innerHTML = `
+    <h2 style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem;">${escapeHtml(headerInfo.companyName)}</h2>
+    <h3 style="font-size: 1.25rem; font-weight: 600; color: #374151;">ICT - PREVENTIVE MAINTENANCE CHECKLIST</h3>
+  `;
+  headerSection.appendChild(titleSection);
+
+  // Info grid
+  const infoGrid = document.createElement('div');
+  infoGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;';
+  
+  const infoItems = [
+    { label: 'COMPANY NAME:', value: headerInfo.companyName },
+    { label: 'BRANCH:', value: headerInfo.branch },
+    { label: 'LOCATION:', value: headerInfo.location },
+    { label: 'ITEM NAME:', value: headerInfo.itemName },
+    { label: 'MONTH:', value: headerInfo.month },
+    { label: 'YEAR:', value: headerInfo.year }
+  ];
+
+  infoItems.forEach(item => {
+    const infoItem = document.createElement('div');
+    infoItem.style.cssText = 'display: flex; gap: 0.5rem;';
+    const label = document.createElement('span');
+    label.style.cssText = 'font-weight: 600; color: #374151;';
+    label.textContent = item.label;
+    const value = document.createElement('span');
+    value.style.cssText = 'color: #1a1a1a;';
+    value.textContent = item.value;
+    infoItem.appendChild(label);
+    infoItem.appendChild(value);
+    infoGrid.appendChild(infoItem);
+  });
+
+  headerSection.appendChild(infoGrid);
+
+  // Frequency/Check type
+  const checkSection = document.createElement('div');
+  checkSection.style.cssText = 'display: flex; align-items: center; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;';
+  const checkLabel = document.createElement('span');
+  checkLabel.style.cssText = 'font-weight: 600; color: #374151;';
+  checkLabel.textContent = 'CHECK:';
+  checkSection.appendChild(checkLabel);
+
+  const frequencies = ['Weekly', 'Monthly', 'Quarterly'];
+  frequencies.forEach(freq => {
+    const checkOption = document.createElement('span');
+    checkOption.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
+    const checkbox = document.createElement('span');
+    checkbox.style.cssText = `
+      width: 18px;
+      height: 18px;
+      border: 2px solid #374151;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      ${headerInfo.frequency === freq ? 'background: #140958; border-color: #140958;' : ''}
+    `;
+    if (headerInfo.frequency === freq) {
+      checkbox.innerHTML = '✓';
+      checkbox.style.color = '#ffffff';
+      checkbox.style.fontSize = '12px';
+    }
+    const label = document.createElement('span');
+    label.textContent = freq;
+    checkOption.appendChild(checkbox);
+    checkOption.appendChild(label);
+    checkSection.appendChild(checkOption);
+  });
+
+  headerSection.appendChild(checkSection);
+
+  // Insert header at the beginning of the container
+  const firstChild = reportTableContainer.firstChild;
+  if (firstChild) {
+    reportTableContainer.insertBefore(headerSection, firstChild);
+  } else {
+    reportTableContainer.appendChild(headerSection);
+  }
 }
 
 // Helper function to escape HTML
