@@ -3,11 +3,23 @@ let selectedReportType = null;
 let currentReportData = null;
 let reportOptions = { locations: [], branches: [], staff: [] };
 
-// Element references - will be initialized in init()
-let reportTypes, criteriaForm, criteriaFields, criteriaTitle, reportResults;
-let reportTable, reportTableHead, reportTableBody, reportTitle, loadingMessage;
-let reportCriteriaForm, cancelBtn, generateBtn, exportPdfBtn, exportCsvBtn;
-let saveReportBtn, savedReportsList;
+const reportTypes = document.querySelectorAll('.report-type-card');
+const criteriaForm = document.getElementById('criteria-form');
+const criteriaFields = document.getElementById('criteria-fields');
+const criteriaTitle = document.getElementById('criteria-title');
+const reportResults = document.getElementById('report-results');
+const reportTable = document.getElementById('report-table');
+const reportTableHead = document.getElementById('report-table-head');
+const reportTableBody = document.getElementById('report-table-body');
+const reportTitle = document.getElementById('report-title');
+const loadingMessage = document.getElementById('loading-message');
+const reportCriteriaForm = document.getElementById('report-criteria-form');
+const cancelBtn = document.getElementById('cancel-btn');
+const generateBtn = document.getElementById('generate-btn');
+const exportPdfBtn = document.getElementById('export-pdf-btn');
+const exportCsvBtn = document.getElementById('export-csv-btn');
+const saveReportBtn = document.getElementById('save-report-btn');
+const savedReportsList = document.getElementById('saved-reports-list');
 
 // Report type configurations
 const reportConfigs = {
@@ -77,147 +89,44 @@ async function loadReportOptions() {
 
 // Initialize
 async function init() {
-  // Initialize element references
-  reportTypes = document.querySelectorAll('.report-type-card');
-  criteriaForm = document.getElementById('criteria-form');
-  criteriaFields = document.getElementById('criteria-fields');
-  criteriaTitle = document.getElementById('criteria-title');
-  reportResults = document.getElementById('report-results');
-  reportTable = document.getElementById('report-table');
-  reportTableHead = document.getElementById('report-table-head');
-  reportTableBody = document.getElementById('report-table-body');
-  reportTitle = document.getElementById('report-title');
-  loadingMessage = document.getElementById('loading-message');
-  reportCriteriaForm = document.getElementById('report-criteria-form');
-  cancelBtn = document.getElementById('cancel-btn');
-  generateBtn = document.getElementById('generate-btn');
-  exportPdfBtn = document.getElementById('export-pdf-btn');
-  exportCsvBtn = document.getElementById('export-csv-btn');
-  saveReportBtn = document.getElementById('save-report-btn');
-  savedReportsList = document.getElementById('saved-reports-list');
-
-  // Check if all required elements exist
-  if (!reportCriteriaForm || !cancelBtn || !generateBtn || !exportPdfBtn || !exportCsvBtn || !saveReportBtn) {
-    console.error('Some required elements are missing from the DOM');
-    console.error('Missing elements:', {
-      reportCriteriaForm: !reportCriteriaForm,
-      cancelBtn: !cancelBtn,
-      generateBtn: !generateBtn,
-      exportPdfBtn: !exportPdfBtn,
-      exportCsvBtn: !exportCsvBtn,
-      saveReportBtn: !saveReportBtn
-    });
-    return;
-  }
-
-  console.log('All elements found, initializing...');
-  
-  // Test if buttons are accessible
-  console.log('Button accessibility test:', {
-    cancelBtn: cancelBtn ? 'found' : 'missing',
-    generateBtn: generateBtn ? 'found' : 'missing',
-    exportPdfBtn: exportPdfBtn ? 'found' : 'missing',
-    exportCsvBtn: exportCsvBtn ? 'found' : 'missing',
-    saveReportBtn: saveReportBtn ? 'found' : 'missing'
-  });
-  
-  // Test click on buttons to see if they're blocked
-  if (cancelBtn) {
-    console.log('Cancel button styles:', window.getComputedStyle(cancelBtn).pointerEvents);
-  }
-  
   await loadReportOptions();
   setupEventListeners();
-  console.log('Event listeners attached successfully');
-  
-  // Add a test click handler to verify buttons work
-  if (cancelBtn) {
-    cancelBtn.onclick = function(e) {
-      console.log('Cancel button clicked (onclick handler)');
-    };
-  }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-  console.log('Setting up event listeners...');
-  
-  // Use event delegation for report type cards (more reliable)
-  const reportTypesContainer = document.getElementById('report-types');
-  if (reportTypesContainer) {
-    reportTypesContainer.addEventListener('click', (e) => {
-      const card = e.target.closest('.report-type-card');
-      if (card && card.dataset.type) {
-        const type = card.dataset.type;
-        console.log('Report type selected:', type);
-        selectReportType(type);
-      }
+  // Report type selection
+  reportTypes.forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.dataset.type;
+      selectReportType(type);
     });
-    console.log('Report type cards listener attached');
-  } else {
-    console.error('Report types container not found');
-  }
+  });
 
   // Cancel button
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      console.log('Cancel button clicked');
-      resetForm();
-    });
-    console.log('Cancel button listener attached');
-  } else {
-    console.error('Cancel button not found');
-  }
+  cancelBtn.addEventListener('click', () => {
+    resetForm();
+  });
 
   // Generate report
-  if (reportCriteriaForm) {
-    reportCriteriaForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      console.log('Generate report form submitted');
-      await generateReport();
-    });
-    console.log('Generate form listener attached');
-  } else {
-    console.error('Report criteria form not found');
-  }
+  reportCriteriaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await generateReport();
+  });
 
   // Export buttons
-  if (exportPdfBtn) {
-    exportPdfBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      console.log('Export PDF clicked');
-      exportReport('pdf');
-    });
-    console.log('Export PDF button listener attached');
-  } else {
-    console.error('Export PDF button not found');
-  }
+  exportPdfBtn.addEventListener('click', () => {
+    exportReport('pdf');
+  });
 
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      console.log('Export CSV clicked');
-      exportReport('csv');
-    });
-    console.log('Export CSV button listener attached');
-  } else {
-    console.error('Export CSV button not found');
-  }
+  exportCsvBtn.addEventListener('click', () => {
+    exportReport('csv');
+  });
 
   // Save report button
-  if (saveReportBtn) {
-    saveReportBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      console.log('Save report clicked');
-      await saveReport();
-    });
-    console.log('Save report button listener attached');
-  } else {
-    console.error('Save report button not found');
-  }
-
-  console.log('All event listeners setup complete');
+  saveReportBtn.addEventListener('click', async () => {
+    await saveReport();
+  });
 }
 
 // Select report type
@@ -225,31 +134,26 @@ function selectReportType(type) {
   selectedReportType = type;
   
   // Update UI
-  if (reportTypes && reportTypes.length > 0) {
-    reportTypes.forEach(card => {
-      card.classList.remove('selected');
-      if (card.dataset.type === type) {
-        card.classList.add('selected');
-      }
-    });
-  }
+  reportTypes.forEach(card => {
+    card.classList.remove('selected');
+    if (card.dataset.type === type) {
+      card.classList.add('selected');
+    }
+  });
 
   // Show criteria form
   const config = reportConfigs[type];
-  if (criteriaTitle) criteriaTitle.textContent = `${config.title} - Criteria`;
+  criteriaTitle.textContent = `${config.title} - Criteria`;
   renderCriteriaFields(config.fields);
-  if (criteriaForm) criteriaForm.classList.add('active');
-  if (reportResults) reportResults.classList.remove('active');
+  criteriaForm.classList.add('active');
+  reportResults.classList.remove('active');
   
   // Scroll to form
-  if (criteriaForm) {
-    criteriaForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
+  criteriaForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // Render criteria fields
 function renderCriteriaFields(fields) {
-  if (!criteriaFields) return;
   criteriaFields.innerHTML = '';
   
   fields.forEach(field => {
@@ -309,10 +213,6 @@ function renderCriteriaFields(fields) {
 // Generate report
 async function generateReport() {
   if (!selectedReportType) return;
-  if (!reportResults || !reportTable || !loadingMessage || !reportTitle || !reportCriteriaForm) {
-    console.error('Required elements not found');
-    return;
-  }
   
   // Show loading
   reportResults.classList.add('active');
@@ -371,18 +271,13 @@ async function generateReport() {
     
   } catch (error) {
     console.error('Error generating report:', error);
-    if (loadingMessage) loadingMessage.textContent = `Error: ${error.message}`;
+    loadingMessage.textContent = `Error: ${error.message}`;
     alert(`Failed to generate report: ${error.message}`);
   }
 }
 
 // Display report
 function displayReport(data) {
-  if (!loadingMessage || !reportTable || !reportTableHead || !reportTableBody) {
-    console.error('Required elements not found for display');
-    return;
-  }
-  
   loadingMessage.style.display = 'none';
   reportTable.style.display = 'table';
   
@@ -441,25 +336,6 @@ function displayChecklistReport(checklistData) {
     reportTableBody.innerHTML = '<tr><td colspan="100%" class="no-results">No checklist data available</td></tr>';
     return;
   }
-
-  // Clear existing table headers
-  reportTableHead.innerHTML = '';
-  reportTableBody.innerHTML = '';
-
-  // Get the first item for header information (assuming all items in report have same branch/location/itemName)
-  const firstItem = checklistData[0];
-  const headerInfo = {
-    companyName: firstItem.companyName || 'PKT LOGISTICS (M) SDN BHD',
-    branch: firstItem.branch || '-',
-    location: firstItem.location || '-',
-    itemName: firstItem.itemName || '-',
-    month: firstItem.month || 'NOV',
-    year: firstItem.year || new Date().getFullYear(),
-    frequency: firstItem.frequency || 'Monthly'
-  };
-
-  // Create and display header section
-  createChecklistHeader(headerInfo);
 
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   
@@ -558,113 +434,6 @@ function displayChecklistReport(checklistData) {
   });
   
   console.log('Checklist report displayed, total rows:', rowNum - 1);
-}
-
-// Create checklist header section
-function createChecklistHeader(headerInfo) {
-  const reportTableContainer = document.getElementById('report-table-container');
-  if (!reportTableContainer) return;
-
-  // Remove existing header if any
-  const existingHeader = document.getElementById('checklist-header-section');
-  if (existingHeader) {
-    existingHeader.remove();
-  }
-
-  // Create header section
-  const headerSection = document.createElement('div');
-  headerSection.id = 'checklist-header-section';
-  headerSection.style.cssText = `
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    font-family: 'Inter', sans-serif;
-  `;
-
-  // Company name and title
-  const titleSection = document.createElement('div');
-  titleSection.style.cssText = 'text-align: center; margin-bottom: 1.5rem;';
-  titleSection.innerHTML = `
-    <h2 style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem;">${escapeHtml(headerInfo.companyName)}</h2>
-    <h3 style="font-size: 1.25rem; font-weight: 600; color: #374151;">ICT - PREVENTIVE MAINTENANCE CHECKLIST</h3>
-  `;
-  headerSection.appendChild(titleSection);
-
-  // Info grid
-  const infoGrid = document.createElement('div');
-  infoGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;';
-  
-  const infoItems = [
-    { label: 'COMPANY NAME:', value: headerInfo.companyName },
-    { label: 'BRANCH:', value: headerInfo.branch },
-    { label: 'LOCATION:', value: headerInfo.location },
-    { label: 'ITEM NAME:', value: headerInfo.itemName },
-    { label: 'MONTH:', value: headerInfo.month },
-    { label: 'YEAR:', value: headerInfo.year }
-  ];
-
-  infoItems.forEach(item => {
-    const infoItem = document.createElement('div');
-    infoItem.style.cssText = 'display: flex; gap: 0.5rem;';
-    const label = document.createElement('span');
-    label.style.cssText = 'font-weight: 600; color: #374151;';
-    label.textContent = item.label;
-    const value = document.createElement('span');
-    value.style.cssText = 'color: #1a1a1a;';
-    value.textContent = item.value;
-    infoItem.appendChild(label);
-    infoItem.appendChild(value);
-    infoGrid.appendChild(infoItem);
-  });
-
-  headerSection.appendChild(infoGrid);
-
-  // Frequency/Check type
-  const checkSection = document.createElement('div');
-  checkSection.style.cssText = 'display: flex; align-items: center; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;';
-  const checkLabel = document.createElement('span');
-  checkLabel.style.cssText = 'font-weight: 600; color: #374151;';
-  checkLabel.textContent = 'CHECK:';
-  checkSection.appendChild(checkLabel);
-
-  const frequencies = ['Weekly', 'Monthly', 'Quarterly'];
-  frequencies.forEach(freq => {
-    const checkOption = document.createElement('span');
-    checkOption.style.cssText = 'display: flex; align-items: center; gap: 0.5rem;';
-    const checkbox = document.createElement('span');
-    checkbox.style.cssText = `
-      width: 18px;
-      height: 18px;
-      border: 2px solid #374151;
-      border-radius: 3px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      ${headerInfo.frequency === freq ? 'background: #140958; border-color: #140958;' : ''}
-    `;
-    if (headerInfo.frequency === freq) {
-      checkbox.innerHTML = '✓';
-      checkbox.style.color = '#ffffff';
-      checkbox.style.fontSize = '12px';
-    }
-    const label = document.createElement('span');
-    label.textContent = freq;
-    checkOption.appendChild(checkbox);
-    checkOption.appendChild(label);
-    checkSection.appendChild(checkOption);
-  });
-
-  headerSection.appendChild(checkSection);
-
-  // Insert header before table
-  const reportTable = document.getElementById('report-table');
-  if (reportTable && reportTable.parentNode) {
-    reportTable.parentNode.insertBefore(headerSection, reportTable);
-  } else {
-    reportTableContainer.appendChild(headerSection);
-  }
 }
 
 // Helper function to escape HTML
@@ -943,36 +712,15 @@ function checkUrlForReport() {
 }
 
 // Initialize when DOM is ready
-async function startApp() {
-  try {
-    console.log('Starting app initialization...');
-    await init();
-    await loadSavedReports();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    loadSavedReports();
     checkUrlForReport();
-    console.log('Report page initialized successfully');
-  } catch (error) {
-    console.error('Error initializing report page:', error);
-    console.error(error.stack);
-  }
-}
-
-// Wait for DOM to be fully ready
-function waitForDOM() {
-  return new Promise((resolve) => {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      // DOM is ready, but wait a bit more for all scripts to load
-      setTimeout(resolve, 200);
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(resolve, 200);
-      });
-    }
   });
+} else {
+  init();
+  loadSavedReports();
+  checkUrlForReport();
 }
-
-// Start the app
-waitForDOM().then(() => {
-  console.log('DOM ready, starting app...');
-  startApp();
-});
 

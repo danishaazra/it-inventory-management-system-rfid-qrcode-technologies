@@ -522,20 +522,8 @@
       border-radius: 8px;
       font-size: 0.875rem;
       font-weight: 600;
-      cursor: pointer !important;
+      cursor: pointer;
       transition: all 0.15s;
-      pointer-events: auto !important;
-      position: relative;
-      z-index: 10;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-    }
-    
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
     }
 
     .btn-primary {
@@ -606,30 +594,6 @@
       overflow: auto;
     }
 
-    #checklist-header-section {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      font-family: 'Inter', sans-serif;
-    }
-
-    #checklist-header-section h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-
-    #checklist-header-section h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #374151;
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
       max-height: 600px;
     }
 
@@ -1041,25 +1005,6 @@
   </div>
 
   <script type="module" src="./report.js"></script>
-  <script>
-    // Fallback: Direct button handlers if module fails
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOMContentLoaded fired');
-      
-      // Test if buttons exist
-      const testBtn = document.getElementById('cancel-btn');
-      console.log('Cancel button found:', !!testBtn);
-      
-      if (testBtn) {
-        console.log('Cancel button computed styles:', {
-          pointerEvents: window.getComputedStyle(testBtn).pointerEvents,
-          cursor: window.getComputedStyle(testBtn).cursor,
-          zIndex: window.getComputedStyle(testBtn).zIndex,
-          position: window.getComputedStyle(testBtn).position
-        });
-      }
-    });
-  </script>
 </body>
 </html>
 
