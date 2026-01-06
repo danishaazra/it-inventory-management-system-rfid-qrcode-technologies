@@ -675,7 +675,7 @@
       .dashboard {
         width: 100%;
         max-width: 100%;
-        padding: 0.5rem;
+        padding: 0.3rem;
         box-shadow: none;
         background: #ffffff;
       }
@@ -686,24 +686,25 @@
       }
 
       .report-title {
-        font-size: 1.2rem;
-        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
       }
 
       #checklist-header-section {
-        padding: 0.75rem;
-        margin-bottom: 0.75rem;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
         page-break-inside: avoid;
+        font-size: 0.7rem;
       }
 
       #checklist-header-section h2 {
-        font-size: 1rem;
-        margin-bottom: 0.25rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.2rem;
       }
 
       #checklist-header-section h3 {
-        font-size: 0.85rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.3rem;
       }
 
       .report-table-container {
@@ -714,49 +715,66 @@
       }
 
       .report-table {
-        font-size: 0.65rem;
+        font-size: 0.5rem;
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
       }
 
       .report-table th,
       .report-table td {
-        padding: 0.25rem 0.3rem;
+        padding: 0.15rem 0.2rem;
         border: 1px solid #d1d5db;
         text-align: center;
+        word-wrap: break-word;
+        overflow: hidden;
       }
 
+      /* NO column - very narrow */
       .report-table th:first-child,
       .report-table td:first-child {
-        width: 30px;
-        min-width: 30px;
-        max-width: 30px;
+        width: 20px;
+        min-width: 20px;
+        max-width: 20px;
         text-align: center;
+        padding: 0.15rem 0.1rem;
+        font-size: 0.5rem;
       }
 
+      /* INSPECTION HARDWARE column - compact */
       .report-table th:nth-child(2),
       .report-table td:nth-child(2) {
-        width: 120px;
-        min-width: 120px;
-        max-width: 120px;
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
         text-align: left;
-        font-size: 0.6rem;
+        font-size: 0.45rem;
+        padding: 0.15rem 0.2rem;
+        line-height: 1.1;
       }
 
-      /* Month columns - make them smaller */
-      .report-table th[colspan="4"],
+      /* Month header columns - very compact */
+      .report-table th[colspan="4"] {
+        padding: 0.15rem 0.1rem;
+        font-size: 0.5rem;
+        font-weight: 600;
+      }
+
+      /* Period sub-header columns - very compact */
       .report-table th:not(:first-child):not(:nth-child(2)) {
         width: auto;
         min-width: 0;
-        padding: 0.2rem 0.15rem;
-        font-size: 0.6rem;
+        padding: 0.1rem 0.15rem;
+        font-size: 0.45rem;
+        font-weight: 600;
       }
 
+      /* Month/period data cells - very compact */
       .report-table td:not(:first-child):not(:nth-child(2)) {
         width: auto;
         min-width: 0;
-        padding: 0.2rem 0.15rem;
-        font-size: 0.6rem;
+        padding: 0.1rem 0.15rem;
+        font-size: 0.45rem;
       }
 
       .report-table thead {
@@ -773,7 +791,7 @@
       }
 
       @page {
-        size: landscape;
+        size: portrait;
         margin: 0.5cm;
       }
     }
