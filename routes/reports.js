@@ -653,30 +653,176 @@ function generatePDFHTML(data, title, reportType, criteria) {
   <title>${escapeHtml(title)}</title>
   <style>
     @media print {
-      @page { margin: 20mm; }
+      @page { 
+        size: portrait;
+        margin: 0.3cm;
+      }
     }
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #140958; }
-    .header-left { display: flex; align-items: center; gap: 15px; }
-    .header-logo { width: 80px; height: 80px; object-fit: contain; }
-    .header-text { display: flex; flex-direction: column; }
-    .company-name { font-size: 18px; font-weight: bold; color: #140958; margin-bottom: 5px; }
-    .report-type { font-size: 14px; color: #333; font-weight: 600; }
-    .header-right { text-align: right; }
-    .report-date { font-size: 12px; color: #666; }
-    .checklist-info { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
-    .checklist-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
-    .checklist-info-item { display: flex; gap: 5px; }
-    .checklist-info-label { font-weight: 600; }
-    .checklist-check { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
-    .check-option { display: flex; align-items: center; gap: 5px; }
-    .check-box { width: 18px; height: 18px; border: 2px solid #333; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; }
-    .check-box.checked { background: #140958; border-color: #140958; color: white; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th { background: #f1f3f5; padding: 10px; text-align: left; border: 1px solid #ddd; font-weight: 600; }
-    td { padding: 8px; border: 1px solid #ddd; }
-    tr:nth-child(even) { background: #f8f9fa; }
-    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 10px; 
+      font-size: 10px;
+    }
+    .header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: flex-start; 
+      margin-bottom: 10px; 
+      padding-bottom: 10px; 
+      border-bottom: 2px solid #140958; 
+    }
+    .header-left { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+    }
+    .header-logo { 
+      width: 50px; 
+      height: 50px; 
+      object-fit: contain; 
+    }
+    .header-text { 
+      display: flex; 
+      flex-direction: column; 
+    }
+    .company-name { 
+      font-size: 12px; 
+      font-weight: bold; 
+      color: #140958; 
+      margin-bottom: 3px; 
+    }
+    .report-type { 
+      font-size: 10px; 
+      color: #333; 
+      font-weight: 600; 
+    }
+    .header-right { 
+      text-align: right; 
+    }
+    .report-date { 
+      font-size: 9px; 
+      color: #666; 
+    }
+    .checklist-info { 
+      margin: 10px 0; 
+      padding: 8px; 
+      border: 1px solid #ddd; 
+      border-radius: 5px; 
+      background: #f9f9f9; 
+      font-size: 9px;
+    }
+    .checklist-info-grid { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 5px; 
+      margin-bottom: 5px; 
+    }
+    .checklist-info-item { 
+      display: flex; 
+      gap: 3px; 
+    }
+    .checklist-info-label { 
+      font-weight: 600; 
+    }
+    .checklist-check { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+      margin-top: 5px; 
+      padding-top: 5px; 
+      border-top: 1px solid #ddd; 
+    }
+    .check-option { 
+      display: flex; 
+      align-items: center; 
+      gap: 3px; 
+    }
+    .check-box { 
+      width: 12px; 
+      height: 12px; 
+      border: 2px solid #333; 
+      border-radius: 3px; 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 8px;
+    }
+    .check-box.checked { 
+      background: #140958; 
+      border-color: #140958; 
+      color: white; 
+    }
+    h1 {
+      font-size: 14px;
+      margin: 10px 0;
+      text-align: center;
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 10px; 
+      font-size: 0.35rem;
+      table-layout: fixed;
+    }
+    th { 
+      background: #f1f3f5; 
+      padding: 0.08rem 0.1rem; 
+      text-align: center; 
+      border: 1px solid #ddd; 
+      font-weight: 600; 
+      font-size: 0.35rem;
+    }
+    td { 
+      padding: 0.06rem 0.08rem; 
+      border: 1px solid #ddd; 
+      font-size: 0.32rem;
+      text-align: center;
+      word-wrap: break-word;
+      overflow: hidden;
+    }
+    /* NO column */
+    table th:first-child,
+    table td:first-child {
+      width: 15px;
+      min-width: 15px;
+      max-width: 15px;
+      font-size: 0.35rem;
+      padding: 0.08rem 0.05rem;
+    }
+    /* INSPECTION HARDWARE column */
+    table th:nth-child(2),
+    table td:nth-child(2) {
+      width: 60px;
+      min-width: 60px;
+      max-width: 60px;
+      text-align: left;
+      font-size: 0.32rem;
+      padding: 0.08rem 0.1rem;
+      line-height: 1.1;
+    }
+    /* Month header columns - ensure all 12 months fit */
+    table th[colspan="4"] {
+      width: calc((100% - 75px) / 12);
+      min-width: 0;
+      padding: 0.08rem 0.05rem;
+      font-size: 0.35rem;
+    }
+    /* Period columns */
+    table th:not(:first-child):not(:nth-child(2)),
+    table td:not(:first-child):not(:nth-child(2)) {
+      width: calc((100% - 75px) / 48);
+      min-width: 0;
+      padding: 0.06rem 0.08rem;
+    }
+    tr:nth-child(even) { 
+      background: #f8f9fa; 
+    }
+    .footer { 
+      margin-top: 15px; 
+      text-align: center; 
+      color: #666; 
+      font-size: 9px; 
+    }
   </style>
 </head>
 <body>
