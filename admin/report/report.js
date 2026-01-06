@@ -96,49 +96,37 @@ async function init() {
 // Setup event listeners
 function setupEventListeners() {
   // Report type selection
-  if (reportTypes && reportTypes.length > 0) {
-    reportTypes.forEach(card => {
-      card.addEventListener('click', () => {
-        const type = card.dataset.type;
-        selectReportType(type);
-      });
+  reportTypes.forEach(card => {
+    card.addEventListener('click', () => {
+      const type = card.dataset.type;
+      selectReportType(type);
     });
-  }
+  });
 
   // Cancel button
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-      resetForm();
-    });
-  }
+  cancelBtn.addEventListener('click', () => {
+    resetForm();
+  });
 
   // Generate report
-  if (reportCriteriaForm) {
-    reportCriteriaForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await generateReport();
-    });
-  }
+  reportCriteriaForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await generateReport();
+  });
 
   // Export buttons
-  if (exportPdfBtn) {
-    exportPdfBtn.addEventListener('click', () => {
-      exportReport('pdf');
-    });
-  }
+  exportPdfBtn.addEventListener('click', () => {
+    exportReport('pdf');
+  });
 
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', () => {
-      exportReport('csv');
-    });
-  }
+  exportCsvBtn.addEventListener('click', () => {
+    exportReport('csv');
+  });
 
   // Save report button
-  if (saveReportBtn) {
-    saveReportBtn.addEventListener('click', async () => {
-      await saveReport();
-    });
-  }
+  saveReportBtn.addEventListener('click', async () => {
+    await saveReport();
+  });
 }
 
 // Select report type
@@ -724,16 +712,15 @@ function checkUrlForReport() {
 }
 
 // Initialize when DOM is ready
-function startApp() {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    init();
+    loadSavedReports();
+    checkUrlForReport();
+  });
+} else {
   init();
   loadSavedReports();
   checkUrlForReport();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApp);
-} else {
-  // DOM already loaded, but wait a tiny bit to ensure all elements are ready
-  setTimeout(startApp, 50);
 }
 
