@@ -399,6 +399,7 @@ function displayChecklistReport(checklistData) {
   let rowNum = 1;
   checklistData.forEach(item => {
     console.log('Processing checklist item:', item);
+    console.log('Item schedule data:', item.schedule);
     
     // Handle inspectionTasks - can be array or string
     let tasks = [];
@@ -410,6 +411,8 @@ function displayChecklistReport(checklistData) {
     }
     
     const schedule = item.schedule || {};
+    console.log('Schedule object:', schedule);
+    console.log('Schedule keys:', Object.keys(schedule));
     
     if (tasks.length === 0) {
       tasks.push(item.itemName || 'No tasks defined');
@@ -434,13 +437,29 @@ function displayChecklistReport(checklistData) {
         for (let period = 1; period <= 4; period++) {
           const cell = document.createElement('td');
           cell.style.textAlign = 'center';
+          
+          // Debug: log what we're checking
+          if (month === 1 && period === 1 && rowNum === 1) {
+            console.log('Checking schedule structure:', {
+              schedule: schedule,
+              month1: schedule[1],
+              month1Period1: schedule[1] && schedule[1][1]
+            });
+          }
+          
           if (schedule && schedule[month] && schedule[month][period]) {
             const dates = schedule[month][period];
             if (Array.isArray(dates) && dates.length > 0) {
               // Dates are day numbers (e.g., "17", "14", "20"), join with commas
               cell.textContent = dates.join(', ');
+              console.log(`Filled cell Month ${month}, Period ${period} with: ${dates.join(', ')}`);
             } else if (dates) {
               cell.textContent = String(dates);
+            }
+          } else {
+            // Debug empty cells
+            if (month === 1 && period === 1 && rowNum === 1) {
+              console.log(`Empty cell for Month ${month}, Period ${period} - schedule[${month}]:`, schedule[month]);
             }
           }
           tr.appendChild(cell);

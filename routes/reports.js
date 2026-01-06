@@ -243,8 +243,9 @@ router.post('/generate-checklist', async (req, res) => {
         const criteria = req.body;
         const filter = {};
 
-        // Year filter
-        const year = criteria.year ? parseInt(criteria.year) : new Date().getFullYear();
+        // Year filter - if not provided, use current year or find dates from schedule
+        let year = criteria.year ? parseInt(criteria.year) : new Date().getFullYear();
+        console.log(`Generating checklist report for year: ${year}`);
 
         if (criteria.branch) filter.branch = criteria.branch;
         if (criteria.location) filter.location = criteria.location;
@@ -312,18 +313,23 @@ router.post('/generate-checklist', async (req, res) => {
                     // Format: { "January": "2024-01-15", "February": "2024-02-15", ... }
                     // Also handle: { "1": "2024-01-15", "2": "2024-02-15", ... }
                     Object.entries(schedule).forEach(([key, dateStr]) => {
-                        if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-                            const dateYear = parseInt(dateStr.substring(0, 4));
-                            if (dateYear === year) {
-                                scheduleDates.push(dateStr);
+                        if (typeof dateStr === 'string' && dateStr.trim() !== '') {
+                            // Check if it's a date string
+                            if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+                                const dateYear = parseInt(dateStr.substring(0, 4));
+                                if (dateYear === year) {
+                                    scheduleDates.push(dateStr);
+                                    console.log(`Found Monthly date: ${dateStr} from key: ${key}`);
+                                }
                             }
                         } else if (typeof dateStr === 'object' && dateStr !== null) {
                             // Handle nested objects
                             Object.values(dateStr).forEach(nestedDate => {
-                                if (typeof nestedDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(nestedDate)) {
+                                if (typeof nestedDate === 'string' && nestedDate.trim() !== '' && /^\d{4}-\d{2}-\d{2}/.test(nestedDate)) {
                                     const dateYear = parseInt(nestedDate.substring(0, 4));
                                     if (dateYear === year) {
                                         scheduleDates.push(nestedDate);
+                                        console.log(`Found Monthly date (nested): ${nestedDate} from key: ${key}`);
                                     }
                                 }
                             });
@@ -357,6 +363,32 @@ router.post('/generate-checklist', async (req, res) => {
                 }
                 
                 console.log(`Found ${scheduleDates.length} schedule dates for ${item.itemName} in year ${year}`);
+                
+                // If no dates found for the selected year, try to find dates in any year
+                if (scheduleDates.length === 0 && schedule && Object.keys(schedule).length > 0) {
+                    console.log(`No dates found for year ${year}, checking all years in schedule...`);
+                    const allDates = [];
+                    const findAnyDates = (obj) => {
+                        if (typeof obj === 'string' && /^\d{4}-\d{2}-\d{2}/.test(obj)) {
+                            allDates.push(obj);
+                        } else if (Array.isArray(obj)) {
+                            obj.forEach(findAnyDates);
+                        } else if (typeof obj === 'object' && obj !== null) {
+                            Object.values(obj).forEach(findAnyDates);
+                        }
+                    };
+                    findAnyDates(schedule);
+                    console.log(`Found ${allDates.length} total dates in schedule (any year):`, allDates);
+                    
+                    // If we found dates in other years, use the most common year or the year of the latest date
+                    if (allDates.length > 0) {
+                        const years = allDates.map(d => parseInt(d.substring(0, 4)));
+                        const yearCounts = {};
+                        years.forEach(y => yearCounts[y] = (yearCounts[y] || 0) + 1);
+                        const mostCommonYear = Object.keys(yearCounts).reduce((a, b) => yearCounts[a] > yearCounts[b] ? a : b);
+                        console.log(`Most common year in schedule: ${mostCommonYear}, but filtering for year: ${year}`);
+                    }
+                }
             } else {
                 console.log(`No maintenanceSchedule found for ${item.itemName}`);
             }
