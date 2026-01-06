@@ -111,57 +111,113 @@ async function init() {
   }
 
   console.log('All elements found, initializing...');
+  
+  // Test if buttons are accessible
+  console.log('Button accessibility test:', {
+    cancelBtn: cancelBtn ? 'found' : 'missing',
+    generateBtn: generateBtn ? 'found' : 'missing',
+    exportPdfBtn: exportPdfBtn ? 'found' : 'missing',
+    exportCsvBtn: exportCsvBtn ? 'found' : 'missing',
+    saveReportBtn: saveReportBtn ? 'found' : 'missing'
+  });
+  
+  // Test click on buttons to see if they're blocked
+  if (cancelBtn) {
+    console.log('Cancel button styles:', window.getComputedStyle(cancelBtn).pointerEvents);
+  }
+  
   await loadReportOptions();
   setupEventListeners();
   console.log('Event listeners attached successfully');
+  
+  // Add a test click handler to verify buttons work
+  if (cancelBtn) {
+    cancelBtn.onclick = function(e) {
+      console.log('Cancel button clicked (onclick handler)');
+    };
+  }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-  // Report type selection
-  if (reportTypes && reportTypes.length > 0) {
-    reportTypes.forEach(card => {
-      card.addEventListener('click', () => {
+  console.log('Setting up event listeners...');
+  
+  // Use event delegation for report type cards (more reliable)
+  const reportTypesContainer = document.getElementById('report-types');
+  if (reportTypesContainer) {
+    reportTypesContainer.addEventListener('click', (e) => {
+      const card = e.target.closest('.report-type-card');
+      if (card && card.dataset.type) {
         const type = card.dataset.type;
+        console.log('Report type selected:', type);
         selectReportType(type);
-      });
+      }
     });
+    console.log('Report type cards listener attached');
+  } else {
+    console.error('Report types container not found');
   }
 
   // Cancel button
   if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
+    cancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('Cancel button clicked');
       resetForm();
     });
+    console.log('Cancel button listener attached');
+  } else {
+    console.error('Cancel button not found');
   }
 
   // Generate report
   if (reportCriteriaForm) {
     reportCriteriaForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      console.log('Generate report form submitted');
       await generateReport();
     });
+    console.log('Generate form listener attached');
+  } else {
+    console.error('Report criteria form not found');
   }
 
   // Export buttons
   if (exportPdfBtn) {
-    exportPdfBtn.addEventListener('click', () => {
+    exportPdfBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('Export PDF clicked');
       exportReport('pdf');
     });
+    console.log('Export PDF button listener attached');
+  } else {
+    console.error('Export PDF button not found');
   }
 
   if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', () => {
+    exportCsvBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log('Export CSV clicked');
       exportReport('csv');
     });
+    console.log('Export CSV button listener attached');
+  } else {
+    console.error('Export CSV button not found');
   }
 
   // Save report button
   if (saveReportBtn) {
-    saveReportBtn.addEventListener('click', async () => {
+    saveReportBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      console.log('Save report clicked');
       await saveReport();
     });
+    console.log('Save report button listener attached');
+  } else {
+    console.error('Save report button not found');
   }
+
+  console.log('All event listeners setup complete');
 }
 
 // Select report type
@@ -887,15 +943,36 @@ function checkUrlForReport() {
 }
 
 // Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    init();
-    loadSavedReports();
+async function startApp() {
+  try {
+    console.log('Starting app initialization...');
+    await init();
+    await loadSavedReports();
     checkUrlForReport();
-  });
-} else {
-  init();
-  loadSavedReports();
-  checkUrlForReport();
+    console.log('Report page initialized successfully');
+  } catch (error) {
+    console.error('Error initializing report page:', error);
+    console.error(error.stack);
+  }
 }
+
+// Wait for DOM to be fully ready
+function waitForDOM() {
+  return new Promise((resolve) => {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      // DOM is ready, but wait a bit more for all scripts to load
+      setTimeout(resolve, 200);
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(resolve, 200);
+      });
+    }
+  });
+}
+
+// Start the app
+waitForDOM().then(() => {
+  console.log('DOM ready, starting app...');
+  startApp();
+});
 

@@ -522,11 +522,20 @@
       border-radius: 8px;
       font-size: 0.875rem;
       font-weight: 600;
-      cursor: pointer;
+      cursor: pointer !important;
       transition: all 0.15s;
-      pointer-events: auto;
+      pointer-events: auto !important;
       position: relative;
-      z-index: 1;
+      z-index: 10;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     .btn-primary {
@@ -1032,6 +1041,25 @@
   </div>
 
   <script type="module" src="./report.js"></script>
+  <script>
+    // Fallback: Direct button handlers if module fails
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOMContentLoaded fired');
+      
+      // Test if buttons exist
+      const testBtn = document.getElementById('cancel-btn');
+      console.log('Cancel button found:', !!testBtn);
+      
+      if (testBtn) {
+        console.log('Cancel button computed styles:', {
+          pointerEvents: window.getComputedStyle(testBtn).pointerEvents,
+          cursor: window.getComputedStyle(testBtn).cursor,
+          zIndex: window.getComputedStyle(testBtn).zIndex,
+          position: window.getComputedStyle(testBtn).position
+        });
+      }
+    });
+  </script>
 </body>
 </html>
 
