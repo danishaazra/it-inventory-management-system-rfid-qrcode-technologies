@@ -655,30 +655,30 @@ function generatePDFHTML(data, title, reportType, criteria) {
     @media print {
       @page { 
         size: portrait;
-        margin: 0.3cm;
+        margin: 0.5cm;
       }
     }
     body { 
       font-family: Arial, sans-serif; 
-      margin: 10px; 
-      font-size: 10px;
+      margin: 15px; 
+      font-size: 11px;
     }
     .header { 
       display: flex; 
       justify-content: space-between; 
       align-items: flex-start; 
-      margin-bottom: 10px; 
-      padding-bottom: 10px; 
+      margin-bottom: 15px; 
+      padding-bottom: 12px; 
       border-bottom: 2px solid #140958; 
     }
     .header-left { 
       display: flex; 
       align-items: center; 
-      gap: 10px; 
+      gap: 12px; 
     }
     .header-logo { 
-      width: 50px; 
-      height: 50px; 
+      width: 60px; 
+      height: 60px; 
       object-fit: contain; 
     }
     .header-text { 
@@ -686,13 +686,13 @@ function generatePDFHTML(data, title, reportType, criteria) {
       flex-direction: column; 
     }
     .company-name { 
-      font-size: 12px; 
+      font-size: 14px; 
       font-weight: bold; 
       color: #140958; 
-      margin-bottom: 3px; 
+      margin-bottom: 4px; 
     }
     .report-type { 
-      font-size: 10px; 
+      font-size: 11px; 
       color: #333; 
       font-weight: 600; 
     }
@@ -700,26 +700,26 @@ function generatePDFHTML(data, title, reportType, criteria) {
       text-align: right; 
     }
     .report-date { 
-      font-size: 9px; 
+      font-size: 10px; 
       color: #666; 
     }
     .checklist-info { 
-      margin: 10px 0; 
-      padding: 8px; 
+      margin: 12px 0; 
+      padding: 10px; 
       border: 1px solid #ddd; 
       border-radius: 5px; 
       background: #f9f9f9; 
-      font-size: 9px;
+      font-size: 10px;
     }
     .checklist-info-grid { 
       display: grid; 
       grid-template-columns: repeat(2, 1fr); 
-      gap: 5px; 
-      margin-bottom: 5px; 
+      gap: 6px; 
+      margin-bottom: 6px; 
     }
     .checklist-info-item { 
       display: flex; 
-      gap: 3px; 
+      gap: 4px; 
     }
     .checklist-info-label { 
       font-weight: 600; 
@@ -727,25 +727,25 @@ function generatePDFHTML(data, title, reportType, criteria) {
     .checklist-check { 
       display: flex; 
       align-items: center; 
-      gap: 8px; 
-      margin-top: 5px; 
-      padding-top: 5px; 
+      gap: 10px; 
+      margin-top: 6px; 
+      padding-top: 6px; 
       border-top: 1px solid #ddd; 
     }
     .check-option { 
       display: flex; 
       align-items: center; 
-      gap: 3px; 
+      gap: 4px; 
     }
     .check-box { 
-      width: 12px; 
-      height: 12px; 
+      width: 14px; 
+      height: 14px; 
       border: 2px solid #333; 
       border-radius: 3px; 
       display: inline-flex; 
       align-items: center; 
       justify-content: center; 
-      font-size: 8px;
+      font-size: 9px;
     }
     .check-box.checked { 
       background: #140958; 
@@ -753,29 +753,29 @@ function generatePDFHTML(data, title, reportType, criteria) {
       color: white; 
     }
     h1 {
-      font-size: 14px;
-      margin: 10px 0;
+      font-size: 16px;
+      margin: 12px 0;
       text-align: center;
     }
     table { 
       width: 100%; 
       border-collapse: collapse; 
-      margin-top: 10px; 
-      font-size: 0.35rem;
+      margin-top: 12px; 
+      font-size: 8px;
       table-layout: fixed;
     }
     th { 
       background: #f1f3f5; 
-      padding: 0.08rem 0.1rem; 
+      padding: 0.2rem 0.25rem; 
       text-align: center; 
       border: 1px solid #ddd; 
       font-weight: 600; 
-      font-size: 0.35rem;
+      font-size: 8px;
     }
     td { 
-      padding: 0.06rem 0.08rem; 
+      padding: 0.15rem 0.2rem; 
       border: 1px solid #ddd; 
-      font-size: 0.32rem;
+      font-size: 7.5px;
       text-align: center;
       word-wrap: break-word;
       overflow: hidden;
@@ -783,36 +783,37 @@ function generatePDFHTML(data, title, reportType, criteria) {
     /* NO column */
     table th:first-child,
     table td:first-child {
-      width: 15px;
-      min-width: 15px;
-      max-width: 15px;
-      font-size: 0.35rem;
-      padding: 0.08rem 0.05rem;
+      width: 25px;
+      min-width: 25px;
+      max-width: 25px;
+      font-size: 8px;
+      padding: 0.2rem 0.15rem;
     }
     /* INSPECTION HARDWARE column */
     table th:nth-child(2),
     table td:nth-child(2) {
-      width: 60px;
-      min-width: 60px;
-      max-width: 60px;
+      width: 90px;
+      min-width: 90px;
+      max-width: 90px;
       text-align: left;
-      font-size: 0.32rem;
-      padding: 0.08rem 0.1rem;
-      line-height: 1.1;
+      font-size: 7.5px;
+      padding: 0.15rem 0.2rem;
+      line-height: 1.2;
     }
     /* Month header columns - ensure all 12 months fit */
     table th[colspan="4"] {
-      width: calc((100% - 75px) / 12);
+      width: calc((100% - 115px) / 12);
       min-width: 0;
-      padding: 0.08rem 0.05rem;
-      font-size: 0.35rem;
+      padding: 0.2rem 0.15rem;
+      font-size: 8px;
     }
     /* Period columns */
     table th:not(:first-child):not(:nth-child(2)),
     table td:not(:first-child):not(:nth-child(2)) {
-      width: calc((100% - 75px) / 48);
+      width: calc((100% - 115px) / 48);
       min-width: 0;
-      padding: 0.06rem 0.08rem;
+      padding: 0.15rem 0.18rem;
+      font-size: 7.5px;
     }
     tr:nth-child(even) { 
       background: #f8f9fa; 
