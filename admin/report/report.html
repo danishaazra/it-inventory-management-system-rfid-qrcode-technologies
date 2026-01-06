@@ -629,7 +629,7 @@
     .report-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.7rem;
+      font-size: 0.6rem;
       table-layout: fixed;
     }
 
@@ -642,7 +642,7 @@
 
     .report-table th,
     .report-table td {
-      padding: 0.4rem 0.5rem;
+      padding: 0.3rem 0.4rem;
       text-align: left;
       border-bottom: 1px solid #e5e5e5;
     }
@@ -650,46 +650,48 @@
     .report-table th {
       font-weight: 600;
       color: #444;
-      font-size: 0.7rem;
+      font-size: 0.6rem;
     }
 
     /* Compact checklist table columns */
     .report-table th:first-child,
     .report-table td:first-child {
-      width: 35px;
-      min-width: 35px;
-      max-width: 35px;
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
       text-align: center;
-      padding: 0.4rem 0.3rem;
+      padding: 0.3rem 0.2rem;
+      font-size: 0.6rem;
     }
 
     .report-table th:nth-child(2),
     .report-table td:nth-child(2) {
-      width: 150px;
-      min-width: 150px;
-      max-width: 150px;
+      width: 120px;
+      min-width: 120px;
+      max-width: 120px;
       text-align: left;
-      font-size: 0.65rem;
-      padding: 0.4rem 0.5rem;
+      font-size: 0.55rem;
+      padding: 0.3rem 0.4rem;
       word-wrap: break-word;
       overflow-wrap: break-word;
+      line-height: 1.2;
     }
 
-    /* Month/period columns - compact */
+    /* Month/period columns - very compact */
     .report-table th[colspan="4"] {
-      padding: 0.4rem 0.3rem;
-      font-size: 0.7rem;
+      padding: 0.3rem 0.2rem;
+      font-size: 0.6rem;
     }
 
     .report-table th:not(:first-child):not(:nth-child(2)) {
-      padding: 0.3rem 0.25rem;
-      font-size: 0.65rem;
+      padding: 0.25rem 0.2rem;
+      font-size: 0.55rem;
       text-align: center;
     }
 
     .report-table td:not(:first-child):not(:nth-child(2)) {
-      padding: 0.3rem 0.25rem;
-      font-size: 0.65rem;
+      padding: 0.25rem 0.2rem;
+      font-size: 0.55rem;
       text-align: center;
     }
 
@@ -763,7 +765,7 @@
       }
 
       .report-table {
-        font-size: 0.4rem;
+        font-size: 0.35rem;
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
@@ -771,7 +773,7 @@
 
       .report-table th,
       .report-table td {
-        padding: 0.1rem 0.15rem;
+        padding: 0.08rem 0.1rem;
         border: 1px solid #d1d5db;
         text-align: center;
         word-wrap: break-word;
@@ -781,48 +783,50 @@
       /* NO column - very narrow */
       .report-table th:first-child,
       .report-table td:first-child {
-        width: 18px;
-        min-width: 18px;
-        max-width: 18px;
+        width: 15px;
+        min-width: 15px;
+        max-width: 15px;
         text-align: center;
-        padding: 0.1rem 0.08rem;
-        font-size: 0.4rem;
+        padding: 0.08rem 0.05rem;
+        font-size: 0.35rem;
       }
 
       /* INSPECTION HARDWARE column - very compact */
       .report-table th:nth-child(2),
       .report-table td:nth-child(2) {
-        width: 70px;
-        min-width: 70px;
-        max-width: 70px;
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
         text-align: left;
-        font-size: 0.38rem;
-        padding: 0.1rem 0.15rem;
+        font-size: 0.32rem;
+        padding: 0.08rem 0.1rem;
         line-height: 1.1;
       }
 
-      /* Month header columns - very compact */
+      /* Month header columns - very compact - calculate to fit 12 months */
       .report-table th[colspan="4"] {
-        padding: 0.1rem 0.08rem;
-        font-size: 0.4rem;
+        padding: 0.08rem 0.05rem;
+        font-size: 0.35rem;
         font-weight: 600;
+        width: calc((100% - 75px) / 12);
+        min-width: 0;
       }
 
       /* Period sub-header columns - very compact */
       .report-table th:not(:first-child):not(:nth-child(2)) {
-        width: auto;
+        width: calc((100% - 75px) / 48);
         min-width: 0;
-        padding: 0.08rem 0.1rem;
-        font-size: 0.38rem;
+        padding: 0.06rem 0.08rem;
+        font-size: 0.32rem;
         font-weight: 600;
       }
 
       /* Month/period data cells - very compact */
       .report-table td:not(:first-child):not(:nth-child(2)) {
-        width: auto;
+        width: calc((100% - 75px) / 48);
         min-width: 0;
-        padding: 0.08rem 0.1rem;
-        font-size: 0.38rem;
+        padding: 0.06rem 0.08rem;
+        font-size: 0.32rem;
       }
 
       .report-table thead {
@@ -840,7 +844,28 @@
 
       @page {
         size: portrait;
-        margin: 0.5cm;
+        margin: 0.3cm;
+      }
+
+      /* Ensure table fits within page width */
+      .report-table {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* Ensure table container doesn't overflow */
+      .report-table-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+      }
+
+      /* Force all 12 months to be visible - ensure DEC is shown */
+      .report-table th[colspan="4"],
+      .report-table th:not(:first-child):not(:nth-child(2)),
+      .report-table td:not(:first-child):not(:nth-child(2)) {
+        display: table-cell !important;
+        visibility: visible !important;
       }
     }
 
