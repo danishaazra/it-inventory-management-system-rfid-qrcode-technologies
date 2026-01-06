@@ -274,11 +274,24 @@ router.post('/generate-checklist', async (req, res) => {
             // Extract schedule dates for the specified year based on frequency
             const scheduleDates = [];
             if (item.maintenanceSchedule) {
-                const schedule = typeof item.maintenanceSchedule === 'object' 
-                    ? item.maintenanceSchedule 
-                    : JSON.parse(item.maintenanceSchedule || '{}');
+                let schedule;
+                try {
+                    // Handle different schedule formats
+                    if (typeof item.maintenanceSchedule === 'string') {
+                        schedule = JSON.parse(item.maintenanceSchedule || '{}');
+                    } else if (typeof item.maintenanceSchedule === 'object') {
+                        // If it's already an object, use it directly
+                        schedule = item.maintenanceSchedule;
+                    } else {
+                        schedule = {};
+                    }
+                } catch (e) {
+                    console.error(`Error parsing maintenanceSchedule for ${item.itemName}:`, e);
+                    schedule = {};
+                }
                 
                 const frequency = item.frequency || 'Monthly';
+                console.log(`Processing schedule for ${item.itemName}, frequency: ${frequency}, schedule:`, JSON.stringify(schedule, null, 2));
                 
                 // Extract dates based on frequency type
                 if (frequency === 'Weekly') {
@@ -297,12 +310,23 @@ router.post('/generate-checklist', async (req, res) => {
                     });
                 } else if (frequency === 'Monthly') {
                     // Format: { "January": "2024-01-15", "February": "2024-02-15", ... }
-                    Object.values(schedule).forEach(dateStr => {
+                    // Also handle: { "1": "2024-01-15", "2": "2024-02-15", ... }
+                    Object.entries(schedule).forEach(([key, dateStr]) => {
                         if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
                             const dateYear = parseInt(dateStr.substring(0, 4));
                             if (dateYear === year) {
                                 scheduleDates.push(dateStr);
                             }
+                        } else if (typeof dateStr === 'object' && dateStr !== null) {
+                            // Handle nested objects
+                            Object.values(dateStr).forEach(nestedDate => {
+                                if (typeof nestedDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(nestedDate)) {
+                                    const dateYear = parseInt(nestedDate.substring(0, 4));
+                                    if (dateYear === year) {
+                                        scheduleDates.push(nestedDate);
+                                    }
+                                }
+                            });
                         }
                     });
                 } else if (frequency === 'Quarterly') {
@@ -331,30 +355,46 @@ router.post('/generate-checklist', async (req, res) => {
                     };
                     findDates(schedule);
                 }
+                
+                console.log(`Found ${scheduleDates.length} schedule dates for ${item.itemName} in year ${year}`);
+            } else {
+                console.log(`No maintenanceSchedule found for ${item.itemName}`);
             }
 
             // Organize dates by month and period
             const monthlySchedule = {};
+            console.log(`Processing ${scheduleDates.length} schedule dates for item ${item.itemName}`);
             scheduleDates.forEach(dateStr => {
-                const date = new Date(dateStr);
-                const month = date.getMonth() + 1; // 1-12
-                const day = date.getDate(); // 1-31
-                
-                // Determine period: 1-7 (1), 8-14 (2), 15-21 (3), 22-31 (4)
-                let period = 1;
-                if (day >= 22) period = 4;
-                else if (day >= 15) period = 3;
-                else if (day >= 8) period = 2;
-                
-                if (!monthlySchedule[month]) {
-                    monthlySchedule[month] = {};
+                try {
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) {
+                        console.warn(`Invalid date string: ${dateStr}`);
+                        return;
+                    }
+                    const month = date.getMonth() + 1; // 1-12
+                    const day = date.getDate(); // 1-31
+                    
+                    // Determine period: 1-7 (1), 8-14 (2), 15-21 (3), 22-31 (4)
+                    let period = 1;
+                    if (day >= 22) period = 4;
+                    else if (day >= 15) period = 3;
+                    else if (day >= 8) period = 2;
+                    
+                    if (!monthlySchedule[month]) {
+                        monthlySchedule[month] = {};
+                    }
+                    if (!monthlySchedule[month][period]) {
+                        monthlySchedule[month][period] = [];
+                    }
+                    // Store just the day number (e.g., "17", "14", "20")
+                    monthlySchedule[month][period].push(String(day));
+                    console.log(`Added date: ${dateStr} -> Month ${month}, Period ${period}, Day ${day}`);
+                } catch (error) {
+                    console.error(`Error processing date ${dateStr}:`, error);
                 }
-                if (!monthlySchedule[month][period]) {
-                    monthlySchedule[month][period] = [];
-                }
-                // Store just the day number (e.g., "17", "14", "20")
-                monthlySchedule[month][period].push(String(day));
             });
+            
+            console.log(`Monthly schedule for ${item.itemName}:`, JSON.stringify(monthlySchedule, null, 2));
 
             // If no tasks, create one entry
             if (tasks.length === 0) {

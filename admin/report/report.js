@@ -434,12 +434,12 @@ function displayChecklistReport(checklistData) {
         for (let period = 1; period <= 4; period++) {
           const cell = document.createElement('td');
           cell.style.textAlign = 'center';
-          if (schedule[month] && schedule[month][period]) {
+          if (schedule && schedule[month] && schedule[month][period]) {
             const dates = schedule[month][period];
-            if (Array.isArray(dates)) {
+            if (Array.isArray(dates) && dates.length > 0) {
               // Dates are day numbers (e.g., "17", "14", "20"), join with commas
               cell.textContent = dates.join(', ');
-            } else {
+            } else if (dates) {
               cell.textContent = String(dates);
             }
           }
