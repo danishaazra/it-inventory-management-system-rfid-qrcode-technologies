@@ -761,21 +761,21 @@ function generatePDFHTML(data, title, reportType, criteria) {
       width: 100%; 
       border-collapse: collapse; 
       margin-top: 12px; 
-      font-size: 8px;
+      font-size: 10px;
       table-layout: fixed;
     }
     th { 
       background: #f1f3f5; 
-      padding: 0.2rem 0.25rem; 
+      padding: 0.15rem 0.2rem; 
       text-align: center; 
       border: 1px solid #ddd; 
       font-weight: 600; 
-      font-size: 8px;
+      font-size: 9px;
     }
     td { 
-      padding: 0.15rem 0.2rem; 
+      padding: 0.1rem 0.15rem; 
       border: 1px solid #ddd; 
-      font-size: 7.5px;
+      font-size: 9px;
       text-align: center;
       word-wrap: break-word;
       overflow: hidden;
@@ -783,37 +783,38 @@ function generatePDFHTML(data, title, reportType, criteria) {
     /* NO column */
     table th:first-child,
     table td:first-child {
-      width: 25px;
-      min-width: 25px;
-      max-width: 25px;
-      font-size: 8px;
-      padding: 0.2rem 0.15rem;
+      width: 20px;
+      min-width: 20px;
+      max-width: 20px;
+      font-size: 9px;
+      padding: 0.15rem 0.1rem;
     }
-    /* INSPECTION HARDWARE column */
+    /* INSPECTION HARDWARE column - make it more readable */
     table th:nth-child(2),
     table td:nth-child(2) {
-      width: 90px;
-      min-width: 90px;
-      max-width: 90px;
+      width: 120px;
+      min-width: 120px;
+      max-width: 120px;
       text-align: left;
-      font-size: 7.5px;
-      padding: 0.15rem 0.2rem;
-      line-height: 1.2;
+      font-size: 9px;
+      padding: 0.1rem 0.15rem;
+      line-height: 1.3;
+      font-weight: 500;
     }
     /* Month header columns - ensure all 12 months fit */
     table th[colspan="4"] {
-      width: calc((100% - 115px) / 12);
+      width: calc((100% - 140px) / 12);
       min-width: 0;
-      padding: 0.2rem 0.15rem;
-      font-size: 8px;
+      padding: 0.15rem 0.1rem;
+      font-size: 9px;
     }
     /* Period columns */
     table th:not(:first-child):not(:nth-child(2)),
     table td:not(:first-child):not(:nth-child(2)) {
-      width: calc((100% - 115px) / 48);
+      width: calc((100% - 140px) / 48);
       min-width: 0;
-      padding: 0.15rem 0.18rem;
-      font-size: 7.5px;
+      padding: 0.1rem 0.12rem;
+      font-size: 8.5px;
     }
     tr:nth-child(even) { 
       background: #f8f9fa; 

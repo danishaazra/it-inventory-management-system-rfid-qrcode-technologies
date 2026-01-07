@@ -1,7 +1,7 @@
 // Asset API routes
 const express = require('express');
 const router = express.Router();
-const { Asset } = require('../models');
+const { Asset, Maintenance, MaintenanceAsset } = require('../models');
 
 // Helper to check MongoDB connection
 function checkDBConnection(res) {
@@ -112,6 +112,8 @@ router.get('/get-by-assetid', async (req, res) => {
         if (!checkDBConnection(res)) return;
 
         const assetId = req.query.assetId;
+        const staffId = req.query.staffId; // Optional: for staff assignment checking
+        
         if (!assetId) {
             return res.status(400).json({ ok: false, error: 'assetId parameter is required' });
         }
@@ -119,6 +121,55 @@ router.get('/get-by-assetid', async (req, res) => {
         const asset = await Asset.findOne({ assetId }).lean();
         if (!asset) {
             return res.status(404).json({ ok: false, error: 'Asset not found' });
+        }
+
+        // If staffId is provided, verify that this asset is assigned to one of the staff's maintenance tasks
+        if (staffId) {
+            // 1) Find maintenance tasks assigned to this staff member
+            const assignedMaintenance = await Maintenance.find({ assignedStaffId: staffId }).select('_id').lean();
+            const assignedMaintenanceIds = assignedMaintenance.map(m => m._id.toString());
+
+            if (assignedMaintenanceIds.length === 0) {
+                // Staff has no assigned maintenance tasks at all
+                return res.status(403).json({
+                    ok: false,
+                    error: 'ASSET_NOT_ASSIGNED_TO_STAFF',
+                    message: 'This asset is not assigned to your maintenance tasks.'
+                });
+            }
+
+            // 2) Check maintenance_assets for a record linking this asset to any of the staff's maintenance tasks
+            const inspection = await MaintenanceAsset.findOne({
+                assetId: asset.assetId,
+                maintenanceId: { $in: assignedMaintenanceIds }
+            }).lean();
+
+            if (!inspection) {
+                // Asset is not part of any maintenance task assigned to this staff member
+                // Find which maintenance task this asset belongs to and get assigned staff info
+                const allInspections = await MaintenanceAsset.find({ assetId: asset.assetId }).limit(1).lean();
+                
+                let assignedStaffName = null;
+                let assignedStaffEmail = null;
+                
+                if (allInspections.length > 0) {
+                    const maintenanceId = allInspections[0].maintenanceId;
+                    const maintenance = await Maintenance.findById(maintenanceId).select('assignedStaffName assignedStaffEmail').lean();
+                    
+                    if (maintenance) {
+                        assignedStaffName = maintenance.assignedStaffName || null;
+                        assignedStaffEmail = maintenance.assignedStaffEmail || null;
+                    }
+                }
+                
+                return res.status(403).json({
+                    ok: false,
+                    error: 'ASSET_NOT_ASSIGNED_TO_STAFF',
+                    message: 'This asset is not assigned to your maintenance tasks.',
+                    assignedStaffName: assignedStaffName,
+                    assignedStaffEmail: assignedStaffEmail
+                });
+            }
         }
 
         res.json({ ok: true, asset });
@@ -330,3 +381,4 @@ router.post('/upload', async (req, res) => {
 });
 
 module.exports = router;
+

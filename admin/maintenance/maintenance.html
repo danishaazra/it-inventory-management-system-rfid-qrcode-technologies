@@ -892,13 +892,19 @@
       border-radius: 8px;
       font-size: 0.9rem;
       color: #111827;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, color 0.15s;
       font-family: inherit;
     }
 
     .form-field textarea {
       min-height: 100px;
       resize: vertical;
+    }
+
+    .form-field input::placeholder,
+    .form-field textarea::placeholder {
+      color: #9ca3af;
+      opacity: 0.8;
     }
 
     .form-field input:focus,
