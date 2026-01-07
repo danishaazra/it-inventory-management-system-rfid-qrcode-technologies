@@ -208,6 +208,55 @@ function setupEventListeners() {
     });
   }
 
+  // Fetch a sample maintenance item from database for placeholder examples
+  async function fetchSampleMaintenance() {
+    try {
+      const resp = await fetch('/api/maintenance/list');
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (data.ok && data.maintenance && data.maintenance.length > 0) {
+        // Return the first maintenance item as an example
+        return data.maintenance[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching sample maintenance:', error);
+      return null;
+    }
+  }
+
+  // Set placeholder examples on maintenance form fields
+  function setMaintenanceFormPlaceholders(sampleMaintenance) {
+    if (!sampleMaintenance) return;
+    
+    const branchField = document.getElementById('add-branch');
+    const locationField = document.getElementById('add-location');
+    const itemNameField = document.getElementById('add-itemName');
+    const inspectionTasksField = document.getElementById('add-inspectionTasks');
+    
+    if (branchField && sampleMaintenance.branch) {
+      branchField.placeholder = `e.g. ${sampleMaintenance.branch}`;
+    }
+    
+    if (locationField && sampleMaintenance.location) {
+      locationField.placeholder = `e.g. ${sampleMaintenance.location}`;
+    }
+    
+    if (itemNameField && sampleMaintenance.itemName) {
+      itemNameField.placeholder = `e.g. ${sampleMaintenance.itemName}`;
+    }
+    
+    if (inspectionTasksField && sampleMaintenance.inspectionTasks) {
+      // Format inspection tasks for placeholder (show first few lines)
+      const tasks = typeof sampleMaintenance.inspectionTasks === 'string' 
+        ? sampleMaintenance.inspectionTasks.split('\n').slice(0, 3).join('\n')
+        : '';
+      if (tasks) {
+        inspectionTasksField.placeholder = `e.g.\n${tasks}`;
+      }
+    }
+  }
+
   // Menu click handlers
   if (addMenu) {
     addMenu.addEventListener('click', async (e) => {
@@ -217,6 +266,10 @@ function setupEventListeners() {
           addModalOverlay.classList.add('open');
         }
         addMenu.classList.remove('open'); // Close menu when opening modal
+        
+        // Fetch sample maintenance and set placeholders
+        const sampleMaintenance = await fetchSampleMaintenance();
+        setMaintenanceFormPlaceholders(sampleMaintenance);
       }
       if (e.target.dataset.action === 'upload') {
         // Set accept attribute to include Excel and CSV files

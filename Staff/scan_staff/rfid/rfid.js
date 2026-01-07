@@ -81,7 +81,9 @@ async function searchAssetByRfid() {
       // Check if it's an assignment error
       if (data.error === 'ASSET_NOT_ASSIGNED_TO_STAFF' || resp.status === 403) {
         const message = data.message || 'This asset is not assigned to your maintenance tasks.';
-        showAssignmentError(message);
+        const assignedStaffName = data.assignedStaffName || null;
+        const assignedStaffEmail = data.assignedStaffEmail || null;
+        showAssignmentError(message, assignedStaffName, assignedStaffEmail);
         if (scanResult) scanResult.classList.remove('show');
         return;
       }
@@ -90,6 +92,8 @@ async function searchAssetByRfid() {
     
     // Display result
     const asset = data.asset;
+    // Show success popup when asset is assigned to staff
+    showAssignmentSuccess(asset);
     displayRfidScanResult(asset);
     
   } catch (error) {
@@ -151,12 +155,162 @@ function showError(message) {
   }
 }
 
+// Show assignment success popup
+function showAssignmentSuccess(asset) {
+  // Remove any existing popup
+  const existingPopup = document.getElementById('assignment-success-popup');
+  if (existingPopup) {
+    existingPopup.remove();
+  }
+  
+  // Create popup overlay
+  const popup = document.createElement('div');
+  popup.id = 'assignment-success-popup';
+  popup.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+  `;
+  
+  popup.innerHTML = `
+    <div style="
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: slideUp 0.3s ease-out;
+    ">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+      <h3 style="
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #16a34a;
+        margin-bottom: 1rem;
+      ">Success</h3>
+      <p style="
+        font-size: 1rem;
+        color: #374151;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      ">This asset is assigned to your maintenance tasks.</p>
+      <button id="close-success-popup-btn" style="
+        padding: 0.75rem 2rem;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">OK</button>
+    </div>
+  `;
+  
+  // Add animations if not exists
+  if (!document.getElementById('assignment-popup-animations')) {
+    const style = document.createElement('style');
+    style.id = 'assignment-popup-animations';
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  document.body.appendChild(popup);
+  
+  // Close button handler
+  const closeBtn = document.getElementById('close-success-popup-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    });
+    
+    // Add hover effect
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.transform = 'translateY(-1px)';
+      closeBtn.style.boxShadow = '0 4px 12px rgba(22, 163, 74, 0.3)';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.transform = '';
+      closeBtn.style.boxShadow = '';
+    });
+  }
+  
+  // Close on overlay click
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    }
+  });
+  
+  // Auto-close after 3 seconds
+  setTimeout(() => {
+    if (popup.parentNode) {
+      popup.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => {
+        if (popup.parentNode) {
+          popup.remove();
+        }
+      }, 300);
+    }
+  }, 3000);
+}
+
 // Show assignment error popup (more prominent)
-function showAssignmentError(message) {
+function showAssignmentError(message, assignedStaffName, assignedStaffEmail) {
   // Remove any existing popup
   const existingPopup = document.getElementById('assignment-error-popup');
   if (existingPopup) {
     existingPopup.remove();
+  }
+  
+  // Build message with assigned staff info
+  let fullMessage = escapeHtml(message);
+  if (assignedStaffName || assignedStaffEmail) {
+    fullMessage += '<br><br><strong>Assigned to:</strong><br>';
+    if (assignedStaffName) {
+      fullMessage += escapeHtml(assignedStaffName);
+    }
+    if (assignedStaffEmail) {
+      fullMessage += assignedStaffName ? '<br>' : '';
+      fullMessage += '<span style="color: #6b7280; font-size: 0.9rem;">' + escapeHtml(assignedStaffEmail) + '</span>';
+    }
   }
   
   // Create popup overlay
@@ -188,7 +342,7 @@ function showAssignmentError(message) {
       text-align: center;
       animation: slideUp 0.3s ease-out;
     ">
-      <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+      <div style="font-size: 4rem; margin-bottom: 1rem;">❌</div>
       <h3 style="
         font-size: 1.5rem;
         font-weight: 700;
@@ -200,7 +354,7 @@ function showAssignmentError(message) {
         color: #374151;
         margin-bottom: 2rem;
         line-height: 1.6;
-      ">${escapeHtml(message)}</p>
+      ">${fullMessage}</p>
       <button id="close-assignment-popup-btn" style="
         padding: 0.75rem 2rem;
         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);

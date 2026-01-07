@@ -234,6 +234,56 @@ function populateLocationDropdown(locations) {
   });
 }
 
+// Fetch a sample asset from database for placeholder examples
+async function fetchSampleAsset() {
+  try {
+    const resp = await fetch('/api/assets/list');
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.ok && data.assets && data.assets.length > 0) {
+      // Return the first asset as an example
+      return data.assets[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching sample asset:', error);
+    return null;
+  }
+}
+
+// Set placeholder examples on form fields
+function setAssetFormPlaceholders(sampleAsset) {
+  if (!sampleAsset) return;
+  
+  const fields = {
+    'add-no': sampleAsset.no || '',
+    'add-branchCode': sampleAsset.branchCode || '',
+    'add-assetId': sampleAsset.assetId || '',
+    'add-assetDescription': sampleAsset.assetDescription || '',
+    'add-assetCategory': sampleAsset.assetCategory || '',
+    'add-assetCategoryDescription': sampleAsset.assetCategoryDescription || '',
+    'add-ownerCode': sampleAsset.ownerCode || '',
+    'add-ownerName': sampleAsset.ownerName || '',
+    'add-model': sampleAsset.model || '',
+    'add-brand': sampleAsset.brand || '',
+    'add-warrantyPeriod': sampleAsset.warrantyPeriod || '',
+    'add-serialNo': sampleAsset.serialNo || '',
+    'add-location': sampleAsset.location || '',
+    'add-area': sampleAsset.area || '',
+    'add-departmentCode': sampleAsset.departmentCode || '',
+    'add-departmentDescription': sampleAsset.departmentDescription || '',
+    'add-currentUser': sampleAsset.currentUser || '',
+    'add-rfidTagId': sampleAsset.rfidTagId || ''
+  };
+  
+  Object.entries(fields).forEach(([fieldId, value]) => {
+    const field = document.getElementById(fieldId);
+    if (field && value) {
+      field.placeholder = `e.g. ${value}`;
+    }
+  });
+}
+
 addMenu.addEventListener('click', async (e) => {
   if (e.target.dataset.action === 'manual') {
     addModalOverlay.classList.add('open');
@@ -246,6 +296,10 @@ addMenu.addEventListener('click', async (e) => {
     // Load and populate existing locations
     const locations = await loadLocations();
     populateLocationDropdown(locations);
+    
+    // Fetch sample asset and set placeholders
+    const sampleAsset = await fetchSampleAsset();
+    setAssetFormPlaceholders(sampleAsset);
     
     // Initialize RFID scanner when modal opens
     if (window.initAddAssetRfidScanner) {
