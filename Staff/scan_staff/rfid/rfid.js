@@ -60,7 +60,7 @@ async function searchAssetByRfid() {
     
     // Search for asset by RFID tag ID with staff assignment check
     // ALWAYS include staffId to enforce assignment checking
-    const url = `../../../admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}&staffId=${encodeURIComponent(staffId)}`;
+    const url = `/admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}&staffId=${encodeURIComponent(staffId)}`;
     console.log('🔍 Searching for asset with RFID Tag ID:', rfidTagId);
     console.log('👤 Staff ID:', staffId);
     console.log('📡 Fetching URL:', url);
@@ -855,7 +855,7 @@ if (inspectionForm) {
     
     try {
       const staffId = sessionStorage.getItem('staffId') || '';
-      const response = await fetch('../../../admin/scan/rfid/save_inspection.php', {
+      const response = await fetch('/admin/scan/rfid/save_inspection.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
