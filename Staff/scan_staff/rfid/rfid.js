@@ -60,7 +60,7 @@ async function searchAssetByRfid() {
     
     // Search for asset by RFID tag ID with staff assignment check
     // ALWAYS include staffId to enforce assignment checking
-    const url = `/admin/asset/get_asset_by_rfid.php?rfidTagId=${encodeURIComponent(rfidTagId)}&staffId=${encodeURIComponent(staffId)}`;
+    const url = `/api/assets/get-by-rfid?rfidTagId=${encodeURIComponent(rfidTagId)}&staffId=${encodeURIComponent(staffId)}`;
     console.log('🔍 Searching for asset with RFID Tag ID:', rfidTagId);
     console.log('👤 Staff ID:', staffId);
     console.log('📡 Fetching URL:', url);
@@ -87,7 +87,11 @@ async function searchAssetByRfid() {
         if (scanResult) scanResult.classList.remove('show');
         return;
       }
-      throw new Error(data.error || 'Asset not found');
+      // Check if asset not found
+      if (data.error === 'ASSET_NOT_FOUND' || resp.status === 404) {
+        throw new Error(data.message || 'Asset not found with this RFID Tag ID');
+      }
+      throw new Error(data.error || data.message || 'Asset not found');
     }
     
     // Display result
@@ -855,7 +859,7 @@ if (inspectionForm) {
     
     try {
       const staffId = sessionStorage.getItem('staffId') || '';
-      const response = await fetch('/admin/scan/rfid/save_inspection.php', {
+      const response = await fetch('/api/inspections/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
