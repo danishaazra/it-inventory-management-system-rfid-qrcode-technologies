@@ -288,6 +288,36 @@ router.post('/add', async (req, res) => {
             });
         }
 
+        // Auto-generate "no" field if not provided
+        let autoNo = data.no;
+        if (!autoNo || autoNo === '') {
+            // Find all assets with "no" field and get the highest numeric value
+            const assetsWithNo = await Asset.find({ 
+                no: { $exists: true, $ne: null, $ne: '' } 
+            }).select('no').lean();
+            
+            if (assetsWithNo && assetsWithNo.length > 0) {
+                // Extract numeric values and find the maximum
+                const numbers = assetsWithNo
+                    .map(a => {
+                        const num = parseInt(a.no, 10);
+                        return isNaN(num) ? 0 : num;
+                    })
+                    .filter(n => n > 0);
+                
+                if (numbers.length > 0) {
+                    const maxNo = Math.max(...numbers);
+                    autoNo = String(maxNo + 1);
+                } else {
+                    // No valid numbers found, start from 1
+                    autoNo = '1';
+                }
+            } else {
+                // No assets with "no" field, start from 1
+                autoNo = '1';
+            }
+        }
+
         const asset = new Asset({
             assetId: data.assetId,
             assetDescription: data.assetDescription,
@@ -308,7 +338,7 @@ router.post('/add', async (req, res) => {
             condition: data.condition,
             currentUser: data.currentUser,
             branchCode: data.branchCode,
-            no: data.no,
+            no: autoNo,
             rfidTagId: data.rfidTagId,
             created_at: new Date()
         });

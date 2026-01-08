@@ -256,7 +256,6 @@ function setAssetFormPlaceholders(sampleAsset) {
   if (!sampleAsset) return;
   
   const fields = {
-    'add-no': sampleAsset.no || '',
     'add-branchCode': sampleAsset.branchCode || '',
     'add-assetId': sampleAsset.assetId || '',
     'add-assetDescription': sampleAsset.assetDescription || '',
