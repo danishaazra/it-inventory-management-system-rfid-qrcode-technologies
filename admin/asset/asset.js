@@ -371,7 +371,18 @@ fileInput.addEventListener('change', async () => {
   fd.append('file', fileInput.files[0]);
   
   try {
-    const resp = await fetch('./upload_assets.php', { method: 'POST', body: fd });
+    const resp = await fetch('/admin/asset/upload_assets.php', { method: 'POST', body: fd });
+    
+    // Check if response is JSON before parsing
+    const contentType = resp.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await resp.text();
+      console.error('Upload error: Server returned non-JSON response', text);
+      fileInput.value = '';
+      addMenu.classList.remove('open');
+      return alert(`Upload failed: Server error (${resp.status}). Please check that upload_assets.php exists and is accessible.`);
+    }
+    
     const data = await resp.json();
     
     if (!resp.ok || !data.ok) {
@@ -404,7 +415,11 @@ fileInput.addEventListener('change', async () => {
     console.error('Upload error:', error);
     fileInput.value = '';
     addMenu.classList.remove('open'); // Close menu on error
-    alert(`Upload failed: ${error.message || 'Network error. Please try again.'}`);
+    if (error instanceof SyntaxError && error.message.includes('JSON')) {
+      alert(`Upload failed: Invalid response from server. Please check that upload_assets.php exists at /admin/asset/upload_assets.php`);
+    } else {
+      alert(`Upload failed: ${error.message || 'Network error. Please try again.'}`);
+    }
   }
 });
 

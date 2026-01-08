@@ -110,11 +110,36 @@ try {
 
     if (empty($inspectionResults)) {
       // Asset is not part of any maintenance task assigned to this staff member
+      // Find which maintenance task this asset belongs to and get assigned staff info
+      $allInspectionFilter = ['assetId' => $asset['assetId']];
+      $allInspectionResults = mongoFind($mongoManager, $inspectionsNamespace, $allInspectionFilter, ['limit' => 1]);
+      
+      $assignedStaffName = null;
+      $assignedStaffEmail = null;
+      
+      if (!empty($allInspectionResults)) {
+        $inspectionDoc = $allInspectionResults[0];
+        $maintenanceId = isset($inspectionDoc->maintenanceId) ? (string)$inspectionDoc->maintenanceId : null;
+        
+        if ($maintenanceId) {
+          $maintenanceFilter = ['_id' => new MongoDB\BSON\ObjectId($maintenanceId)];
+          $maintenanceResults = mongoFind($mongoManager, $maintenanceNamespace, $maintenanceFilter, ['limit' => 1]);
+          
+          if (!empty($maintenanceResults)) {
+            $maintenanceDoc = $maintenanceResults[0];
+            $assignedStaffName = $maintenanceDoc->assignedStaffName ?? null;
+            $assignedStaffEmail = $maintenanceDoc->assignedStaffEmail ?? null;
+          }
+        }
+      }
+      
       http_response_code(403);
       echo json_encode([
         'ok' => false,
         'error' => 'ASSET_NOT_ASSIGNED_TO_STAFF',
-        'message' => 'This asset is not assigned to your maintenance tasks.'
+        'message' => 'This asset is not assigned to your maintenance tasks.',
+        'assignedStaffName' => $assignedStaffName,
+        'assignedStaffEmail' => $assignedStaffEmail
       ]);
       exit;
     }
