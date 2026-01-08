@@ -18,7 +18,7 @@ router.post('/save', async (req, res) => {
     try {
         if (!checkDBConnection(res)) return;
 
-        const { maintenanceId, branch, location, itemName, assetId, notes, solved, inspectorId, inspectorName } = req.body;
+        const { maintenanceId, branch, location, itemName, assetId, notes, solved, inspectorId, inspectorName, staffId } = req.body;
 
         if (!assetId) {
             return res.status(400).json({ ok: false, error: 'assetId is required' });
@@ -34,10 +34,28 @@ router.post('/save', async (req, res) => {
                 return res.status(404).json({ ok: false, error: 'Maintenance task not found' });
             }
             filter = { maintenanceId: maintenance._id.toString(), assetId };
+        } else if (staffId) {
+            // If staffId is provided, find the maintenance asset that belongs to staff's assigned tasks
+            // 1) Find maintenance tasks assigned to this staff member
+            const assignedMaintenance = await Maintenance.find({ assignedStaffId: staffId }).select('_id').lean();
+            const assignedMaintenanceIds = assignedMaintenance.map(m => m._id.toString());
+
+            if (assignedMaintenanceIds.length === 0) {
+                return res.status(403).json({
+                    ok: false,
+                    error: 'No maintenance tasks assigned to this staff member'
+                });
+            }
+
+            // 2) Find maintenance asset for this assetId that belongs to staff's tasks
+            filter = {
+                assetId: assetId,
+                maintenanceId: { $in: assignedMaintenanceIds }
+            };
         } else {
             return res.status(400).json({ 
                 ok: false, 
-                error: 'maintenanceId is required, or provide branch, location, and itemName' 
+                error: 'maintenanceId is required, or provide branch, location, and itemName, or staffId' 
             });
         }
 
