@@ -1,7 +1,15 @@
 // Asset API routes
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const xlsx = require('xlsx');
 const { Asset, Maintenance, MaintenanceAsset } = require('../models');
+
+// Configure multer for file uploads (memory storage)
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 // Helper to check MongoDB connection
 function checkDBConnection(res) {
@@ -90,13 +98,69 @@ router.get('/get-by-rfid', async (req, res) => {
         if (!checkDBConnection(res)) return;
 
         const rfidTagId = req.query.rfidTagId;
+        const staffId = req.query.staffId; // Optional: for staff assignment checking
+        
         if (!rfidTagId) {
             return res.status(400).json({ ok: false, error: 'rfidTagId parameter is required' });
         }
 
         const asset = await Asset.findOne({ rfidTagId }).lean();
         if (!asset) {
-            return res.status(404).json({ ok: false, error: 'Asset not found' });
+            return res.status(404).json({ 
+                ok: false, 
+                error: 'ASSET_NOT_FOUND',
+                message: 'Asset not found with this RFID Tag ID' 
+            });
+        }
+
+        // If staffId is provided, verify that this asset is assigned to one of the staff's maintenance tasks
+        // IMPORTANT: For staff scanning, staffId should always be provided to enforce assignment checking
+        if (staffId) {
+            // 1) Find maintenance tasks assigned to this staff member
+            const assignedMaintenance = await Maintenance.find({ assignedStaffId: staffId }).select('_id').lean();
+            const assignedMaintenanceIds = assignedMaintenance.map(m => m._id.toString());
+
+            if (assignedMaintenanceIds.length === 0) {
+                // Staff has no assigned maintenance tasks at all
+                return res.status(403).json({
+                    ok: false,
+                    error: 'ASSET_NOT_ASSIGNED_TO_STAFF',
+                    message: 'This asset is not assigned to your maintenance tasks.'
+                });
+            }
+
+            // 2) Check maintenance_assets for a record linking this asset to any of the staff's maintenance tasks
+            const inspection = await MaintenanceAsset.findOne({
+                assetId: asset.assetId,
+                maintenanceId: { $in: assignedMaintenanceIds }
+            }).lean();
+
+            if (!inspection) {
+                // Asset is not part of any maintenance task assigned to this staff member
+                // Find which maintenance task this asset belongs to and get assigned staff info
+                const allInspections = await MaintenanceAsset.find({ assetId: asset.assetId }).limit(1).lean();
+                
+                let assignedStaffName = null;
+                let assignedStaffEmail = null;
+                
+                if (allInspections.length > 0) {
+                    const maintenanceId = allInspections[0].maintenanceId;
+                    const maintenance = await Maintenance.findById(maintenanceId).select('assignedStaffName assignedStaffEmail').lean();
+                    
+                    if (maintenance) {
+                        assignedStaffName = maintenance.assignedStaffName || null;
+                        assignedStaffEmail = maintenance.assignedStaffEmail || null;
+                    }
+                }
+                
+                return res.status(403).json({
+                    ok: false,
+                    error: 'ASSET_NOT_ASSIGNED_TO_STAFF',
+                    message: 'This asset is not assigned to your maintenance tasks.',
+                    assignedStaffName: assignedStaffName,
+                    assignedStaffEmail: assignedStaffEmail
+                });
+            }
         }
 
         res.json({ ok: true, asset });
@@ -327,56 +391,199 @@ router.post('/delete', async (req, res) => {
     }
 });
 
-// Upload assets (bulk import) - simplified version
-router.post('/upload', async (req, res) => {
+// Upload assets (bulk import) - handles CSV and Excel files
+router.post('/upload', upload.single('file'), async (req, res) => {
     try {
         if (!checkDBConnection(res)) return;
 
-        // This would need multipart/form-data handling for file uploads
-        // For now, accept JSON array of assets
-        const assets = req.body.assets || [];
-        
-        if (!Array.isArray(assets) || assets.length === 0) {
-            return res.status(400).json({ ok: false, error: 'No assets provided' });
+        if (!req.file) {
+            return res.status(400).json({ ok: false, error: 'No file uploaded' });
         }
 
+        const file = req.file;
+        const fileName = file.originalname;
+        const fileExt = fileName.split('.').pop().toLowerCase();
+
+        // Check file type
+        if (!['csv', 'xlsx', 'xls'].includes(fileExt)) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'Please upload a CSV or Excel file (.csv, .xlsx, .xls)' 
+            });
+        }
+
+        let rows = [];
+
+        // Parse file based on type
+        if (fileExt === 'csv') {
+            // Parse CSV
+            const csvData = file.buffer.toString('utf8');
+            const lines = csvData.split('\n').filter(line => line.trim());
+            
+            // Simple CSV parsing (handles quoted fields)
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                // Simple CSV parsing - split by comma, handle quoted fields
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim());
+                rows.push(values);
+            }
+        } else {
+            // Parse Excel file
+            const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            rows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+        }
+
+        if (rows.length === 0) {
+            return res.status(400).json({ ok: false, error: 'Empty file' });
+        }
+
+        // Get header row (first row)
+        const rawHeader = rows[0].map(cell => 
+            cell !== null && cell !== undefined ? String(cell).trim() : ''
+        );
+
+        if (rawHeader.length === 0) {
+            return res.status(400).json({ ok: false, error: 'Empty file or missing header' });
+        }
+
+        // Normalize header names
+        function normalizeHeaderName(header) {
+            header = String(header).trim().toLowerCase();
+            if (!header) return '';
+            
+            const mappings = {
+                'no.': 'no',
+                'branch code': 'branchCode',
+                'asset id': 'assetId',
+                'asset description': 'assetDescription',
+                'asset category': 'assetCategory',
+                'asset category description': 'assetCategoryDescription',
+                'owner code': 'ownerCode',
+                'owner name': 'ownerName',
+                'warranty period': 'warrantyPeriod',
+                'serial no.': 'serialNo',
+                'serial no': 'serialNo',
+                'location description': 'locationDescription',
+                'department code': 'departmentCode',
+                'department description': 'departmentDescription',
+                'current user': 'currentUser',
+                'rfid tag id': 'rfidTagId',
+                'rfidtagid': 'rfidTagId',
+                'rfid': 'rfidTagId'
+            };
+            
+            if (mappings[header]) {
+                return mappings[header];
+            }
+            
+            // Convert to camelCase
+            return header.replace(/[\s.]+/g, '').replace(/([a-z])([A-Z])/g, '$1$2').toLowerCase();
+        }
+
+        const header = rawHeader.map(normalizeHeaderName);
+        const requiredCol = 'assetId';
         let inserted = 0;
         let skipped = 0;
-        const errors = [];
+        const duplicates = [];
+        const batch = [];
 
-        for (const assetData of assets) {
-            try {
-                if (!assetData.assetId) {
-                    skipped++;
-                    continue;
-                }
-
-                const existing = await Asset.findOne({ assetId: assetData.assetId });
-                if (existing) {
-                    skipped++;
-                    continue;
-                }
-
-                const asset = new Asset({
-                    ...assetData,
-                    created_at: new Date()
-                });
-                await asset.save();
-                inserted++;
-            } catch (error) {
-                errors.push({ assetId: assetData.assetId, error: error.message });
+        // Process data rows (skip header row)
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            
+            // Skip empty rows
+            if (!row || row.every(cell => !cell || String(cell).trim() === '')) {
+                continue;
             }
+
+            // Map row to associative array
+            const assoc = {};
+            header.forEach((colName, idx) => {
+                if (!colName) return;
+                const value = row[idx];
+                assoc[colName] = value !== null && value !== undefined ? String(value).trim() : null;
+            });
+
+            // Skip rows without assetId
+            const assetId = assoc[requiredCol] ? String(assoc[requiredCol]).trim() : '';
+            if (!assetId) {
+                skipped++;
+                continue;
+            }
+
+            // Check for duplicate assetId
+            const existing = await Asset.findOne({ assetId });
+            if (existing) {
+                duplicates.push(assetId);
+                skipped++;
+                continue;
+            }
+
+            batch.push({
+                assetId: assoc['assetId'] || null,
+                assetDescription: assoc['assetDescription'] || null,
+                assetCategory: assoc['assetCategory'] || null,
+                assetCategoryDescription: assoc['assetCategoryDescription'] || null,
+                ownerCode: assoc['ownerCode'] || null,
+                ownerName: assoc['ownerName'] || null,
+                model: assoc['model'] || null,
+                brand: assoc['brand'] || null,
+                status: assoc['status'] || null,
+                warrantyPeriod: assoc['warrantyPeriod'] || null,
+                serialNo: assoc['serialNo'] || null,
+                location: assoc['location'] || null,
+                locationDescription: assoc['locationDescription'] || null,
+                area: assoc['area'] || null,
+                departmentCode: assoc['departmentCode'] || null,
+                departmentDescription: assoc['departmentDescription'] || null,
+                condition: assoc['condition'] || null,
+                currentUser: assoc['currentUser'] || null,
+                branchCode: assoc['branchCode'] || null,
+                no: assoc['no'] || null,
+                rfidTagId: assoc['rfidTagId'] || null,
+                created_at: new Date()
+            });
+            inserted++;
         }
 
-        res.json({
+        // Insert batch
+        if (batch.length > 0) {
+            await Asset.insertMany(batch, { ordered: false });
+        }
+
+        const response = {
             ok: true,
-            inserted,
-            skipped,
-            errors: errors.length > 0 ? errors : undefined
-        });
+            inserted: batch.length,
+            processed: inserted
+        };
+
+        if (duplicates.length > 0) {
+            response.duplicates = duplicates;
+            response.skipped = skipped;
+            response.message = `Inserted ${batch.length} asset(s). ${duplicates.length} duplicate(s) skipped.`;
+        }
+
+        res.json(response);
     } catch (error) {
         console.error('Error uploading assets:', error);
-        res.status(500).json({ ok: false, error: error.message });
+        res.status(500).json({ ok: false, error: 'Upload failed: ' + error.message });
     }
 });
 
