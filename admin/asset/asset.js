@@ -371,7 +371,7 @@ fileInput.addEventListener('change', async () => {
   fd.append('file', fileInput.files[0]);
   
   try {
-    const resp = await fetch('/admin/asset/upload_assets.php', { method: 'POST', body: fd });
+    const resp = await fetch('/api/assets/upload', { method: 'POST', body: fd });
     
     // Check if response is JSON before parsing
     const contentType = resp.headers.get('content-type');
