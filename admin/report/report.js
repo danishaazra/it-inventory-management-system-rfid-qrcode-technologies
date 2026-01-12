@@ -1,7 +1,7 @@
 // Report Type Selection
 let selectedReportType = null;
 let currentReportData = null;
-let reportOptions = { locations: [], branches: [], staff: [] };
+let reportOptions = { locations: [], branches: [], staff: [], categories: [] };
 
 const reportTypes = document.querySelectorAll('.report-type-card');
 const criteriaForm = document.getElementById('criteria-form');
@@ -26,10 +26,8 @@ const reportConfigs = {
   asset: {
     title: 'Asset Report',
     fields: [
-      { name: 'dateFrom', label: 'Date From', type: 'date' },
-      { name: 'dateTo', label: 'Date To', type: 'date' },
       { name: 'status', label: 'Status', type: 'select', options: ['', 'Active', 'Inactive', 'Maintenance', 'Retired'] },
-      { name: 'category', label: 'Category', type: 'select', options: ['', 'IT Equipment', 'Furniture', 'Vehicle', 'Other'] },
+      { name: 'category', label: 'Category', type: 'select', dynamic: 'categories' },
       { name: 'location', label: 'Location', type: 'select', dynamic: 'locations' },
       { name: 'branch', label: 'Branch', type: 'select', dynamic: 'branches' }
     ]
@@ -37,35 +35,24 @@ const reportConfigs = {
   maintenance: {
     title: 'Maintenance Report',
     fields: [
-      { name: 'dateFrom', label: 'Date From', type: 'date' },
-      { name: 'dateTo', label: 'Date To', type: 'date' },
+      { name: 'year', label: 'Year', type: 'number', placeholder: '2025' },
       { name: 'frequency', label: 'Frequency', type: 'select', options: ['', 'Weekly', 'Monthly', 'Quarterly'] },
       { name: 'branch', label: 'Branch', type: 'select', dynamic: 'branches' },
       { name: 'location', label: 'Location', type: 'select', dynamic: 'locations' },
+      { name: 'itemName', label: 'Item Name', type: 'text', placeholder: 'e.g., PKT SERVERS' },
       { name: 'assignedStaff', label: 'Assigned Staff', type: 'select', dynamic: 'staff' }
     ]
   },
   inspection: {
     title: 'Inspection Report',
     fields: [
-      { name: 'dateFrom', label: 'Date From', type: 'date' },
-      { name: 'dateTo', label: 'Date To', type: 'date' },
-      { name: 'status', label: 'Status', type: 'select', options: ['', 'Pending', 'Completed', 'Overdue'] },
       { name: 'branch', label: 'Branch', type: 'select', dynamic: 'branches' },
       { name: 'location', label: 'Location', type: 'select', dynamic: 'locations' },
-      { name: 'assignedStaff', label: 'Assigned Staff', type: 'select', dynamic: 'staff' }
+      { name: 'itemName', label: 'Item Name', type: 'text', placeholder: 'e.g., PKT Servers' },
+      { name: 'frequency', label: 'Inspection Type', type: 'select', options: ['', 'Weekly', 'Monthly', 'Quarterly'] },
+      { name: 'status', label: 'Status', type: 'select', options: ['', 'Good', 'Attention', 'Faulty'] }
     ]
   },
-  checklist: {
-    title: 'Checklist Report',
-    fields: [
-      { name: 'year', label: 'Year', type: 'number', placeholder: '2025' },
-      { name: 'frequency', label: 'Frequency', type: 'select', options: ['', 'Weekly', 'Monthly', 'Quarterly'] },
-      { name: 'branch', label: 'Branch', type: 'select', dynamic: 'branches' },
-      { name: 'location', label: 'Location', type: 'select', dynamic: 'locations' },
-      { name: 'itemName', label: 'Item Name', type: 'text', placeholder: 'e.g., RF SCANNER' }
-    ]
-  }
 };
 
 // Load report options (locations and branches)
@@ -81,6 +68,7 @@ async function loadReportOptions() {
       reportOptions.locations = data.locations || [];
       reportOptions.branches = data.branches || [];
       reportOptions.staff = data.staff || [];
+      reportOptions.categories = data.categories || [];
     }
   } catch (error) {
     console.error('Error loading report options:', error);
@@ -237,9 +225,6 @@ async function generateReport() {
       case 'inspection':
         endpoint = '/api/reports/generate-inspection';
         break;
-      case 'checklist':
-        endpoint = '/api/reports/generate-checklist';
-        break;
     }
     
     const response = await fetch(endpoint, {
@@ -256,8 +241,11 @@ async function generateReport() {
       throw new Error(data.error || 'Failed to generate report');
     }
     
-    // Store report data
+    // Store report data (include headerInfo for inspection reports)
     currentReportData = data;
+    if (data.headerInfo) {
+      currentReportData.headerInfo = data.headerInfo;
+    }
     
     // Display report
     displayReport(data);
@@ -295,9 +283,11 @@ function displayReport(data) {
     return;
   }
   
-  // Handle checklist format differently
-  if (selectedReportType === 'checklist') {
+  // Handle checklist format differently (maintenance reports use checklist format)
+  if (selectedReportType === 'maintenance') {
     displayChecklistReport(data.report);
+  } else if (selectedReportType === 'inspection') {
+    displayInspectionReport(data);
   } else {
     // Get headers from first row
     const headers = Object.keys(data.report[0]);
@@ -341,17 +331,33 @@ function displayChecklistReport(checklistData) {
   reportTableHead.innerHTML = '';
   reportTableBody.innerHTML = '';
 
-  // Get the first item for header information (assuming all items in report have same branch/location/itemName)
+  // Get criteria from form to populate header (use selected values from dropdown)
+  const formData = new FormData(reportCriteriaForm);
+  const formCriteria = Object.fromEntries(formData.entries());
+  
+  // Also check if criteria was returned from API
+  const apiCriteria = currentReportData?.criteria || {};
+  
+  // Get the first item for header information
   const firstItem = checklistData[0];
+  const reportTitle = reportConfigs[selectedReportType]?.title || 'Checklist Report';
+  
+  // Use criteria values first (what user selected), then fall back to first item data
+  // Priority: API criteria > Form criteria > First item data > Default
   const headerInfo = {
-    companyName: firstItem.companyName || 'PKT LOGISTICS (M) SDN BHD',
-    branch: firstItem.branch || '-',
-    location: firstItem.location || '-',
-    itemName: firstItem.itemName || '-',
-    month: firstItem.month || 'NOV',
-    year: firstItem.year || new Date().getFullYear(),
-    frequency: firstItem.frequency || 'Monthly'
+    companyName: reportTitle,
+    branch: firstItem?.branch && firstItem.branch !== '-' ? firstItem.branch : (apiCriteria.branch || formCriteria.branch || '-'),
+    location: firstItem?.location && firstItem.location !== '-' ? firstItem.location : (apiCriteria.location || formCriteria.location || '-'),
+    itemName: firstItem?.itemName && firstItem.itemName !== '-' ? firstItem.itemName : (apiCriteria.itemName || formCriteria.itemName || '-'),
+    month: firstItem?.month || 'NOV',
+    year: apiCriteria.year || formCriteria.year || firstItem?.year || new Date().getFullYear(),
+    frequency: apiCriteria.frequency || formCriteria.frequency || firstItem?.frequency || 'Monthly'
   };
+  
+  console.log('Header info:', headerInfo);
+  console.log('Form criteria:', formCriteria);
+  console.log('API criteria:', apiCriteria);
+  console.log('First item:', firstItem);
 
   // Create and display header section
   createChecklistHeader(headerInfo);
@@ -437,6 +443,15 @@ function displayChecklistReport(checklistData) {
         for (let period = 1; period <= 4; period++) {
           const cell = document.createElement('td');
           cell.style.textAlign = 'center';
+          cell.style.verticalAlign = 'middle';
+          cell.style.padding = '4px 1px';
+          cell.style.width = '40px';
+          cell.style.minWidth = '40px';
+          cell.style.maxWidth = '40px';
+          cell.style.whiteSpace = 'nowrap';
+          cell.style.overflow = 'visible';
+          cell.style.lineHeight = '1.2';
+          cell.style.fontSize = '0';
           
           // Debug: log what we're checking
           if (month === 1 && period === 1 && rowNum === 1) {
@@ -450,16 +465,88 @@ function displayChecklistReport(checklistData) {
           if (schedule && schedule[month] && schedule[month][period]) {
             const dates = schedule[month][period];
             if (Array.isArray(dates) && dates.length > 0) {
-              // Dates are day numbers (e.g., "17", "14", "20"), join with commas
-              cell.textContent = dates.join(', ');
-              console.log(`Filled cell Month ${month}, Period ${period} with: ${dates.join(', ')}`);
+              // Check if dates are objects with day and class, or just strings
+              const firstDate = dates[0];
+              if (typeof firstDate === 'object' && firstDate.day) {
+                // New format: dates are objects with {day, class}
+                dates.forEach(dateObj => {
+                  const dateDiv = document.createElement('div');
+                  dateDiv.className = `date-cell ${dateObj.class || 'pending'}`;
+                  dateDiv.textContent = dateObj.day;
+                  
+                  // Apply colors matching checklist draft page - smaller size for report, horizontal layout
+                  if (dateObj.class === 'completed') {
+                    dateDiv.style.cssText = `
+                      width: 16px;
+                      height: 16px;
+                      border-radius: 2px;
+                      display: inline-block;
+                      text-align: center;
+                      line-height: 16px;
+                      font-size: 0.55rem;
+                      font-weight: 700;
+                      cursor: pointer;
+                      margin: 0;
+                      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+                      color: #ffffff;
+                      vertical-align: middle;
+                    `;
+                  } else if (dateObj.class === 'pending') {
+                    dateDiv.style.cssText = `
+                      width: 16px;
+                      height: 16px;
+                      border-radius: 2px;
+                      display: inline-block;
+                      text-align: center;
+                      line-height: 16px;
+                      font-size: 0.55rem;
+                      font-weight: 600;
+                      cursor: pointer;
+                      margin: 0;
+                      background: #fef3c7;
+                      color: #92400e;
+                      vertical-align: middle;
+                    `;
+                  } else if (dateObj.class === 'upcoming') {
+                    dateDiv.style.cssText = `
+                      width: 16px;
+                      height: 16px;
+                      border-radius: 2px;
+                      display: inline-block;
+                      text-align: center;
+                      line-height: 16px;
+                      font-size: 0.55rem;
+                      font-weight: 600;
+                      cursor: not-allowed;
+                      margin: 0;
+                      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                      color: #ffffff;
+                      opacity: 0.9;
+                      vertical-align: middle;
+                    `;
+                  } else {
+                    dateDiv.style.cssText = `
+                      width: 16px;
+                      height: 16px;
+                      border-radius: 2px;
+                      display: inline-block;
+                      text-align: center;
+                      line-height: 16px;
+                      font-size: 0.55rem;
+                      font-weight: 600;
+                      cursor: pointer;
+                      margin: 0;
+                      vertical-align: middle;
+                    `;
+                  }
+                  cell.appendChild(dateDiv);
+                });
+              } else {
+                // Old format: dates are just strings
+                cell.textContent = dates.join(', ');
+              }
             } else if (dates) {
               cell.textContent = String(dates);
-            }
-          } else {
-            // Debug empty cells
-            if (month === 1 && period === 1 && rowNum === 1) {
-              console.log(`Empty cell for Month ${month}, Period ${period} - schedule[${month}]:`, schedule[month]);
             }
           }
           tr.appendChild(cell);
@@ -472,6 +559,169 @@ function displayChecklistReport(checklistData) {
   });
   
   console.log('Checklist report displayed, total rows:', rowNum - 1);
+}
+
+// Display inspection report with header info
+function displayInspectionReport(data) {
+  console.log('Displaying inspection report, data:', data);
+  
+  if (!data.report || !Array.isArray(data.report) || data.report.length === 0) {
+    reportTableBody.innerHTML = '<tr><td colspan="100%" class="no-results">No inspection data available</td></tr>';
+    return;
+  }
+
+  // Clear existing table headers
+  reportTableHead.innerHTML = '';
+  reportTableBody.innerHTML = '';
+
+  // Get header info from API response or use defaults
+  const headerInfo = data.headerInfo || {
+    companyName: 'PKT Logistics Group',
+    reportTitle: 'Maintenance Inspection Report',
+    branch: '-',
+    location: '-',
+    inspectionType: '-',
+    itemName: '-',
+    monthYear: '-',
+    inspectionDate: '-'
+  };
+
+  // Create and display header section
+  createInspectionHeader(headerInfo);
+
+  // Create table headers
+  const headerRow = document.createElement('tr');
+  const headers = ['Asset ID', 'Asset Name', 'Serial Number', 'Inspection Date', 'Status', 'Remarks'];
+  headers.forEach(header => {
+    const th = document.createElement('th');
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+  reportTableHead.appendChild(headerRow);
+
+  // Create data rows
+  let rowNum = 1;
+  data.report.forEach(item => {
+    const tr = document.createElement('tr');
+    
+    // Add row number (Asset ID column shows row number)
+    const assetIdCell = document.createElement('td');
+    assetIdCell.textContent = rowNum;
+    assetIdCell.style.textAlign = 'center';
+    tr.appendChild(assetIdCell);
+    
+    // Asset Name
+    const assetNameCell = document.createElement('td');
+    assetNameCell.textContent = item['Asset Name'] || '-';
+    tr.appendChild(assetNameCell);
+    
+    // Serial Number
+    const serialCell = document.createElement('td');
+    serialCell.textContent = item['Serial Number'] || '-';
+    tr.appendChild(serialCell);
+    
+    // Inspection Date
+    const dateCell = document.createElement('td');
+    dateCell.textContent = item['Inspection Date'] || '-';
+    tr.appendChild(dateCell);
+    
+    // Status
+    const statusCell = document.createElement('td');
+    statusCell.textContent = item['Status'] || '-';
+    // Add color coding for status
+    if (item['Status'] === 'Good') {
+      statusCell.style.color = '#16a34a';
+      statusCell.style.fontWeight = '600';
+    } else if (item['Status'] === 'Attention') {
+      statusCell.style.color = '#f59e0b';
+      statusCell.style.fontWeight = '600';
+    } else if (item['Status'] === 'Faulty') {
+      statusCell.style.color = '#dc2626';
+      statusCell.style.fontWeight = '600';
+    }
+    tr.appendChild(statusCell);
+    
+    // Remarks
+    const remarksCell = document.createElement('td');
+    remarksCell.textContent = item['Remarks'] || '-';
+    tr.appendChild(remarksCell);
+    
+    reportTableBody.appendChild(tr);
+    rowNum++;
+  });
+  
+  console.log('Inspection report displayed, total rows:', rowNum - 1);
+}
+
+// Create inspection report header section
+function createInspectionHeader(headerInfo) {
+  const reportTableContainer = document.getElementById('report-table-container');
+  if (!reportTableContainer) return;
+
+  // Remove existing header if any
+  const existingHeader = document.getElementById('inspection-header-section');
+  if (existingHeader) {
+    existingHeader.remove();
+  }
+
+  // Create header section
+  const headerSection = document.createElement('div');
+  headerSection.id = 'inspection-header-section';
+  headerSection.style.cssText = `
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-family: 'Inter', sans-serif;
+  `;
+
+  // Title
+  const titleSection = document.createElement('div');
+  titleSection.style.cssText = 'text-align: center; margin-bottom: 1.5rem;';
+  titleSection.innerHTML = `
+    <h2 style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem;">${escapeHtml(headerInfo.reportTitle)}</h2>
+  `;
+  headerSection.appendChild(titleSection);
+
+  // Info grid - 2 columns
+  const infoGrid = document.createElement('div');
+  infoGrid.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;';
+  
+  const infoItems = [
+    { label: 'Company Name', value: headerInfo.companyName },
+    { label: 'Report Title', value: headerInfo.reportTitle },
+    { label: 'Branch', value: headerInfo.branch },
+    { label: 'Location', value: headerInfo.location },
+    { label: 'Inspection Type', value: headerInfo.inspectionType },
+    { label: 'Item Name', value: headerInfo.itemName },
+    { label: 'Month / Year', value: headerInfo.monthYear },
+    { label: 'Inspection Date', value: headerInfo.inspectionDate }
+  ];
+
+  infoItems.forEach(item => {
+    const infoItem = document.createElement('div');
+    infoItem.style.cssText = 'display: flex; gap: 0.5rem;';
+    const label = document.createElement('span');
+    label.style.cssText = 'font-weight: 600; color: #374151; min-width: 140px;';
+    label.textContent = item.label + ':';
+    const value = document.createElement('span');
+    value.style.cssText = 'color: #1a1a1a;';
+    value.textContent = item.value;
+    infoItem.appendChild(label);
+    infoItem.appendChild(value);
+    infoGrid.appendChild(infoItem);
+  });
+
+  headerSection.appendChild(infoGrid);
+
+  // Insert header at the beginning of the container
+  const firstChild = reportTableContainer.firstChild;
+  if (firstChild) {
+    reportTableContainer.insertBefore(headerSection, firstChild);
+  } else {
+    reportTableContainer.appendChild(headerSection);
+  }
 }
 
 // Create checklist header section
@@ -502,7 +752,6 @@ function createChecklistHeader(headerInfo) {
   titleSection.style.cssText = 'text-align: center; margin-bottom: 1.5rem;';
   titleSection.innerHTML = `
     <h2 style="font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem;">${escapeHtml(headerInfo.companyName)}</h2>
-    <h3 style="font-size: 1.25rem; font-weight: 600; color: #374151;">ICT - PREVENTIVE MAINTENANCE CHECKLIST</h3>
   `;
   headerSection.appendChild(titleSection);
 
@@ -633,11 +882,17 @@ function exportReport(format) {
   criteriaInput.value = JSON.stringify(criteria);
   form.appendChild(criteriaInput);
   
-  // Add report data
+  // Add report data (include headerInfo for inspection reports)
+  const reportDataToExport = {
+    report: currentReportData.report
+  };
+  if (currentReportData.headerInfo) {
+    reportDataToExport.headerInfo = currentReportData.headerInfo;
+  }
   const dataInput = document.createElement('input');
   dataInput.type = 'hidden';
   dataInput.name = 'reportData';
-  dataInput.value = JSON.stringify(currentReportData.report);
+  dataInput.value = JSON.stringify(reportDataToExport);
   form.appendChild(dataInput);
   
   document.body.appendChild(form);

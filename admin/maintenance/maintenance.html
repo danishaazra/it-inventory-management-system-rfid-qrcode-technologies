@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/responsive.css">
   <style>
     * {
       margin: 0;
@@ -16,20 +17,21 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      background: #ffffff;
       min-height: 100vh;
       color: #1a1a1a;
+      margin: 0;
+      padding: 0;
     }
 
     .app-shell {
       display: flex;
       min-height: 100vh;
-      padding: 2rem;
-      gap: 2rem;
+      padding: 0;
+      gap: 0;
       transition: gap 0.3s ease;
     }
     
-    /* Adjust gap when sidebar is collapsed */
     .app-shell.has-collapsed-sidebar {
       gap: 1rem;
     }
@@ -38,15 +40,20 @@
       width: 260px;
       background: rgba(7, 3, 30, 0.95);
       backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 0;
       padding: 2rem 1.5rem;
       color: #f5f5ff;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      box-shadow: none;
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 1000;
       flex-shrink: 0;
     }
 
@@ -72,7 +79,6 @@
       display: flex;
     }
 
-    /* Only expand on hover when collapsed */
     .sidebar.collapsed:hover {
       width: 260px;
       padding: 2rem 1.5rem;
@@ -83,12 +89,14 @@
 
     .sidebar-brand {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: center;
       gap: 0.75rem;
       margin-bottom: 2rem;
       transition: justify-content 0.3s ease;
-      padding-right: 3rem;
+      padding-right: 0;
       position: relative;
+      width: 100%;
     }
 
     .sidebar.collapsed .sidebar-brand {
@@ -109,12 +117,12 @@
     }
 
     .sidebar-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      overflow: hidden;
+      width: 100%;
+      height: auto;
+      border-radius: 0;
+      overflow: visible;
       flex-shrink: 0;
-      background: #ffffff;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -132,50 +140,23 @@
 
     .sidebar.collapsed:hover .sidebar-logo {
       opacity: 1;
-      width: 36px;
-      height: 36px;
+      width: auto;
+      height: auto;
       margin: 0;
     }
 
-    .sidebar-logo img {
+    .sidebar-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 100;
+      color: #f5f5ff;
+      letter-spacing: 2px;
+      text-align: center;
+      display: block;
       width: 100%;
-      height: 100%;
-      object-fit: contain;
     }
 
     .sidebar-brand-text {
-      font-size: 0.85rem;
-      font-weight: 600;
-      line-height: 1.4;
-      white-space: normal;
-      word-wrap: break-word;
-      opacity: 1;
-      max-width: 160px;
-      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: visible;
-      display: block;
-    }
-
-    .sidebar.collapsed .sidebar-brand-text {
-      opacity: 0;
-      max-width: 0;
-      max-height: 0;
-      margin: 0;
-      overflow: hidden;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      padding: 0;
-    }
-
-    .sidebar.collapsed:hover .sidebar-brand-text {
-      opacity: 1;
-      max-width: 160px;
-      max-height: 100px;
-      overflow: visible;
-      font-size: 0.85rem;
-      width: auto;
-      height: auto;
+      display: none;
     }
 
     .sidebar-nav {
@@ -195,6 +176,8 @@
       transition: background 0.15s, color 0.15s, transform 0.15s, justify-content 0.3s ease;
       cursor: pointer;
       white-space: nowrap;
+      word-break: keep-all;
+      overflow-wrap: normal;
       position: relative;
     }
 
@@ -218,22 +201,6 @@
       width: auto;
       height: auto;
       overflow: visible;
-    }
-
-    .nav-item::before {
-      content: '●';
-      font-size: 0.5rem;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .sidebar.collapsed .nav-item::before {
-      opacity: 0;
-      display: none;
-    }
-
-    .sidebar.collapsed:hover .nav-item::before {
-      opacity: 0;
     }
 
     .nav-item:hover {
@@ -352,39 +319,58 @@
       max-height: 0;
       padding: 0;
       margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      overflow: hidden;
     }
 
     .sidebar.collapsed:hover .logout-btn {
       opacity: 1;
       max-height: 100px;
-      padding: 0.75rem 1rem;
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      width: auto;
+      height: auto;
     }
 
     .dashboard-container {
       flex: 1;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 0;
       padding: 3rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: none;
       display: flex;
       flex-direction: column;
       max-width: 100%;
+      width: 100%;
+      height: 100vh;
+      margin-left: 260px;
+      overflow-y: auto;
+    }
+    
+    .app-shell.has-collapsed-sidebar .dashboard-container {
+      margin-left: 80px;
     }
 
     .dashboard-header {
       display: flex;
       align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 2px solid #e5e5e5;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
       gap: 1.25rem;
       flex-wrap: wrap;
     }
 
     .dashboard-header h1 {
-      font-size: 2rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
     }
 
     .user-info {
@@ -415,13 +401,13 @@
     }
 
     .user-greeting-main {
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 600;
       color: #1a1a1a;
     }
 
     .user-greeting-sub {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #888;
     }
 
@@ -443,101 +429,174 @@
     }
 
     .maintenance-header {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
 
     .maintenance-header-row {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 2rem;
       flex-wrap: wrap;
       margin-bottom: 0.75rem;
     }
 
+    .pagination-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
     .maintenance-header-text h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0;
       color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .maintenance-header-text p {
       color: #666;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
 
     .maintenance-filters {
       display: flex;
       align-items: flex-end;
       gap: 0.75rem;
-      flex: 1;
       flex-wrap: wrap;
-      justify-content: flex-end;
+      justify-content: flex-start;
     }
 
     .filter-group {
       display: flex;
       flex-direction: column;
       gap: 0.35rem;
-      min-width: 260px;
-      flex: 1;
+      min-width: 150px;
     }
 
     .filter-group label {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 600;
       color: #4b5563;
     }
 
-    .filter-input {
-      padding: 0.6rem 0.75rem;
+    .filter-input,
+    .filter-select {
+      padding: 0.5rem 0.75rem;
       border: 1px solid #d1d5db;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       transition: border-color 0.15s;
       width: 100%;
+      background: #ffffff;
+      cursor: pointer;
     }
 
-    .filter-input:focus {
+    .filter-input:focus,
+    .filter-select:focus {
       outline: none;
       border-color: #140958;
       box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
     }
 
-    .btn-search {
-      padding: 0.65rem 1.2rem;
+    .filter-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.5rem;
+    }
+
+    /* List Table Styles */
+    .list-container {
+      background: transparent;
+      border-radius: 0;
       border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: #ffffff;
+      overflow: visible;
+      box-shadow: none;
+    }
+
+    .list-table-wrapper {
+      overflow: visible;
+    }
+
+    .list-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      border: none;
+    }
+
+    .list-table thead {
+      background: transparent;
+    }
+
+    .list-table th {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
       font-weight: 600;
+      font-size: 0.7rem;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: none;
+      border-bottom: none;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+
+    .list-table td {
+      padding: 0.6rem 0.75rem;
+      border: none;
+      border-bottom: none;
+      transition: background 0.2s ease;
+      font-size: 0.8rem;
+      color: #374151;
+      word-wrap: break-word;
+      max-width: 200px;
+    }
+
+    .list-table tbody tr {
+      transition: all 0.2s ease;
       cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
+      border: none;
     }
 
-    .btn-search:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.25);
+    .list-table tbody tr:hover {
+      background: #f9fafb;
+      transform: translateX(2px);
     }
-
+    
+    .list-table tbody tr:not(:last-child) {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .list-table tbody tr {
+      height: auto;
+      min-height: 40px;
+    }
+    
     .pagination-controls {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       justify-content: flex-end;
-      margin-top: 0.5rem;
-      padding-right: 0;
+      margin-left: auto;
+    }
+    
+    .list-table-wrapper {
+      position: relative;
     }
 
     .pagination-btn {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border: 1px solid #d1d5db;
       background: #ffffff;
       color: #374151;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -559,45 +618,18 @@
     }
 
     .pagination-info {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #6b7280;
       padding: 0 0.5rem;
       white-space: nowrap;
     }
 
-    .maintenance-header-row .add-maintenance-wrapper {
-      margin-left: auto;
-    }
-
     .add-maintenance-wrapper {
       position: relative;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 0.5rem;
-    }
-
-    .info-icon-btn {
-      width: 36px;
-      height: 36px;
-      border: 1px solid #d1d5db;
-      background: #ffffff;
-      color: #6b7280;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      font-weight: 600;
-      transition: all 0.15s;
       flex-shrink: 0;
-    }
-
-    .info-icon-btn:hover {
-      background: #f3f4f6;
-      border-color: #9ca3af;
-      color: #374151;
-      transform: translateY(-1px);
     }
 
     .add-maintenance-btn {
@@ -622,113 +654,6 @@
       box-shadow: 0 6px 18px rgba(20, 9, 88, 0.45);
     }
 
-    .add-maintenance-menu {
-      position: absolute;
-      right: 0;
-      top: calc(100% + 0.5rem);
-      background: #ffffff;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
-      padding: 0.4rem 0;
-      min-width: 180px;
-      z-index: 30;
-      display: none;
-    }
-
-    .add-maintenance-menu.open {
-      display: block;
-    }
-
-    .add-maintenance-menu button {
-      width: 100%;
-      text-align: left;
-      padding: 0.6rem 1rem;
-      border: none;
-      background: transparent;
-      font-size: 0.875rem;
-      color: #1f2933;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .add-maintenance-menu button:hover {
-      background: #f3f4f6;
-    }
-
-    .maintenance-table-container {
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e5e5e5;
-      overflow: auto;
-    }
-
-    table.maintenance-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 900px;
-      font-size: 0.85rem;
-    }
-
-    .maintenance-table thead {
-      background: #f1f3f5;
-    }
-
-    .maintenance-table th,
-    .maintenance-table td {
-      padding: 0.6rem 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e5e5;
-    }
-
-    .maintenance-table th {
-      font-weight: 600;
-      color: #444;
-    }
-
-    .maintenance-table tbody tr:nth-child(even) {
-      background: #fafbfc;
-    }
-
-    .maintenance-table tbody tr:hover {
-      background: #eef4ff;
-    }
-
-    .inspection-tasks-link {
-      color: #140958;
-      text-decoration: none;
-      font-weight: 500;
-      cursor: pointer;
-      transition: color 0.15s;
-    }
-
-    .inspection-tasks-link:hover {
-      color: #1a0d6b;
-      text-decoration: underline;
-    }
-
-    .frequency-badge {
-      padding: 0.25rem 0.6rem;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      display: inline-block;
-    }
-
-    .frequency-weekly {
-      background: #dbeafe;
-      color: #1e40af;
-    }
-
-    .frequency-monthly {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .frequency-quarterly {
-      background: #d1fae5;
-      color: #065f46;
-    }
 
     .add-modal-overlay {
       position: fixed;
@@ -747,77 +672,6 @@
       display: flex;
     }
 
-    .info-modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .info-modal-overlay.open {
-      display: flex;
-    }
-
-    .info-modal {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 2rem;
-      max-width: 600px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
-
-    .info-modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #e5e5e5;
-    }
-
-    .info-modal-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-
-    .info-modal-content {
-      margin-bottom: 1.5rem;
-    }
-
-    .info-modal-content p {
-      font-size: 0.95rem;
-      color: #374151;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-
-    .info-modal-image {
-      width: 100%;
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      border: 1px solid #e5e5e5;
-      margin-top: 1rem;
-    }
-
-    .info-modal-actions {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: flex-end;
-      margin-top: 1.5rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #e5e5e5;
-    }
 
     .add-modal {
       background: #ffffff;
@@ -882,6 +736,16 @@
       font-weight: 600;
       color: #374151;
       margin-bottom: 0.4rem;
+    }
+
+    .form-field label::after {
+      content: '*';
+      color: #dc2626;
+      margin-left: 0.2rem;
+    }
+
+    .form-field.schedule-field label::after {
+      display: none;
     }
 
     .form-field input,
@@ -964,7 +828,6 @@
       transform: none;
     }
 
-    /* Schedule Calendar Styles */
     .schedule-calendar {
       background: #f8f9fa;
       border-radius: 12px;
@@ -1001,14 +864,6 @@
       border: 1px solid #e5e7eb;
     }
 
-    .calendar-month-header {
-      font-weight: 600;
-      font-size: 1rem;
-      color: #1a1a1a;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
 
     .calendar-weeks {
       display: flex;
@@ -1024,59 +879,182 @@
 
     .calendar-week-label {
       font-size: 0.85rem;
-      font-weight: 600;
       color: #6b7280;
-      min-width: 60px;
+      min-width: 70px;
     }
 
     .calendar-date-input {
+      flex: 1;
       padding: 0.4rem 0.6rem;
       border: 1px solid #d1d5db;
       border-radius: 6px;
       font-size: 0.85rem;
-      width: 100%;
-      max-width: 150px;
     }
 
-    .calendar-date-input:focus {
-      outline: none;
-      border-color: #140958;
-      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    .calendar-month-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+
+    .add-week-btn {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid #140958;
+      background: #ffffff;
+      color: #140958;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .add-week-btn:hover:not(:disabled) {
+      background: #140958;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .add-week-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .remove-week-btn {
+      padding: 0.2rem 0.5rem;
+      border: 1px solid #dc2626;
+      background: #ffffff;
+      color: #dc2626;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-left: 0.5rem;
+    }
+
+    .remove-week-btn:hover {
+      background: #dc2626;
+      color: #ffffff;
+    }
+
+    .calendar-week {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .calendar-quarters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
     }
 
     .calendar-quarter {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .calendar-quarter-label {
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: #1a1a1a;
-    }
-
-    .calendar-month-select {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 0.9rem;
       background: #ffffff;
-      color: #111827;
+      border-radius: 8px;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .calendar-quarter-header {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+
+    .list-table tbody tr:active {
+      background: #f3f4f6;
+    }
+
+    .action-btn {
+      padding: 0.35rem 0.85rem;
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: border-color 0.15s;
-      flex: 1;
-      max-width: 200px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
     }
 
-    .calendar-month-select:focus {
-      outline: none;
-      border-color: #140958;
-      box-shadow: 0 0 0 2px rgba(20, 9, 88, 0.1);
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
     }
 
-    /* Mobile Responsive Styles */
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #6b7280;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #140958;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #6b7280;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .staff-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.5rem;
+      background: #eff6ff;
+      color: #1e40af;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .staff-badge.empty {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
       .app-shell {
         flex-direction: column;
@@ -1085,6 +1063,8 @@
       }
 
       .sidebar {
+        position: relative;
+        height: auto;
         width: 100%;
         order: -1;
         border-radius: 0;
@@ -1093,95 +1073,19 @@
         align-items: center;
         gap: 1rem;
       }
-
-      .sidebar-brand {
-        margin-bottom: 0;
-        padding-right: 0;
+      
+      .dashboard-container {
+        margin-left: 0;
       }
-
-      .sidebar-nav {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        flex: 1;
-      }
-
-      .nav-item {
-        white-space: nowrap;
-        word-break: keep-all;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
-      }
-
-      .sidebar-footer {
-        margin-top: 0;
-        margin-left: auto;
-      }
-
-      .main-content {
-        width: 100%;
-        order: 2;
-        padding: 1rem;
-      }
-
-      /* Prevent text breaking */
-      * {
-        word-break: keep-all;
-        overflow-wrap: break-word;
-        hyphens: none;
-      }
-
-      .nav-item,
-      .btn,
-      h1, h2, h3 {
-        word-break: keep-all;
-        white-space: normal;
-        overflow-wrap: break-word;
-      }
-
-      .content-header {
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .maintenance-table-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .maintenance-table {
-        min-width: 800px;
-      }
-
-      .modal {
-        width: 95%;
-        max-width: 95%;
-        margin: 1rem;
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .app-shell {
-        padding: 0.5rem;
-      }
-
-      .maintenance-table {
-        font-size: 0.85rem;
-        min-width: 600px;
-      }
-
-      .maintenance-table th,
-      .maintenance-table td {
-        padding: 0.5rem;
+      
+      .app-shell.has-collapsed-sidebar .dashboard-container {
+        margin-left: 0;
       }
     }
   </style>
   <script type="module">
     import '../shared/init.js';
+    import './maintenance.js';
   </script>
 </head>
 <body>
@@ -1192,7 +1096,7 @@
       </button>
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="../../images/pkt_logo.png" alt="PKT Logistics logo">
+          <span class="logo-text">DM</span>
         </div>
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
@@ -1200,76 +1104,89 @@
         <a class="nav-item" href="../../dashboard/dashboard_admin.html">Dashboard</a>
         <a class="nav-item" href="../asset/asset.html">Assets</a>
         <a class="nav-item active" href="maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../scan/scan.html">Scan Asset</a>
         <a class="nav-item" href="../report/report.html">Reports</a>
-        <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
-        <div class="sidebar-meta">v1.0 • Maintenance</div>
+        <div class="sidebar-meta">v1.0 • Preventive Maintenance</div>
       </div>
     </aside>
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Maintenance Checklist</h1>
+        <h1>PREVENTIVE MAINTENANCE CHECKLIST</h1>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Maintenance overview</span>
           </div>
         </div>
       </div>
 
       <section class="maintenance-header">
         <div class="maintenance-header-row">
-          <div class="maintenance-header-text">
-            <h2>Maintenance Checklist</h2>
-            <p>All registered maintenance items with inspection tasks.</p>
-          </div>
           <div class="maintenance-filters">
             <div class="filter-group">
-              <label for="maintenance-search">Search</label>
-              <input id="maintenance-search" type="text" class="filter-input" placeholder="Search by branch, location, item name">
+              <label for="filter-year">Year</label>
+              <select id="filter-year" class="filter-select">
+                <option value="">All Years</option>
+              </select>
             </div>
-            <button class="btn-search" id="maintenance-search-btn">Search</button>
+            <div class="filter-group">
+              <label for="filter-frequency">Frequency</label>
+              <select id="filter-frequency" class="filter-select">
+                <option value="">All Frequencies</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Quarterly">Quarterly</option>
+              </select>
+            </div>
+            <div class="filter-group" style="min-width: 260px;">
+              <label for="filter-search">Search</label>
+              <input id="filter-search" type="text" class="filter-input" placeholder="Search by branch, location, item name">
+            </div>
           </div>
           <div class="add-maintenance-wrapper">
             <button class="add-maintenance-btn" id="add-maintenance-btn">
               <span>＋</span>
               <span>Add Maintenance</span>
             </button>
-            <button class="info-icon-btn" id="info-icon-btn" title="File format information">ℹ</button>
-            <div class="add-maintenance-menu" id="add-maintenance-menu">
-              <button type="button" data-action="manual">Add manually</button>
-              <button type="button" data-action="upload">Upload file</button>
-            </div>
           </div>
         </div>
-        <div class="pagination-controls">
-          <button class="pagination-btn" id="prev-page-btn" title="Previous page">‹</button>
-          <span class="pagination-info" id="page-info">Page 1</span>
-          <button class="pagination-btn" id="next-page-btn" title="Next page">›</button>
+        <div class="pagination-row">
+          <div class="pagination-controls">
+            <button class="pagination-btn" id="prev-page-btn" disabled>‹</button>
+            <span class="pagination-info" id="page-info">1-10 of 0</span>
+            <button class="pagination-btn" id="next-page-btn" disabled>›</button>
+          </div>
         </div>
       </section>
 
-      <section class="maintenance-table-container">
-        <table class="maintenance-table">
-          <thead>
-            <tr>
-              <th>Branch</th>
-              <th>Location</th>
-              <th>Item Name</th>
-              <th>Frequency</th>
-              <th>List of Inspection Tasks</th>
-            </tr>
-          </thead>
-          <tbody id="maintenance-table-body">
-            <!-- Maintenance rows will be loaded here -->
-          </tbody>
-        </table>
-      </section>
+      <!-- Maintenance Items List -->
+      <div class="list-container" style="margin-top: 0;">
+        <div class="list-table-wrapper">
+          <table class="list-table">
+            <thead>
+              <tr>
+                <th>Branch</th>
+                <th>Location</th>
+                <th>Item Name</th>
+                <th>Frequency</th>
+                <th>Staff In Charge</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="maintenance-items-tbody">
+              <tr>
+                <td colspan="6" class="loading-state">
+                  <div class="loading-spinner"></div>
+                  <p>Loading maintenance items...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -1283,19 +1200,19 @@
       <form id="add-maintenance-form">
         <div class="add-form-grid">
           <div class="form-field">
-            <label for="add-branch">Branch *</label>
+            <label for="add-branch">Branch</label>
             <input type="text" id="add-branch" name="branch" required>
           </div>
           <div class="form-field">
-            <label for="add-location">Location *</label>
+            <label for="add-location">Location</label>
             <input type="text" id="add-location" name="location" required>
           </div>
           <div class="form-field">
-            <label for="add-itemName">Item Name *</label>
+            <label for="add-itemName">Item Name</label>
             <input type="text" id="add-itemName" name="itemName" required>
           </div>
           <div class="form-field">
-            <label for="add-frequency">Frequency *</label>
+            <label for="add-frequency">Frequency</label>
             <select id="add-frequency" name="frequency" required>
               <option value="">Select frequency</option>
               <option value="Weekly">Weekly</option>
@@ -1303,14 +1220,14 @@
               <option value="Quarterly">Quarterly</option>
             </select>
           </div>
-          <div class="form-field" id="add-schedule-container" style="grid-column: 1 / -1; display: none;">
-            <label>Maintenance Schedule *</label>
+          <div class="form-field schedule-field" id="add-schedule-container" style="grid-column: 1 / -1; display: none;">
+            <label>Maintenance Schedule</label>
             <div id="add-schedule-calendar" class="schedule-calendar">
               <!-- Calendar will be generated here -->
             </div>
           </div>
           <div class="form-field">
-            <label for="add-inspectionTasks">List of Inspection Tasks *</label>
+            <label for="add-inspectionTasks">Inspection Tasks</label>
             <textarea id="add-inspectionTasks" name="inspectionTasks" placeholder="Enter inspection tasks, one per line" required></textarea>
           </div>
         </div>
@@ -1322,26 +1239,5 @@
     </div>
   </div>
 
-  <!-- Info Modal -->
-  <div class="info-modal-overlay" id="info-modal-overlay">
-    <div class="info-modal">
-      <div class="info-modal-header">
-        <h2>File Upload Format</h2>
-        <button class="close-modal-btn" id="close-info-modal-btn">×</button>
-      </div>
-      <div class="info-modal-content">
-        <p>Upload file can only be <strong>column</strong> and <strong>rows</strong> format (Excel).</p>
-        <p>Please ensure your file follows the required format:</p>
-        <img src="../../images/file_format.png" alt="File Format Example" class="info-modal-image">
-      </div>
-      <div class="info-modal-actions">
-        <button type="button" class="btn-save" id="ok-info-modal-btn">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <input type="file" id="maintenance-file-input" style="display:none" />
-
-  <script type="module" src="./maintenance.js"></script>
 </body>
 </html>

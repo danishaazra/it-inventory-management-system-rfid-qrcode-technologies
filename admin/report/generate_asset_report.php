@@ -8,20 +8,6 @@ try {
   // Build filter based on criteria
   $filter = [];
   
-  // Date range filter (if created_at exists)
-  if (!empty($data['dateFrom']) || !empty($data['dateTo'])) {
-    $dateFilter = [];
-    if (!empty($data['dateFrom'])) {
-      $dateFilter['$gte'] = new MongoDB\BSON\UTCDateTime(strtotime($data['dateFrom']) * 1000);
-    }
-    if (!empty($data['dateTo'])) {
-      $dateFilter['$lte'] = new MongoDB\BSON\UTCDateTime((strtotime($data['dateTo']) + 86400) * 1000);
-    }
-    if (!empty($dateFilter)) {
-      $filter['created_at'] = $dateFilter;
-    }
-  }
-  
   // Status filter
   if (!empty($data['status'])) {
     $filter['status'] = $data['status'];

@@ -67,6 +67,18 @@ const maintenanceAssetSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 }, { collection: 'maintenance_assets' });
 
+// Inspection Task Schema (separate collection for each task's schedule)
+const inspectionTaskSchema = new mongoose.Schema({
+    maintenanceId: { type: String, required: true },
+    taskName: { type: String, required: true },
+    schedule: mongoose.Schema.Types.Mixed,
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now }
+}, { collection: 'inspection_tasks' });
+
+// Create index for faster queries
+inspectionTaskSchema.index({ maintenanceId: 1, taskName: 1 });
+
 // Report Schema
 const reportSchema = new mongoose.Schema({
     reportType: String,
@@ -87,12 +99,14 @@ const Asset = mongoose.model('Asset', assetSchema, 'assets');
 const Maintenance = mongoose.model('Maintenance', maintenanceSchema, 'maintenance');
 const MaintenanceAsset = mongoose.model('MaintenanceAsset', maintenanceAssetSchema, 'maintenance_assets');
 const Report = mongoose.model('Report', reportSchema, 'reports');
+const InspectionTask = mongoose.model('InspectionTask', inspectionTaskSchema, 'inspection_tasks');
 
 module.exports = {
     User,
     Asset,
     Maintenance,
     MaintenanceAsset,
-    Report
+    Report,
+    InspectionTask
 };
 

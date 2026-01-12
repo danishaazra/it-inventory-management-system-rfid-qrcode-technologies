@@ -16,16 +16,18 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      background: #ffffff;
       min-height: 100vh;
       color: #1a1a1a;
+      margin: 0;
+      padding: 0;
     }
 
     .app-shell {
       display: flex;
       min-height: 100vh;
-      padding: 2rem;
-      gap: 2rem;
+      padding: 0;
+      gap: 0;
       transition: gap 0.3s ease;
     }
     
@@ -37,15 +39,20 @@
       width: 260px;
       background: rgba(7, 3, 30, 0.95);
       backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 0;
       padding: 2rem 1.5rem;
       color: #f5f5ff;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      box-shadow: none;
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 1000;
       flex-shrink: 0;
     }
 
@@ -81,12 +88,14 @@
 
     .sidebar-brand {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: center;
       gap: 0.75rem;
       margin-bottom: 2rem;
       transition: justify-content 0.3s ease;
-      padding-right: 3rem;
+      padding-right: 0;
       position: relative;
+      width: 100%;
     }
 
     .sidebar.collapsed .sidebar-brand {
@@ -107,12 +116,12 @@
     }
 
     .sidebar-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      overflow: hidden;
+      width: 100%;
+      height: auto;
+      border-radius: 0;
+      overflow: visible;
       flex-shrink: 0;
-      background: #ffffff;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -130,50 +139,23 @@
 
     .sidebar.collapsed:hover .sidebar-logo {
       opacity: 1;
-      width: 36px;
-      height: 36px;
+      width: auto;
+      height: auto;
       margin: 0;
     }
 
-    .sidebar-logo img {
+    .sidebar-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 100;
+      color: #f5f5ff;
+      letter-spacing: 2px;
+      text-align: center;
+      display: block;
       width: 100%;
-      height: 100%;
-      object-fit: contain;
     }
 
     .sidebar-brand-text {
-      font-size: 0.85rem;
-      font-weight: 600;
-      line-height: 1.4;
-      white-space: normal;
-      word-wrap: break-word;
-      opacity: 1;
-      max-width: 160px;
-      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: visible;
-      display: block;
-    }
-
-    .sidebar.collapsed .sidebar-brand-text {
-      opacity: 0;
-      max-width: 0;
-      max-height: 0;
-      margin: 0;
-      overflow: hidden;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      padding: 0;
-    }
-
-    .sidebar.collapsed:hover .sidebar-brand-text {
-      opacity: 1;
-      max-width: 160px;
-      max-height: 100px;
-      overflow: visible;
-      font-size: 0.85rem;
-      width: auto;
-      height: auto;
+      display: none;
     }
 
     .sidebar-nav {
@@ -342,30 +324,40 @@
     .dashboard-container {
       flex: 1;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 0;
       padding: 3rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: none;
       display: flex;
       flex-direction: column;
-      min-width: 0;
-      overflow: hidden;
       max-width: 100%;
+      width: 100%;
+      height: 100vh;
+      margin-left: 260px;
+      overflow-y: auto;
+    }
+    
+    .app-shell.has-collapsed-sidebar .dashboard-container {
+      margin-left: 80px;
     }
 
     .dashboard-header {
       display: flex;
       align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 2px solid #e5e5e5;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
       gap: 1.25rem;
       flex-wrap: wrap;
     }
 
     .dashboard-header h1 {
-      font-size: 2rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
     }
 
     .user-info {
@@ -396,32 +388,50 @@
     }
 
     .user-greeting-main {
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 600;
       color: #1a1a1a;
     }
 
     .user-greeting-sub {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #888;
     }
 
     /* Report Type Selection */
+    .report-type-section {
+      margin-bottom: 2rem;
+    }
+
+    .report-type-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 1rem;
+    }
+
     .report-types {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      width: 100%;
     }
 
     .report-type-card {
       background: #f8f9fa;
       border-radius: 12px;
-      padding: 2rem;
+      padding: 1.25rem;
       border: 2px solid #e5e7eb;
       cursor: pointer;
       transition: all 0.3s;
       text-align: center;
+      width: 100%;
+      box-sizing: border-box;
+      aspect-ratio: 2.5 / 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
     .report-type-card:hover {
@@ -438,20 +448,21 @@
     }
 
     .report-type-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-    }
-
-    .report-type-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #1a1a1a;
+      font-size: 2rem;
       margin-bottom: 0.5rem;
     }
 
+    .report-type-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+
     .report-type-description {
-      font-size: 0.9rem;
+      font-size: 0.75rem;
       color: #6b7280;
+      line-height: 1.3;
     }
 
     /* Criteria Form */
@@ -1026,6 +1037,8 @@
       }
 
       .sidebar {
+        position: relative;
+        height: auto;
         width: 100%;
         order: -1;
         border-radius: 0;
@@ -1033,6 +1046,14 @@
         flex-direction: row;
         align-items: center;
         gap: 1rem;
+      }
+      
+      .dashboard-container {
+        margin-left: 0;
+      }
+      
+      .app-shell.has-collapsed-sidebar .dashboard-container {
+        margin-left: 0;
       }
 
       .sidebar-brand {
@@ -1080,8 +1101,8 @@
         overflow-wrap: break-word;
       }
 
-      .report-type-cards {
-        grid-template-columns: 1fr;
+      .report-types {
+        grid-template-columns: repeat(2, 1fr);
       }
 
       .report-criteria {
@@ -1128,6 +1149,10 @@
         padding: 0.5rem;
       }
 
+      .report-types {
+        grid-template-columns: 1fr;
+      }
+
       .report-criteria {
         padding: 1rem;
       }
@@ -1155,7 +1180,7 @@
       </button>
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="../../images/pkt_logo.png" alt="PKT Logistics logo">
+          <span class="logo-text">DM</span>
         </div>
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
@@ -1163,9 +1188,7 @@
         <a class="nav-item" href="../../dashboard/dashboard_admin.html">Dashboard</a>
         <a class="nav-item" href="../asset/asset.html">Assets</a>
         <a class="nav-item" href="../maintenance/maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../scan/scan.html">Scan Asset</a>
         <a class="nav-item active" href="report.html">Reports</a>
-        <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
@@ -1175,37 +1198,34 @@
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Reports</h1>
+        <h1>REPORTS</h1>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Generate reports</span>
           </div>
         </div>
       </div>
 
       <!-- Report Type Selection -->
-      <div class="report-types" id="report-types">
-        <div class="report-type-card" data-type="asset">
-          <div class="report-type-icon">📊</div>
-          <div class="report-type-title">Asset Report</div>
-          <div class="report-type-description">Generate comprehensive asset inventory reports</div>
-        </div>
-        <div class="report-type-card" data-type="maintenance">
-          <div class="report-type-icon">🔧</div>
-          <div class="report-type-title">Maintenance Report</div>
-          <div class="report-type-description">View maintenance schedules and history</div>
-        </div>
-        <div class="report-type-card" data-type="inspection">
-          <div class="report-type-icon">✅</div>
-          <div class="report-type-title">Inspection Report</div>
-          <div class="report-type-description">Track inspection tasks and completion status</div>
-        </div>
-        <div class="report-type-card" data-type="checklist">
-          <div class="report-type-icon">📋</div>
-          <div class="report-type-title">Checklist Report</div>
-          <div class="report-type-description">Generate maintenance checklist with monthly schedule</div>
+      <div class="report-type-section">
+        <div class="report-type-label">Report Type</div>
+        <div class="report-types" id="report-types">
+          <div class="report-type-card" data-type="asset">
+            <div class="report-type-icon">📊</div>
+            <div class="report-type-title">Asset Report</div>
+            <div class="report-type-description">Generate comprehensive asset inventory reports</div>
+          </div>
+          <div class="report-type-card" data-type="maintenance">
+            <div class="report-type-icon">🔧</div>
+            <div class="report-type-title">Maintenance Report</div>
+            <div class="report-type-description">View maintenance schedules and history</div>
+          </div>
+          <div class="report-type-card" data-type="inspection">
+            <div class="report-type-icon">✅</div>
+            <div class="report-type-title">Inspection Report</div>
+            <div class="report-type-description">Track inspection tasks and completion status</div>
+          </div>
         </div>
       </div>
 

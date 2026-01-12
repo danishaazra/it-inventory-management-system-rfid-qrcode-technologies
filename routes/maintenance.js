@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const { Maintenance, MaintenanceAsset, Asset, User } = require('../models');
+const { Maintenance, MaintenanceAsset, Asset, User, InspectionTask } = require('../models');
 
 // Helper to check MongoDB connection
 function checkDBConnection(res) {
@@ -19,10 +19,14 @@ router.get('/list', async (req, res) => {
         if (!checkDBConnection(res)) return;
 
         const query = req.query.query || '';
+        const frequency = req.query.frequency || '';
         
         let filter = {};
+        if (frequency) {
+            filter.frequency = frequency;
+        }
         if (query) {
-            filter = {
+            const queryFilter = {
                 $or: [
                     { branch: { $regex: query, $options: 'i' } },
                     { location: { $regex: query, $options: 'i' } },
@@ -30,6 +34,11 @@ router.get('/list', async (req, res) => {
                     { frequency: { $regex: query, $options: 'i' } }
                 ]
             };
+            if (frequency) {
+                filter = { $and: [filter, queryFilter] };
+            } else {
+                filter = queryFilter;
+            }
         }
 
         const maintenanceItems = await Maintenance.find(filter).sort({ itemName: 1 }).lean();
@@ -234,6 +243,16 @@ router.post('/add', async (req, res) => {
 
         const { branch, location, itemName, frequency, inspectionTasks, maintenanceSchedule } = req.body;
 
+        console.log('Received maintenance add request:', {
+            branch,
+            location,
+            itemName,
+            frequency,
+            hasSchedule: !!maintenanceSchedule,
+            scheduleType: maintenanceSchedule ? typeof maintenanceSchedule : 'none',
+            scheduleKeys: maintenanceSchedule && typeof maintenanceSchedule === 'object' ? Object.keys(maintenanceSchedule) : []
+        });
+
         if (!branch || !location || !itemName || !frequency || !inspectionTasks) {
             return res.status(400).json({ ok: false, error: 'Branch, location, itemName, frequency, and inspectionTasks are required' });
         }
@@ -269,8 +288,86 @@ router.post('/add', async (req, res) => {
             created_at: new Date()
         });
 
+        console.log('Saving maintenance to database with schedule:', {
+            hasSchedule: !!maintenanceSchedule,
+            scheduleData: maintenanceSchedule
+        });
+
         await maintenance.save();
-        res.json({ ok: true, message: 'Maintenance item added successfully' });
+        
+        // Verify the saved document
+        const saved = await Maintenance.findById(maintenance._id);
+        console.log('Saved maintenance document:', {
+            id: saved._id,
+            hasSchedule: !!saved.maintenanceSchedule,
+            scheduleKeys: saved.maintenanceSchedule && typeof saved.maintenanceSchedule === 'object' ? Object.keys(saved.maintenanceSchedule) : []
+        });
+        
+        // Save each inspection task to inspection_tasks collection
+        const maintenanceId = saved._id.toString();
+        console.log('=== SAVING INSPECTION TASKS ===');
+        console.log('Maintenance ID:', maintenanceId);
+        console.log('Inspection tasks string:', inspectionTasks);
+        console.log('Maintenance schedule:', JSON.stringify(maintenanceSchedule, null, 2));
+        
+        const tasksList = inspectionTasks ? inspectionTasks.split('\n').filter(t => t.trim()) : [];
+        console.log('Parsed tasks list:', tasksList);
+        console.log('Number of tasks:', tasksList.length);
+        
+        if (tasksList.length > 0) {
+            console.log(`\n🔄 Saving ${tasksList.length} inspection task(s) to inspection_tasks collection...`);
+            const taskPromises = tasksList.map(async (taskName) => {
+                const trimmedName = taskName.trim();
+                try {
+                    console.log(`  Creating task: "${trimmedName}"`);
+                    const task = new InspectionTask({
+                        maintenanceId: maintenanceId,
+                        taskName: trimmedName,
+                        schedule: maintenanceSchedule || null,
+                        created_at: new Date(),
+                        updated_at: new Date()
+                    });
+                    
+                    console.log(`  Saving task: "${trimmedName}"...`);
+                    await task.save();
+                    console.log(`  ✓ Successfully saved task: "${trimmedName}" (ID: ${task._id.toString()})`);
+                    
+                    // Auto-link assets with matching locationDescription
+                    await autoLinkAssetsByLocation(maintenanceId, trimmedName);
+                    
+                    return { success: true, taskName: trimmedName, taskId: task._id.toString() };
+                } catch (error) {
+                    console.error(`  ✗ FAILED to save task "${trimmedName}":`, error.message);
+                    console.error(`  Error stack:`, error.stack);
+                    return { success: false, taskName: trimmedName, error: error.message };
+                }
+            });
+            
+            const results = await Promise.all(taskPromises);
+            const successful = results.filter(r => r.success).length;
+            const failed = results.filter(r => !r.success).length;
+            
+            console.log(`\n📊 Inspection tasks save complete: ${successful} succeeded, ${failed} failed`);
+            
+            if (successful > 0) {
+                console.log('✅ Successfully saved tasks:', results.filter(r => r.success).map(r => r.taskName));
+            }
+            
+            if (failed > 0) {
+                console.error('❌ Failed tasks:', results.filter(r => !r.success));
+            }
+        } else {
+            console.log('⚠ No inspection tasks to save (tasksList is empty)');
+            console.log('  This could mean:');
+            console.log('  - inspectionTasks field is empty');
+            console.log('  - inspectionTasks field is not being sent from frontend');
+        }
+        
+        res.json({ 
+            ok: true, 
+            message: 'Maintenance item added successfully',
+            maintenanceId: maintenanceId
+        });
     } catch (error) {
         console.error('Error adding maintenance:', error);
         res.status(500).json({ ok: false, error: error.message });
@@ -535,6 +632,249 @@ router.post('/upload', async (req, res) => {
         });
     } catch (error) {
         console.error('Error uploading maintenance:', error);
+        res.status(500).json({ ok: false, error: error.message });
+    }
+});
+
+// ============================================
+// INSPECTION TASKS ROUTES (separate collection)
+// ============================================
+
+// Auto-link assets to inspection task based on locationDescription matching taskName
+async function autoLinkAssetsByLocation(maintenanceId, taskName) {
+    try {
+        console.log(`\n🔗 Auto-linking assets for task "${taskName}" (maintenanceId: ${maintenanceId})...`);
+        
+        // Find all assets with locationDescription matching taskName
+        const matchingAssets = await Asset.find({ 
+            locationDescription: taskName 
+        }).lean();
+        
+        console.log(`Found ${matchingAssets.length} asset(s) with locationDescription="${taskName}"`);
+        
+        if (matchingAssets.length === 0) {
+            console.log('No matching assets found, skipping auto-link');
+            return;
+        }
+        
+        // Link each matching asset to the maintenance task
+        let linkedCount = 0;
+        let skippedCount = 0;
+        
+        for (const asset of matchingAssets) {
+            // Check if asset is already linked to this maintenance
+            const existing = await MaintenanceAsset.findOne({
+                maintenanceId: maintenanceId,
+                assetId: asset.assetId
+            });
+            
+            if (existing) {
+                skippedCount++;
+                console.log(`  ⏭️  Asset ${asset.assetId} already linked, skipping`);
+                continue;
+            }
+            
+            // Create new maintenance asset link
+            const maintenanceAsset = new MaintenanceAsset({
+                maintenanceId: maintenanceId,
+                assetId: asset.assetId,
+                inspectionStatus: 'open',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+            
+            await maintenanceAsset.save();
+            linkedCount++;
+            console.log(`  ✓ Linked asset ${asset.assetId} (${asset.assetDescription || 'No description'})`);
+        }
+        
+        console.log(`\n📊 Auto-link complete: ${linkedCount} linked, ${skippedCount} already linked`);
+    } catch (error) {
+        console.error('Error auto-linking assets:', error);
+        // Don't throw - this is a background operation, shouldn't fail the main save
+    }
+}
+
+// Get inspection task by maintenanceId and taskName
+router.get('/inspection-task', async (req, res) => {
+    try {
+        if (!checkDBConnection(res)) return;
+
+        const { maintenanceId, taskName } = req.query;
+
+        if (!maintenanceId || !taskName) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'maintenanceId and taskName are required' 
+            });
+        }
+
+        const task = await InspectionTask.findOne({ 
+            maintenanceId, 
+            taskName 
+        }).lean();
+
+        if (!task) {
+            return res.json({ ok: true, task: null });
+        }
+
+        res.json({ 
+            ok: true, 
+            task: {
+                _id: task._id.toString(),
+                maintenanceId: task.maintenanceId,
+                taskName: task.taskName,
+                schedule: task.schedule || null,
+                created_at: task.created_at,
+                updated_at: task.updated_at
+            }
+        });
+    } catch (error) {
+        console.error('Error getting inspection task:', error);
+        res.status(500).json({ ok: false, error: error.message });
+    }
+});
+
+// List all inspection tasks for a maintenance item
+router.get('/inspection-tasks', async (req, res) => {
+    try {
+        if (!checkDBConnection(res)) return;
+
+        const { maintenanceId } = req.query;
+        
+        console.log('=== GET /api/maintenance/inspection-tasks ===');
+        console.log('Query params:', req.query);
+        console.log('maintenanceId:', maintenanceId);
+
+        if (!maintenanceId) {
+            console.error('✗ Missing maintenanceId parameter');
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'maintenanceId is required' 
+            });
+        }
+
+        console.log(`Searching for tasks with maintenanceId: ${maintenanceId}`);
+        const tasks = await InspectionTask.find({ maintenanceId }).lean();
+        console.log(`Found ${tasks.length} task(s) in inspection_tasks collection`);
+
+        const formattedTasks = tasks.map(task => ({
+            _id: task._id.toString(),
+            maintenanceId: task.maintenanceId,
+            taskName: task.taskName,
+            schedule: task.schedule || null,
+            created_at: task.created_at,
+            updated_at: task.updated_at
+        }));
+
+        console.log('Returning tasks:', formattedTasks.map(t => ({ taskName: t.taskName, hasSchedule: !!t.schedule })));
+        res.json({ ok: true, tasks: formattedTasks });
+    } catch (error) {
+        console.error('Error listing inspection tasks:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ ok: false, error: error.message });
+    }
+});
+
+// Add or update inspection task
+router.post('/inspection-task', async (req, res) => {
+    try {
+        if (!checkDBConnection(res)) return;
+
+        const { maintenanceId, taskName, schedule } = req.body;
+
+        if (!maintenanceId || !taskName) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'maintenanceId and taskName are required' 
+            });
+        }
+
+        // Check if task already exists
+        const existing = await InspectionTask.findOne({ 
+            maintenanceId, 
+            taskName 
+        });
+
+        if (existing) {
+            // Update existing task
+            console.log('Updating existing inspection task:', { maintenanceId, taskName, existingId: existing._id.toString() });
+            existing.schedule = schedule || null;
+            existing.updated_at = new Date();
+            await existing.save();
+            console.log('✓ Inspection task updated successfully');
+            
+            // Auto-link assets with matching locationDescription
+            await autoLinkAssetsByLocation(maintenanceId, taskName);
+
+            res.json({ 
+                ok: true, 
+                message: 'Inspection task updated successfully',
+                taskId: existing._id.toString()
+            });
+        } else {
+            // Insert new task
+            console.log('Creating new inspection task:', { maintenanceId, taskName, hasSchedule: !!schedule });
+            const newTask = new InspectionTask({
+                maintenanceId,
+                taskName,
+                schedule: schedule || null,
+                created_at: new Date(),
+                updated_at: new Date()
+            });
+
+            await newTask.save();
+            console.log('✓ Inspection task created successfully, ID:', newTask._id.toString());
+            console.log('✓ Collection "inspection_tasks" should now exist in MongoDB');
+            
+            // Auto-link assets with matching locationDescription
+            await autoLinkAssetsByLocation(maintenanceId, taskName);
+
+            res.json({ 
+                ok: true, 
+                message: 'Inspection task created successfully',
+                taskId: newTask._id.toString()
+            });
+        }
+    } catch (error) {
+        console.error('Error saving inspection task:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            maintenanceId,
+            taskName,
+            hasSchedule: !!schedule
+        });
+        res.status(500).json({ ok: false, error: error.message });
+    }
+});
+
+// Delete inspection task
+router.delete('/inspection-task', async (req, res) => {
+    try {
+        if (!checkDBConnection(res)) return;
+
+        const { maintenanceId, taskName } = req.body;
+
+        if (!maintenanceId || !taskName) {
+            return res.status(400).json({ 
+                ok: false, 
+                error: 'maintenanceId and taskName are required' 
+            });
+        }
+
+        const result = await InspectionTask.deleteOne({ 
+            maintenanceId, 
+            taskName 
+        });
+
+        if (result.deletedCount > 0) {
+            res.json({ ok: true, message: 'Inspection task deleted successfully' });
+        } else {
+            res.status(404).json({ ok: false, error: 'Inspection task not found' });
+        }
+    } catch (error) {
+        console.error('Error deleting inspection task:', error);
         res.status(500).json({ ok: false, error: error.message });
     }
 });

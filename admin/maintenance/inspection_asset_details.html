@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Maintenance Asset Details • IT Inventory</title>
+  <title>Inspection Asset Details • IT Inventory</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,16 +16,18 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      background: #ffffff;
       min-height: 100vh;
       color: #1a1a1a;
+      margin: 0;
+      padding: 0;
     }
 
     .app-shell {
       display: flex;
       min-height: 100vh;
-      padding: 2rem;
-      gap: 2rem;
+      padding: 0;
+      gap: 0;
       transition: gap 0.3s ease;
     }
     
@@ -37,16 +39,64 @@
       width: 260px;
       background: rgba(7, 3, 30, 0.95);
       backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 0;
       padding: 2rem 1.5rem;
       color: #f5f5ff;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      box-shadow: none;
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 1000;
       flex-shrink: 0;
+    }
+
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .sidebar-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
     }
 
     .sidebar.collapsed {
@@ -54,19 +104,19 @@
       padding: 2rem 0.5rem;
       align-items: center;
     }
-    
+
     .sidebar.collapsed .sidebar-nav {
       display: none;
     }
-    
+
     .sidebar.collapsed:hover .sidebar-nav {
       display: flex;
     }
-    
+
     .sidebar.collapsed .sidebar-footer {
       display: none;
     }
-    
+
     .sidebar.collapsed:hover .sidebar-footer {
       display: flex;
     }
@@ -81,12 +131,14 @@
 
     .sidebar-brand {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: center;
       gap: 0.75rem;
       margin-bottom: 2rem;
       transition: justify-content 0.3s ease;
-      padding-right: 3rem;
+      padding-right: 0;
       position: relative;
+      width: 100%;
     }
 
     .sidebar.collapsed .sidebar-brand {
@@ -107,12 +159,12 @@
     }
 
     .sidebar-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      overflow: hidden;
+      width: 100%;
+      height: auto;
+      border-radius: 0;
+      overflow: visible;
       flex-shrink: 0;
-      background: #ffffff;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -130,50 +182,23 @@
 
     .sidebar.collapsed:hover .sidebar-logo {
       opacity: 1;
-      width: 36px;
-      height: 36px;
+      width: auto;
+      height: auto;
       margin: 0;
     }
 
-    .sidebar-logo img {
+    .sidebar-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 100;
+      color: #f5f5ff;
+      letter-spacing: 2px;
+      text-align: center;
+      display: block;
       width: 100%;
-      height: 100%;
-      object-fit: contain;
     }
 
     .sidebar-brand-text {
-      font-size: 0.85rem;
-      font-weight: 600;
-      line-height: 1.4;
-      white-space: normal;
-      word-wrap: break-word;
-      opacity: 1;
-      max-width: 160px;
-      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: visible;
-      display: block;
-    }
-
-    .sidebar.collapsed .sidebar-brand-text {
-      opacity: 0;
-      max-width: 0;
-      max-height: 0;
-      margin: 0;
-      overflow: hidden;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      padding: 0;
-    }
-
-    .sidebar.collapsed:hover .sidebar-brand-text {
-      opacity: 1;
-      max-width: 160px;
-      max-height: 100px;
-      overflow: visible;
-      font-size: 0.85rem;
-      width: auto;
-      height: auto;
+      display: none;
     }
 
     .sidebar-nav {
@@ -193,6 +218,8 @@
       transition: background 0.15s, color 0.15s, transform 0.15s, justify-content 0.3s ease;
       cursor: pointer;
       white-space: nowrap;
+      word-break: keep-all;
+      overflow-wrap: normal;
       position: relative;
     }
 
@@ -267,61 +294,6 @@
       height: auto;
     }
 
-    .sidebar-toggle-btn {
-      position: absolute;
-      top: 1.5rem;
-      right: 1rem;
-      width: 36px;
-      height: 36px;
-      border: none;
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      overflow: hidden;
-    }
-
-    .sidebar-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      color: #ffffff;
-    }
-
-    .sidebar-toggle-btn:active {
-      transform: scale(0.95);
-    }
-
-    .sidebar.collapsed .sidebar-toggle-btn {
-      right: 0.5rem;
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-    }
-
-    .sidebar.collapsed .sidebar-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: #ffffff;
-    }
-
-    #toggle-icon {
-      display: inline-block;
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      line-height: 1;
-      color: #ffffff !important;
-    }
-
-    .sidebar.collapsed #toggle-icon {
-      transform: rotate(0deg);
-      color: #ffffff !important;
-    }
-
     .logout-btn {
       padding: 0.5rem 1.5rem;
       background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
@@ -332,14 +304,6 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
-      white-space: nowrap;
-      max-height: 100px;
-      overflow: hidden;
-    }
-
-    .logout-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
     }
 
     .sidebar.collapsed .logout-btn {
@@ -362,53 +326,67 @@
       height: auto;
     }
 
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
     .dashboard-container {
       flex: 1;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 0;
       padding: 3rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: none;
       display: flex;
       flex-direction: column;
       max-width: 100%;
+      width: 100%;
+      height: 100vh;
+      margin-left: 260px;
+      overflow-y: auto;
+    }
+
+    .app-shell.has-collapsed-sidebar .dashboard-container {
+      margin-left: 80px;
     }
 
     .dashboard-header {
       display: flex;
       align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 2px solid #e5e5e5;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
       gap: 1.25rem;
       flex-wrap: wrap;
     }
 
     .dashboard-header h1 {
-      font-size: 2rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
     }
 
     .user-info {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-left: auto;
     }
 
     .user-avatar {
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: #140958;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
       color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 600;
-      font-size: 1rem;
-      text-transform: uppercase;
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.4);
+      font-size: 0.875rem;
     }
 
     .user-greeting {
@@ -417,166 +395,143 @@
     }
 
     .user-greeting-main {
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 600;
       color: #1a1a1a;
     }
 
     .user-greeting-sub {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #888;
     }
 
-    .asset-details-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1.5rem;
-      margin-bottom: 1.75rem;
-    }
-
-    .asset-details-meta {
-      font-size: 0.85rem;
-      color: #666;
-    }
-
     .back-link {
-      font-size: 0.85rem;
-      color: #140958;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
       text-decoration: none;
-      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+      display: inline-block;
     }
 
     .back-link:hover {
-      text-decoration: underline;
+      color: #140958;
     }
 
-    .summary-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
+    .asset-details-container {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+
+    .details-header {
       margin-bottom: 2rem;
     }
 
-    .summary-card {
-      background: #f8fafc;
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      padding: 1rem 1.25rem;
+    .details-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 0.5rem;
     }
 
-    .summary-card h3 {
-      font-size: 0.8rem;
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .detail-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #6b7280;
-      margin-bottom: 0.25rem;
     }
 
-    .summary-card p {
+    .detail-value {
       font-size: 1rem;
-      font-weight: 600;
-      color: #111827;
-    }
-
-    .spec-section {
-      margin-top: 0.5rem;
-      border-radius: 16px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      overflow: hidden;
-    }
-
-    .spec-header {
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 0.95rem;
-      font-weight: 600;
-      background: #f3f4f6;
-    }
-
-    .spec-list {
-      padding: 0.75rem 1.5rem 1.25rem;
-    }
-
-    .spec-row {
-      display: grid;
-      grid-template-columns: minmax(160px, 260px) minmax(0, 1fr);
-      padding: 0.4rem 0;
-      border-bottom: 1px solid #e5e7eb;
-      column-gap: 2rem;
-    }
-
-    .spec-row:last-child {
-      border-bottom: none;
-    }
-
-    .spec-label {
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    .spec-value {
-      font-size: 0.9rem;
-      color: #111827;
-      word-break: break-word;
-    }
-
-    .muted {
-      color: #9ca3af;
-    }
-
-    .status-active {
-      color: #16a34a;
-      font-weight: 600;
+      color: #1a1a1a;
+      font-weight: 500;
     }
 
     .status-badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
       font-size: 0.875rem;
       font-weight: 600;
     }
 
-    .status-badge.complete {
+    .status-badge.good {
       background: #d1fae5;
       color: #065f46;
     }
 
-    .status-badge.open {
+    .status-badge.fault {
       background: #fee2e2;
       color: #991b1b;
     }
 
-    .status-badge.solved {
-      background: #dbeafe;
-      color: #1e40af;
+    .remark-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e5e5e5;
     }
 
-    .status-badge.not-solved {
-      background: #fef3c7;
-      color: #92400e;
+    .remark-content {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+      min-height: 100px;
+      font-size: 0.9rem;
+      color: #374151;
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
-    .loading {
+    .loading-state {
       text-align: center;
-      padding: 3rem;
+      padding: 4rem 2rem;
       color: #6b7280;
     }
 
-    .error {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      padding: 1.5rem;
-      color: #991b1b;
+    .error-state {
       text-align: center;
+      padding: 4rem 2rem;
+      color: #dc2626;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+      }
+
+      .dashboard-container {
+        margin-left: 0;
+        padding: 1rem;
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
   <script type="module">
     import '../shared/init.js';
-    import './maintenanceassetdetails.js';
+    import './inspection_asset_details.js';
   </script>
 </head>
 <body>
@@ -587,7 +542,7 @@
       </button>
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="../../images/pkt_logo.png" alt="PKT Logistics logo">
+          <span class="logo-text">DM</span>
         </div>
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
@@ -595,70 +550,36 @@
         <a class="nav-item" href="../../dashboard/dashboard_admin.html">Dashboard</a>
         <a class="nav-item" href="../asset/asset.html">Assets</a>
         <a class="nav-item active" href="maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../scan/scan.html">Scan Asset</a>
         <a class="nav-item" href="../report/report.html">Reports</a>
-        <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
-        <div class="sidebar-meta">v1.0 • Maintenance Asset Details</div>
+        <div class="sidebar-meta">v1.0 • Preventive Maintenance</div>
       </div>
     </aside>
 
     <main class="dashboard-container">
       <div class="dashboard-header">
-        <h1>Asset Details</h1>
+        <h1>INSPECTION ASSET DETAILS</h1>
         <div class="user-info">
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Maintenance asset inspection</span>
           </div>
         </div>
       </div>
 
-      <div class="asset-details-header">
-        <div>
-          <a href="#" class="back-link" id="back-link">← Back to Assets</a>
-          <div class="asset-details-meta" id="asset-id-meta"></div>
+      <div class="asset-details-container">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+          <a href="#" class="back-link" id="back-link">←</a>
         </div>
-        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
-          <div class="asset-details-meta" id="asset-status-meta"></div>
+
+        <div id="asset-details-content">
+          <div class="loading-state">
+            <p>Loading asset details...</p>
+          </div>
         </div>
       </div>
-
-      <div class="summary-row">
-        <div class="summary-card">
-          <h3>Asset ID</h3>
-          <p id="summary-asset-id">-</p>
-        </div>
-        <div class="summary-card">
-          <h3>Category</h3>
-          <p id="summary-category">-</p>
-        </div>
-        <div class="summary-card">
-          <h3>Location</h3>
-          <p id="summary-location">-</p>
-        </div>
-        <div class="summary-card">
-          <h3>Owner</h3>
-          <p id="summary-owner">-</p>
-        </div>
-      </div>
-
-      <section class="spec-section">
-        <div class="spec-header">Asset specifications</div>
-        <div class="spec-list" id="asset-spec-list">
-          <!-- Filled by script -->
-        </div>
-      </section>
-
-      <section class="spec-section">
-        <div class="spec-header">Inspection Information</div>
-        <div class="spec-list" id="inspection-spec-list">
-          <!-- Filled by script -->
-        </div>
-      </section>
     </main>
   </div>
 </body>

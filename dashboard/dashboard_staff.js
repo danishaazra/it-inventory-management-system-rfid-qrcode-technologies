@@ -61,7 +61,7 @@ async function loadDashboardStats() {
     // Process each maintenance task
     for (const task of assignedTasks) {
       try {
-        const assetsUrl = `../admin/maintenance/get_maintenance_assets.php?maintenanceId=${encodeURIComponent(task._id)}`;
+        const assetsUrl = `/api/maintenance/assets?maintenanceId=${encodeURIComponent(task._id)}`;
         const assetsResp = await fetch(assetsUrl);
         
         if (assetsResp.ok) {
@@ -289,9 +289,29 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Update welcome username when user name is loaded
+function updateWelcomeUsername() {
+  const userNameEl = document.getElementById('user-name');
+  const welcomeUsernameEl = document.getElementById('welcome-username');
+  if (userNameEl && welcomeUsernameEl && userNameEl.textContent !== 'Loading...') {
+    welcomeUsernameEl.textContent = userNameEl.textContent;
+  }
+}
+
 // Initialize dashboard
 function init() {
   loadDashboardStats();
+  
+  // Update welcome username
+  updateWelcomeUsername();
+  setTimeout(updateWelcomeUsername, 100);
+  
+  // Watch for changes to user-name element
+  const userNameEl = document.getElementById('user-name');
+  if (userNameEl) {
+    const observer = new MutationObserver(updateWelcomeUsername);
+    observer.observe(userNameEl, { childList: true, characterData: true, subtree: true });
+  }
 }
 
 // Start initialization
