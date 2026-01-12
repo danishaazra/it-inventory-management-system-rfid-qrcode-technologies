@@ -543,7 +543,7 @@ function displayChecklistReport(checklistData) {
                 });
               } else {
                 // Old format: dates are just strings
-                cell.textContent = dates.join(', ');
+              cell.textContent = dates.join(', ');
               }
             } else if (dates) {
               cell.textContent = String(dates);

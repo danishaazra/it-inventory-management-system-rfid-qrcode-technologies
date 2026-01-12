@@ -1681,7 +1681,15 @@ async function disconnectFromArduinoInspection() {
     serialBufferInspection = '';
     updateConnectionUIInspection(false);
   } catch (error) {
-    console.error('Error disconnecting:', error);
+    // Device already disconnected or connection lost - this is normal
+    // Only log if it's not a "device lost" error
+    if (error.message && !error.message.includes('device has been lost')) {
+      console.warn('Error during disconnect (device may already be disconnected):', error.message);
+    }
+    // Ensure UI is updated even if disconnect fails
+    isConnectedInspection = false;
+    serialBufferInspection = '';
+    updateConnectionUIInspection(false);
   }
 }
 
@@ -1771,8 +1779,20 @@ async function startReadingSerialInspection() {
     }
   } catch (error) {
     if (error.name !== 'AbortError') {
-      console.error('Error reading serial:', error);
-      await disconnectFromArduinoInspection();
+      // Device connection lost - this is normal if device disconnects or browser loses connection
+      // Only log as warning, not error, since RFID tag was likely already captured
+      if (error.message && error.message.includes('device has been lost')) {
+        console.warn('Device connection lost (this is normal if device disconnected):', error.message);
+      } else {
+        console.error('Error reading serial:', error);
+      }
+      // Silently disconnect - don't show error to user if tag was already scanned
+      try {
+        await disconnectFromArduinoInspection();
+      } catch (disconnectError) {
+        // Ignore disconnect errors - device is already gone
+        console.warn('Device already disconnected');
+      }
     }
   } finally {
     serialBufferInspection = '';
@@ -2082,25 +2102,38 @@ async function submitInspection() {
     }
   });
   
+  // Allow submission even if no assets (to save inspection date/status)
   if (assets.length === 0) {
-    alert('No assets to inspect');
-    return;
+    if (!confirm('No assets found for this inspection. Do you want to save the inspection date anyway?')) {
+      return;
+    }
   }
   
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting...';
   
   try {
+    // Include maintenance information if available
+    const payload = {
+      frequency: currentFrequency,
+      inspectionDate: currentInspectionDate,
+      assets: assets
+    };
+    
+    // Add maintenance info if available
+    if (currentMaintenanceItem) {
+      payload.maintenanceId = currentMaintenanceItem._id;
+      payload.branch = currentMaintenanceItem.branch;
+      payload.location = currentMaintenanceItem.location;
+      payload.itemName = currentMaintenanceItem.itemName;
+    }
+    
     const response = await fetch('/api/inspections/save-checklist', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        frequency: currentFrequency,
-        inspectionDate: currentInspectionDate,
-        assets: assets
-      })
+      body: JSON.stringify(payload)
     });
     
     const data = await response.json();
@@ -2125,7 +2158,12 @@ async function submitInspection() {
       }
     });
     
-    alert(`Inspection submitted successfully for ${assets.length} asset(s)!`);
+    // Show success message based on whether assets were saved
+    if (assets.length > 0) {
+      alert(`Inspection submitted successfully for ${assets.length} asset(s)!`);
+    } else {
+      alert('Inspection date saved successfully!');
+    }
     closeModal();
     renderCalendarGrid(); // Refresh grid
     
@@ -2496,29 +2534,44 @@ function setupAddScheduleListeners() {
           return;
         }
         
-        // Refresh the calendar grid
-        const refreshedInspectionTasks = currentMaintenanceItem.inspectionTasks || '';
-        const refreshedTasksList = refreshedInspectionTasks ? refreshedInspectionTasks.split('\n').filter(t => t.trim()) : [];
-        
-        if (refreshedTasksList.length > 0) {
-          maintenanceItems = refreshedTasksList.map((task, idx) => ({
-            _id: `task-${idx}`,
-            text: task.trim(),
-            isTask: true
-          }));
-        }
-        
-        // Force re-render with updated schedule
-        renderCalendarGrid();
-        
-        // Load inspection data and re-render
-        loadInspectionData().then(() => {
-          renderCalendarGrid();
-        });
-        
-        // Don't show alert here - already shown above at line 2489
+        // Close modal first
         addScheduleForm.reset();
         closeAddScheduleModal();
+        
+        // Wait for database to update, then reload schedule from database
+        // Use a longer delay to ensure database write is complete
+        setTimeout(async () => {
+          console.log('🔄 Reloading quarterly schedule from database after save...');
+          console.log('Task name:', inspectionTaskText);
+          console.log('Maintenance ID:', currentMaintenanceItem._id);
+          
+          // First, verify the schedule was saved by fetching it directly
+          try {
+            const verifyResponse = await fetch(`/api/maintenance/inspection-task?maintenanceId=${encodeURIComponent(currentMaintenanceItem._id)}&taskName=${encodeURIComponent(inspectionTaskText)}`);
+            if (verifyResponse.ok) {
+              const verifyData = await verifyResponse.json();
+              if (verifyData.ok && verifyData.task) {
+                console.log('✓ Verified schedule in database:', JSON.stringify(verifyData.task.schedule, null, 2));
+                console.log('Schedule keys:', Object.keys(verifyData.task.schedule || {}));
+              } else {
+                console.warn('⚠ Schedule not found in database after save');
+              }
+            }
+          } catch (error) {
+            console.warn('Could not verify schedule:', error);
+          }
+          
+          // Force a complete reload by calling renderCalendarGrid which will fetch fresh data from API
+          // renderCalendarGrid() creates its own inspectionTaskSchedules by fetching from /api/maintenance/inspection-tasks
+          // This ensures we get the latest data from the database
+          await renderCalendarGrid();
+          
+          // Also reload inspection data and re-render one more time to ensure everything is in sync
+          await loadInspectionData();
+          await renderCalendarGrid();
+          
+          console.log('✓ Checklist reloaded with updated quarterly schedule');
+        }, 1000);
       } catch (error) {
         console.error('Error saving inspection task:', error);
         alert(`Failed to save: ${error.message || 'Network error'}`);
