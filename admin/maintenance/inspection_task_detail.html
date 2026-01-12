@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspection Task Detail • IT Inventory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+      color: #1a1a1a;
+      margin: 0;
+      padding: 0;
+    }
+
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      padding: 0;
+      gap: 0;
+      transition: gap 0.3s ease;
+    }
+    
+    .app-shell.has-collapsed-sidebar {
+      gap: 1rem;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: rgba(7, 3, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 0;
+      padding: 2rem 1.5rem;
+      color: #f5f5ff;
+      display: flex;
+      flex-direction: column;
+      box-shadow: none;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 1000;
+      flex-shrink: 0;
+    }
+
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1rem;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      color: #ffffff;
+    }
+
+    .sidebar-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn {
+      right: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .sidebar.collapsed {
+      width: 80px;
+      padding: 2rem 0.5rem;
+      align-items: center;
+    }
+
+    .sidebar.collapsed .sidebar-nav {
+      display: none;
+    }
+
+    .sidebar.collapsed:hover .sidebar-nav {
+      display: flex;
+    }
+
+    .sidebar.collapsed .sidebar-footer {
+      display: none;
+    }
+
+    .sidebar.collapsed:hover .sidebar-footer {
+      display: flex;
+    }
+
+    .sidebar.collapsed:hover {
+      width: 260px;
+      padding: 2rem 1.5rem;
+      z-index: 100;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      align-items: flex-start;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      transition: justify-content 0.3s ease;
+      padding-right: 0;
+      position: relative;
+      width: 100%;
+    }
+
+    .sidebar.collapsed .sidebar-brand {
+      justify-content: center;
+      padding-right: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-brand {
+      justify-content: flex-start;
+      padding-right: 3rem;
+      width: auto;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar-logo {
+      width: 100%;
+      height: auto;
+      border-radius: 0;
+      overflow: visible;
+      flex-shrink: 0;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+    }
+
+    .sidebar.collapsed .sidebar-logo {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-logo {
+      opacity: 1;
+      width: auto;
+      height: auto;
+      margin: 0;
+    }
+
+    .sidebar-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 100;
+      color: #f5f5ff;
+      letter-spacing: 2px;
+      text-align: center;
+      display: block;
+      width: 100%;
+    }
+
+    .sidebar-brand-text {
+      display: none;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: background 0.15s, color 0.15s, transform 0.15s, justify-content 0.3s ease;
+      cursor: pointer;
+      white-space: nowrap;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      position: relative;
+    }
+
+    .sidebar.collapsed .nav-item {
+      justify-content: center;
+      padding: 0.75rem 0.5rem;
+      color: transparent;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .nav-item {
+      justify-content: flex-start;
+      padding: 0.75rem 1rem;
+      color: #d0cff9;
+      font-size: 0.95rem;
+      width: auto;
+      height: auto;
+      overflow: visible;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-meta {
+      font-size: 0.75rem;
+      color: #8c88c9;
+      opacity: 0.9;
+      text-align: left;
+      white-space: nowrap;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 50px;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed .sidebar-meta {
+      opacity: 0;
+      max-height: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .sidebar-meta {
+      opacity: 0.9;
+      max-height: 50px;
+      font-size: 0.75rem;
+      width: auto;
+      height: auto;
+    }
+
+    .logout-btn {
+      padding: 0.5rem 1.5rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sidebar.collapsed .logout-btn {
+      opacity: 0;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      font-size: 0;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed:hover .logout-btn {
+      opacity: 1;
+      max-height: 100px;
+      padding: 0.5rem 1.5rem;
+      font-size: 0.875rem;
+      width: auto;
+      height: auto;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .dashboard-container {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 0;
+      padding: 3rem;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      max-width: 100%;
+      width: 100%;
+      height: 100vh;
+      margin-left: 260px;
+      overflow-y: auto;
+    }
+
+    .app-shell.has-collapsed-sidebar .dashboard-container {
+      margin-left: 80px;
+    }
+
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      color: #140958;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 2rem;
+      line-height: 1;
+      margin-bottom: 0;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover {
+      color: #1a0d6b;
+      text-decoration: underline;
+    }
+
+    .dashboard-header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #140958;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1rem;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.4);
+    }
+
+    .user-greeting {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-greeting-main {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .user-greeting-sub {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .task-detail-container {
+      background: transparent;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+
+    .task-header {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .task-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 0.5rem;
+    }
+
+    .assets-list-section {
+      margin-top: 2rem;
+    }
+
+    .assets-list-section h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 1rem;
+    }
+
+    .list-container {
+      background: transparent;
+      border-radius: 0;
+      border: none;
+      overflow: visible;
+      box-shadow: none;
+    }
+
+    .list-table-wrapper {
+      overflow: visible;
+    }
+
+    .assets-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      border: none;
+    }
+
+    .assets-table thead {
+      background: transparent;
+    }
+
+    .assets-table th {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.7rem;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: none;
+      border-bottom: none;
+      white-space: normal;
+      word-wrap: break-word;
+    }
+
+    .assets-table td {
+      padding: 0.6rem 0.75rem;
+      border: none;
+      border-bottom: none;
+      transition: background 0.2s ease;
+      font-size: 0.8rem;
+      color: #374151;
+      word-wrap: break-word;
+      max-width: 200px;
+    }
+
+    .assets-table tbody tr {
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .assets-table tbody tr:hover {
+      background: #f9fafb;
+      transform: translateX(2px);
+    }
+    
+    .assets-table tbody tr:not(:last-child) {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .assets-table tbody tr {
+      height: auto;
+      min-height: 40px;
+    }
+
+    .asset-id {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .asset-description {
+      color: #1a1a1a;
+    }
+
+    .asset-category {
+      color: #6b7280;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-badge.complete {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-badge.upcoming {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn-view-details,
+    .action-btn {
+      padding: 0.35rem 0.85rem;
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+    }
+
+    .btn-view-details:hover,
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    .btn-view-details:active,
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-delete-asset {
+      padding: 0.35rem 0.85rem;
+      background: #dc2626;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-left: 0.5rem;
+    }
+
+    .btn-delete-asset:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-delete-asset:active {
+      transform: translateY(0);
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .inspection-actions-wrapper {
+      position: relative;
+    }
+
+    .inspection-actions-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      color: #6b7280;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .inspection-actions-btn:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      color: #111827;
+    }
+
+    .inspection-actions-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 0.5rem);
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+      padding: 0.4rem 0;
+      min-width: 180px;
+      z-index: 1000;
+      display: none;
+      pointer-events: auto;
+    }
+
+    .inspection-actions-menu.open {
+      display: block;
+    }
+
+    .inspection-actions-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 1rem;
+      border: none;
+      background: transparent;
+      font-size: 0.875rem;
+      color: #1f2933;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s;
+      pointer-events: auto;
+      position: relative;
+      z-index: 1001;
+    }
+
+    .inspection-actions-menu button:hover {
+      background: #f3f4f6;
+    }
+
+    .inspection-actions-menu button.delete-action {
+      color: #dc2626;
+    }
+
+    .inspection-actions-menu button.delete-action:hover {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .add-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .add-modal-overlay.open {
+      display: flex;
+    }
+
+    .add-modal {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 800px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .add-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e5e5;
+    }
+
+    .add-modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .add-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .schedule-calendar {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
+      margin-top: 0.5rem;
+    }
+
+    .edit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 2rem;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .edit-modal-overlay.open {
+      display: flex;
+    }
+
+    .edit-modal {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .edit-modal-header {
+      padding: 2rem 2.5rem;
+      border-bottom: 2px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    }
+
+    .edit-modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0;
+    }
+
+    .close-modal-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+
+    .close-modal-btn:hover {
+      background: #f3f4f6;
+      color: #1a1a1a;
+    }
+
+    .edit-modal-body {
+      padding: 2rem 2.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .edit-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-field label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+
+    .form-field textarea,
+    .form-field input[type="text"] {
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: border-color 0.15s;
+      resize: vertical;
+    }
+
+    .form-field textarea:focus,
+    .form-field input[type="text"]:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid #e5e5e5;
+    }
+
+    .btn-cancel {
+      padding: 0.6rem 1.2rem;
+      background: #f3f4f6;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-save {
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
+    }
+
+    .calendar-year-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .calendar-year-selector label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+    }
+
+    .calendar-year-selector select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #ffffff;
+    }
+
+    .calendar-months {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 0.5rem;
+    }
+
+    .calendar-month {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .calendar-month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .calendar-month-header span {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.9rem;
+      text-transform: capitalize;
+    }
+
+    .add-week-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid #140958;
+      background: #140958;
+      color: #ffffff;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      padding: 0;
+    }
+
+    .add-week-btn:hover:not(:disabled) {
+      background: #1a0d6b;
+      transform: scale(1.05);
+    }
+
+    .add-week-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: #9ca3af;
+      border-color: #9ca3af;
+    }
+
+    .calendar-weeks {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .calendar-week {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+
+    .calendar-week-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      min-width: 70px;
+    }
+
+    .calendar-date-input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+
+    .calendar-date-input:focus {
+      outline: none;
+      border-color: #140958;
+      box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
+    }
+
+    .remove-week-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid #dc2626;
+      background: #ffffff;
+      color: #dc2626;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      padding: 0;
+    }
+
+    .remove-week-btn:hover {
+      background: #dc2626;
+      color: #ffffff;
+    }
+
+    .no-assets {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: relative;
+        height: auto;
+        width: 100%;
+        order: -1;
+        border-radius: 0;
+        padding: 1rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .dashboard-container {
+        margin-left: 0;
+      }
+      
+      .app-shell.has-collapsed-sidebar .dashboard-container {
+        margin-left: 0;
+      }
+    }
+  </style>
+  <script type="module">
+    import '../shared/init.js';
+  </script>
+  <script src="./inspection_task_detail.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle sidebar">
+        <span id="toggle-icon">☰</span>
+      </button>
+      <div class="sidebar-brand">
+        <div class="sidebar-logo">
+          <span class="logo-text">DM</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="../../dashboard/dashboard_admin.html">Dashboard</a>
+        <a class="nav-item" href="../asset/asset.html">Assets</a>
+        <a class="nav-item active" href="maintenance.html">Maintenance Checklist</a>
+        <a class="nav-item" href="../report/report.html">Reports</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logout-btn">Logout</button>
+        <div class="sidebar-meta">v1.0 • Preventive Maintenance</div>
+      </div>
+    </aside>
+
+    <main class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Inspection Task Detail</h1>
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-greeting">
+            <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-detail-container">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <a href="#" class="back-link" id="back-link">←</a>
+          <div class="inspection-actions-wrapper">
+            <button class="inspection-actions-btn" id="inspection-actions-btn" aria-label="Task actions">⋯</button>
+            <div class="inspection-actions-menu" id="inspection-actions-menu">
+              <button type="button" class="edit-action" id="edit-maintenance-btn">
+                <span>✏️</span>
+                <span>Edit</span>
+              </button>
+              <button type="button" class="delete-action" id="delete-maintenance-btn">
+                <span>🗑️</span>
+                <span>Delete Task</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="task-header">
+          <h2 class="task-title" id="task-title">Loading...</h2>
+        </div>
+
+        <div class="list-container">
+          <div class="list-table-wrapper">
+            <div id="assets-table-wrapper">
+              <div class="loading-state">Loading assets...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit Maintenance Modal -->
+  <div class="add-modal-overlay" id="edit-maintenance-modal-overlay">
+    <div class="add-modal">
+      <div class="add-modal-header">
+        <h2>Edit Maintenance</h2>
+        <button class="close-modal-btn" id="close-edit-maintenance-modal-btn">×</button>
+      </div>
+      <form id="edit-maintenance-form">
+        <div class="add-form-grid">
+          <div class="form-field">
+            <label for="edit-task-text">Inspection Tasks</label>
+            <textarea id="edit-task-text" name="inspectionTasks" placeholder="eg. The Ship - 1st Floor" required rows="4"></textarea>
+          </div>
+          <div class="form-field schedule-field" id="edit-schedule-container" style="grid-column: 1 / -1;">
+            <label>Maintenance Schedule</label>
+            <div id="edit-schedule-calendar" class="schedule-calendar">
+              <!-- Calendar will be generated here -->
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="cancel-edit-maintenance-btn">Cancel</button>
+          <button type="submit" class="btn-save" id="save-edit-maintenance-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

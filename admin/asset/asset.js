@@ -257,7 +257,6 @@ function setAssetFormPlaceholders(sampleAsset) {
   
   const fields = {
     'add-branchCode': sampleAsset.branchCode || '',
-    'add-assetId': sampleAsset.assetId || '',
     'add-assetDescription': sampleAsset.assetDescription || '',
     'add-assetCategory': sampleAsset.assetCategory || '',
     'add-assetCategoryDescription': sampleAsset.assetCategoryDescription || '',
@@ -282,6 +281,102 @@ function setAssetFormPlaceholders(sampleAsset) {
     }
   });
 }
+
+// Generate a unique asset ID based on existing format
+async function generateAssetId() {
+  try {
+    // Fetch all existing assets to analyze format and avoid duplicates
+    const resp = await fetch('/api/assets/list');
+    if (!resp.ok) {
+      throw new Error('Failed to fetch existing assets');
+    }
+    const data = await resp.json();
+    const existingAssets = data.ok && data.assets ? data.assets : [];
+    
+    // Extract existing asset IDs
+    const existingIds = existingAssets
+      .map(asset => asset.assetId)
+      .filter(id => id && typeof id === 'string')
+      .map(id => id.trim().toUpperCase());
+    
+    // Analyze format from existing IDs
+    // Expected format: IT + numbers (e.g., IT10010001)
+    const formatPattern = /^IT(\d+)$/;
+    let maxNumber = 0;
+    let basePrefix = 'IT';
+    
+    existingIds.forEach(id => {
+      const match = id.match(formatPattern);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) {
+          maxNumber = num;
+        }
+      }
+    });
+    
+    // Generate new ID with variation to avoid duplication
+    // Strategy: Use current year/month + random number, or increment from max
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2); // Last 2 digits of year
+    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Month (01-12)
+    const day = now.getDate().toString().padStart(2, '0'); // Day (01-31)
+    
+    // Generate multiple candidates and pick the first unique one
+    let newId = '';
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      // Strategy 1: Use date-based format (IT + YYMMDD + random 2 digits)
+      if (attempts < 5) {
+        const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        newId = `IT${year}${month}${day}${randomSuffix}`;
+      }
+      // Strategy 2: Increment from max number found
+      else if (maxNumber > 0) {
+        const increment = Math.floor(Math.random() * 100) + 1;
+        const newNumber = (maxNumber + increment).toString().padStart(8, '0');
+        newId = `${basePrefix}${newNumber}`;
+      }
+      // Strategy 3: Use timestamp-based format
+      else {
+        const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+        newId = `${basePrefix}${year}${month}${timestamp}`;
+      }
+      
+      // Check if this ID already exists
+      if (!existingIds.includes(newId)) {
+        return newId;
+      }
+      
+      attempts++;
+    }
+    
+    // Fallback: Use timestamp with random component
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    newId = `${basePrefix}${timestamp}${random}`;
+    
+    // Final check
+    if (!existingIds.includes(newId)) {
+      return newId;
+    }
+    
+    // Last resort: Use UUID-like format
+    return `${basePrefix}${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    
+  } catch (error) {
+    console.error('Error generating asset ID:', error);
+    // Fallback to simple timestamp-based ID
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const timestamp = Date.now().toString().slice(-6);
+    return `IT${year}${month}${timestamp}`;
+  }
+}
+
 
 addMenu.addEventListener('click', async (e) => {
   if (e.target.dataset.action === 'manual') {
@@ -318,6 +413,16 @@ addMenu.addEventListener('click', async (e) => {
 addForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = Object.fromEntries(new FormData(addForm).entries());
+  
+  // Auto-generate Asset ID before submission
+  try {
+    formData.assetId = await generateAssetId();
+    console.log('Auto-generated Asset ID:', formData.assetId);
+  } catch (error) {
+    console.error('Error generating Asset ID:', error);
+    alert('Failed to generate Asset ID. Please try again.');
+    return;
+  }
   
   // Use custom location if it's visible and has a value
   if (customLocationInput.style.display !== 'none' && customLocationInput.value.trim()) {

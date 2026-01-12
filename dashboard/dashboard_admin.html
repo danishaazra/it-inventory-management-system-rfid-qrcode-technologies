@@ -16,16 +16,18 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
+      background: #ffffff;
       min-height: 100vh;
       color: #1a1a1a;
+      margin: 0;
+      padding: 0;
     }
 
     .app-shell {
       display: flex;
       min-height: 100vh;
-      padding: 2rem;
-      gap: 2rem;
+      padding: 0;
+      gap: 0;
       transition: gap 0.3s ease;
     }
     
@@ -38,15 +40,20 @@
       width: 260px;
       background: rgba(7, 3, 30, 0.95);
       backdrop-filter: blur(10px);
-      border-radius: 16px;
+      border-radius: 0;
       padding: 2rem 1.5rem;
       color: #f5f5ff;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      box-shadow: none;
       transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 1000;
       flex-shrink: 0;
     }
 
@@ -83,12 +90,14 @@
 
     .sidebar-brand {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
+      justify-content: center;
       gap: 0.75rem;
       margin-bottom: 2rem;
       transition: justify-content 0.3s ease;
-      padding-right: 3rem;
+      padding-right: 0;
       position: relative;
+      width: 100%;
     }
 
     .sidebar.collapsed .sidebar-brand {
@@ -109,12 +118,12 @@
     }
 
     .sidebar-logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      overflow: hidden;
+      width: 100%;
+      height: auto;
+      border-radius: 0;
+      overflow: visible;
       flex-shrink: 0;
-      background: #ffffff;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -132,50 +141,23 @@
 
     .sidebar.collapsed:hover .sidebar-logo {
       opacity: 1;
-      width: 36px;
-      height: 36px;
+      width: auto;
+      height: auto;
       margin: 0;
     }
 
-    .sidebar-logo img {
+    .sidebar-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 100;
+      color: #f5f5ff;
+      letter-spacing: 2px;
+      text-align: center;
+      display: block;
       width: 100%;
-      height: 100%;
-      object-fit: contain;
     }
 
     .sidebar-brand-text {
-      font-size: 0.85rem;
-      font-weight: 600;
-      line-height: 1.4;
-      white-space: normal;
-      word-wrap: break-word;
-      opacity: 1;
-      max-width: 160px;
-      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: visible;
-      display: block;
-    }
-
-    .sidebar.collapsed .sidebar-brand-text {
-      opacity: 0;
-      max-width: 0;
-      max-height: 0;
-      margin: 0;
-      overflow: hidden;
-      font-size: 0;
-      width: 0;
-      height: 0;
-      padding: 0;
-    }
-
-    .sidebar.collapsed:hover .sidebar-brand-text {
-      opacity: 1;
-      max-width: 160px;
-      max-height: 100px;
-      overflow: visible;
-      font-size: 0.85rem;
-      width: auto;
-      height: auto;
+      display: none;
     }
 
     .sidebar-nav {
@@ -228,14 +210,6 @@
       margin-right: 0;
     }
 
-    .sidebar.collapsed .nav-item::before {
-      opacity: 0;
-      display: none;
-    }
-
-    .sidebar.collapsed:hover .nav-item::before {
-      opacity: 0;
-    }
 
     .nav-item:hover {
       background: rgba(255, 255, 255, 0.06);
@@ -371,34 +345,48 @@
     .dashboard-container {
       flex: 1;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 0;
       padding: 3rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: none;
       display: flex;
       flex-direction: column;
       max-width: 100%;
+      width: 100%;
+      height: 100vh;
+      margin-left: 260px;
+      overflow-y: auto;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .app-shell.has-collapsed-sidebar .dashboard-container {
+      margin-left: 80px;
     }
 
     .dashboard-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 2px solid #e5e5e5;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
+      gap: 1.25rem;
+      flex-wrap: wrap;
     }
 
     .dashboard-header h1 {
-      font-size: 2rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: #1a1a1a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0;
     }
 
     .user-info {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      margin-left: auto;
     }
 
     .user-avatar {
@@ -422,13 +410,13 @@
     }
 
     .user-greeting-main {
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 600;
       color: #1a1a1a;
     }
 
     .user-greeting-sub {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #888;
     }
 
@@ -451,50 +439,129 @@
 
     .dashboard-content {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      margin-top: 2rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
     }
 
     .dashboard-card {
       background: #f8f9fa;
-      border-radius: 12px;
-      padding: 2rem;
+      border-radius: 8px;
+      padding: 1rem;
       border: 2px solid #e5e5e5;
     }
 
     .dashboard-card h2 {
-      font-size: 1.5rem;
+      font-size: 1rem;
       font-weight: 600;
       color: #1a1a1a;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .dashboard-card p {
+      font-size: 0.8rem;
       color: #666;
-      line-height: 1.6;
-      margin-bottom: 1rem;
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
     }
 
     .stat {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem;
+      padding: 0.75rem;
       background: white;
-      border-radius: 8px;
+      border-radius: 6px;
       margin-bottom: 0.5rem;
     }
 
     .stat-label {
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       color: #666;
     }
 
     .stat-value {
-      font-size: 1.5rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: #140958;
+    }
+
+    .today-inspections-section {
+      grid-column: 1 / -1;
+    }
+
+    .bar-chart-container {
+      margin-top: 0;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 1rem;
+      height: 120px;
+      margin-bottom: 0.5rem;
+    }
+
+    .bar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      min-height: 20px;
+      border-radius: 4px 4px 0 0;
+      transition: all 0.3s ease;
+    }
+
+    .bar.complete {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    }
+
+    .bar.pending {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+    }
+
+    .bar-label {
+      font-size: 0.65rem;
+      color: #666;
+      margin-top: 0.25rem;
+      text-align: center;
+    }
+
+    .bar-value {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 0.25rem;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.7rem;
+      margin-top: 0.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    .legend-color.complete {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    }
+
+    .legend-color.pending {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
     }
 
     .asset-table-wrapper {
@@ -552,21 +619,11 @@
       text-decoration: underline;
     }
 
-    .welcome-message {
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: white;
-      padding: 2rem;
-      border-radius: 12px;
-      margin-bottom: 2rem;
-    }
-
-    .welcome-message h2 {
-      font-size: 1.75rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .welcome-message p {
-      color: rgba(255, 255, 255, 0.9);
+    .welcome-text {
+      font-size: 1.25rem;
+      color: #140958;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
     }
 
     .saved-reports-wrapper {
@@ -680,6 +737,8 @@
       }
 
       .sidebar {
+        position: relative;
+        height: auto;
         width: 100%;
         order: -1;
         border-radius: 0;
@@ -687,6 +746,14 @@
         flex-direction: row;
         align-items: center;
         gap: 1rem;
+      }
+      
+      .dashboard-container {
+        margin-left: 0;
+      }
+      
+      .app-shell.has-collapsed-sidebar .dashboard-container {
+        margin-left: 0;
       }
 
       .sidebar-brand {
@@ -735,7 +802,13 @@
       }
 
       .dashboard-content {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      @media (max-width: 480px) {
+        .dashboard-content {
+          grid-template-columns: 1fr;
+        }
       }
 
       .asset-table-container,
@@ -794,7 +867,7 @@
       </button>
       <div class="sidebar-brand">
         <div class="sidebar-logo">
-          <img src="../images/pkt_logo.png" alt="PKT Logistics logo">
+          <span class="logo-text">DM</span>
         </div>
         <div class="sidebar-brand-text">PKT Logistics Group Sdn. Bhd.</div>
       </div>
@@ -802,9 +875,7 @@
         <a class="nav-item active" href="dashboard_admin.html">Dashboard</a>
         <a class="nav-item" href="../admin/asset/asset.html">Assets</a>
         <a class="nav-item" href="../admin/maintenance/maintenance.html">Maintenance Checklist</a>
-        <a class="nav-item" href="../admin/scan/scan.html">Scan Asset</a>
         <a class="nav-item" href="../admin/report/report.html">Reports</a>
-        <a class="nav-item">Settings</a>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" id="logout-btn">Logout</button>
@@ -819,15 +890,11 @@
           <div class="user-avatar" id="user-avatar">U</div>
           <div class="user-greeting">
             <span class="user-greeting-main">Hi, <span id="user-name">Loading...</span></span>
-            <span class="user-greeting-sub">Welcome back</span>
           </div>
         </div>
       </div>
 
-      <div class="welcome-message">
-        <h2>Welcome to IT Inventory Management System</h2>
-        <p>Manage your IT assets using RFID & QR Code Technologies</p>
-      </div>
+      <div class="welcome-text" id="welcome-text">Welcome, <span id="welcome-username">Loading...</span></div>
 
       <div class="dashboard-content">
         <div class="dashboard-card">
@@ -840,49 +907,51 @@
         </div>
 
         <div class="dashboard-card">
-          <h2>Maintenance Items</h2>
+          <h2>Pending Maintenance Inspection</h2>
           <div class="stat">
-            <span class="stat-label">Active Maintenance</span>
-            <span class="stat-value" id="total-maintenance-stat">-</span>
+            <span class="stat-label">Pending Inspections</span>
+            <span class="stat-value" id="pending-inspection-stat">-</span>
           </div>
-          <p>Number of maintenance items in the system</p>
+          <p>Number of pending maintenance inspections</p>
         </div>
 
         <div class="dashboard-card">
           <h2>Quick Actions</h2>
           <p>Add new assets, scan QR codes, generate reports, and more.</p>
-          <div style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <a href="../admin/asset/asset.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Manage Assets</a>
-            <a href="../admin/maintenance/maintenance.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Manage Maintenance</a>
-            <a href="../admin/scan/scan.html" style="color: #140958; font-weight: 600; text-decoration: none;">→ Scan Assets</a>
+          <div style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+            <a href="../admin/asset/asset.html" style="color: #140958; font-weight: 600; text-decoration: none; font-size: 0.8rem;">→ Manage Assets</a>
+            <a href="../admin/maintenance/maintenance.html" style="color: #140958; font-weight: 600; text-decoration: none; font-size: 0.8rem;">→ Manage Maintenance</a>
           </div>
         </div>
+      </div>
 
-        <div class="asset-table-wrapper">
-          <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">Assets Overview</h2>
-          <p style="color: #666; margin-bottom: 0.75rem;">Key details for your IT assets.</p>
-          <div class="asset-table-container">
-            <table class="asset-table">
-              <thead>
-                <tr>
-                  <th>Asset Code</th>
-                  <th>Asset Name</th>
-                  <th>Category</th>
-                  <th>Model</th>
-                  <th>Serial Number</th>
-                  <th>Location</th>
-                  <th>Area</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="assets-table-body">
-                <tr>
-                  <td colspan="8" style="text-align: center; padding: 2rem; color: #888;">Loading assets...</td>
-                </tr>
-              </tbody>
-            </table>
+      <!-- Today's Inspections Chart Section -->
+      <div class="today-inspections-section" style="margin-top: 2rem;">
+        <h2 style="font-size: 1.1rem; font-weight: 600; color: #1a1a1a; margin-bottom: 1rem;">Today's Maintenance Inspections</h2>
+        <div class="dashboard-card" style="padding: 1.5rem;">
+          <div class="bar-chart-container">
+            <div class="bar-chart" id="today-inspections-chart">
+              <div class="bar complete" style="height: 0%;">
+                <div class="bar-value">0</div>
+              </div>
+              <div class="bar pending" style="height: 0%;">
+                <div class="bar-value">0</div>
+              </div>
+            </div>
+            <div class="bar-label" style="text-align: center; font-size: 0.7rem; color: #666; margin-top: 0.5rem;">Complete | Pending</div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-color complete"></div>
+                <span>Complete</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color pending"></div>
+                <span>Pending</span>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
         <div class="maintenance-assignments-wrapper" style="margin-top: 2rem; grid-column: 1 / -1;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">

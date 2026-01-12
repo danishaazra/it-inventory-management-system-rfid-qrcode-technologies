@@ -33,41 +33,163 @@ async function loadDashboardStats() {
       }
     }
     
-    // Update maintenance items count - use real data only
-    const totalMaintenanceEl = document.getElementById('total-maintenance-stat');
-    if (totalMaintenanceEl) {
+    // Calculate pending maintenance inspections
+    const pendingInspectionEl = document.getElementById('pending-inspection-stat');
+    if (pendingInspectionEl) {
+      let totalPending = 0;
+      
       if (maintenanceData.ok && maintenanceData.maintenance) {
-        const totalMaintenance = maintenanceData.maintenance.length;
-        totalMaintenanceEl.textContent = totalMaintenance;
-      } else {
-        totalMaintenanceEl.textContent = '0';
-        console.warn('Maintenance data not available:', maintenanceData.error || 'Unknown error');
+        // For each maintenance item, count pending inspections
+        const maintenanceItems = maintenanceData.maintenance;
+        
+        // Process each maintenance item to count pending inspections
+        const inspectionPromises = maintenanceItems.map(async (item) => {
+          try {
+            const assetsResp = await fetch(`/api/maintenance/assets?maintenanceId=${encodeURIComponent(item._id)}`);
+            if (assetsResp.ok) {
+              const assetsData = await assetsResp.json();
+              if (assetsData.ok && assetsData.assets) {
+                // Count assets with pending inspection status (not 'complete')
+                const pending = assetsData.assets.filter(asset => {
+                  const status = asset.inspectionStatus || 'open';
+                  return status !== 'complete';
+                }).length;
+                return pending;
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching assets for maintenance ${item._id}:`, error);
+          }
+          return 0;
+        });
+        
+        const pendingCounts = await Promise.all(inspectionPromises);
+        totalPending = pendingCounts.reduce((sum, count) => sum + count, 0);
       }
+      
+      pendingInspectionEl.textContent = totalPending;
     }
     
-    // Load recent assets for the table - use real data only
-    const tbody = document.getElementById('assets-table-body');
-    if (assetsData.ok && assetsData.assets && assetsData.assets.length > 0) {
-      // Sort by assetId descending to show newest first, then take first 10
-      const sortedAssets = [...assetsData.assets].sort((a, b) => {
-        return (b.assetId || '').localeCompare(a.assetId || '');
-      });
-      displayRecentAssets(sortedAssets.slice(0, 10));
-    } else {
-      if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #888;">No assets found in database</td></tr>';
-      }
-    }
+    // Load today's inspections for bar chart
+    await loadTodayInspections();
   } catch (error) {
     console.error('Error loading dashboard stats:', error);
     const totalAssetsEl = document.getElementById('total-assets-stat');
-    const totalMaintenanceEl = document.getElementById('total-maintenance-stat');
-    const tbody = document.getElementById('assets-table-body');
+    const pendingInspectionEl = document.getElementById('pending-inspection-stat');
     
     if (totalAssetsEl) totalAssetsEl.textContent = '0';
-    if (totalMaintenanceEl) totalMaintenanceEl.textContent = '0';
-    if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #dc2626;">Error loading data: ${error.message}</td></tr>`;
+    if (pendingInspectionEl) pendingInspectionEl.textContent = '0';
+  }
+}
+
+// Load today's inspections for bar chart
+async function loadTodayInspections() {
+  try {
+    const chartContainer = document.getElementById('today-inspections-chart');
+    if (!chartContainer) {
+      console.warn('Today inspections chart container not found');
+      return;
+    }
+
+    // Get all maintenance items
+    const maintenanceResp = await fetch('/api/maintenance/list');
+    if (!maintenanceResp.ok) {
+      throw new Error(`Maintenance API returned ${maintenanceResp.status}`);
+    }
+    const maintenanceData = await maintenanceResp.json();
+
+    if (!maintenanceData.ok || !maintenanceData.maintenance) {
+      updateBarChart(0, 0);
+      return;
+    }
+
+    const maintenanceItems = maintenanceData.maintenance;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let completeCount = 0;
+    let pendingCount = 0;
+
+    // Process each maintenance item to count today's inspections
+    const inspectionPromises = maintenanceItems.map(async (item) => {
+      try {
+        const assetsResp = await fetch(`/api/maintenance/assets?maintenanceId=${encodeURIComponent(item._id)}`);
+        if (assetsResp.ok) {
+          const assetsData = await assetsResp.json();
+          if (assetsData.ok && assetsData.assets) {
+            const assets = assetsData.assets;
+            
+            // Count inspections completed today
+            const completedToday = assets.filter(asset => {
+              if (asset.inspectionStatus !== 'complete') return false;
+              if (!asset.inspectionDate) return false;
+              
+              // Handle MongoDB UTCDateTime format
+              let inspectionDate;
+              if (typeof asset.inspectionDate === 'object' && asset.inspectionDate.$date) {
+                inspectionDate = new Date(asset.inspectionDate.$date);
+              } else if (typeof asset.inspectionDate === 'string' || typeof asset.inspectionDate === 'number') {
+                inspectionDate = new Date(asset.inspectionDate);
+              } else {
+                return false;
+              }
+              
+              inspectionDate.setHours(0, 0, 0, 0);
+              return inspectionDate.getTime() === today.getTime();
+            }).length;
+            
+            // Count pending inspections (status = 'open')
+            const pending = assets.filter(asset => {
+              const status = asset.inspectionStatus || 'open';
+              return status === 'open';
+            }).length;
+            
+            return { completedToday, pending };
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching assets for maintenance ${item._id}:`, error);
+      }
+      return { completedToday: 0, pending: 0 };
+    });
+    
+    const results = await Promise.all(inspectionPromises);
+    completeCount = results.reduce((sum, r) => sum + r.completedToday, 0);
+    pendingCount = results.reduce((sum, r) => sum + r.pending, 0);
+
+    updateBarChart(completeCount, pendingCount);
+  } catch (error) {
+    console.error('Error loading today inspections:', error);
+    updateBarChart(0, 0);
+  }
+}
+
+// Update the bar chart with today's inspection counts
+function updateBarChart(completeCount, pendingCount) {
+  const chartContainer = document.getElementById('today-inspections-chart');
+  if (!chartContainer) return;
+
+  const total = completeCount + pendingCount;
+  const maxValue = Math.max(total, 1); // Avoid division by zero
+
+  const completeBar = chartContainer.querySelector('.bar.complete');
+  const pendingBar = chartContainer.querySelector('.bar.pending');
+
+  if (completeBar) {
+    const completeHeight = total > 0 ? (completeCount / maxValue) * 100 : 0;
+    completeBar.style.height = `${completeHeight}%`;
+    const completeValue = completeBar.querySelector('.bar-value');
+    if (completeValue) {
+      completeValue.textContent = completeCount;
+    }
+  }
+
+  if (pendingBar) {
+    const pendingHeight = total > 0 ? (pendingCount / maxValue) * 100 : 0;
+    pendingBar.style.height = `${pendingHeight}%`;
+    const pendingValue = pendingBar.querySelector('.bar-value');
+    if (pendingValue) {
+      pendingValue.textContent = pendingCount;
     }
   }
 }
@@ -122,6 +244,31 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// Update welcome username when user name is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Wait for init.js to set the user-name, then update welcome username
+  const updateWelcomeUsername = () => {
+    const userNameEl = document.getElementById('user-name');
+    const welcomeUsernameEl = document.getElementById('welcome-username');
+    if (userNameEl && welcomeUsernameEl && userNameEl.textContent !== 'Loading...') {
+      welcomeUsernameEl.textContent = userNameEl.textContent;
+    }
+  };
+  
+  // Try immediately
+  updateWelcomeUsername();
+  
+  // Also try after a short delay in case init.js hasn't run yet
+  setTimeout(updateWelcomeUsername, 100);
+  
+  // Watch for changes to user-name element
+  const userNameEl = document.getElementById('user-name');
+  if (userNameEl) {
+    const observer = new MutationObserver(updateWelcomeUsername);
+    observer.observe(userNameEl, { childList: true, characterData: true, subtree: true });
+  }
+});
 
 // Load saved reports
 async function loadSavedReports() {
@@ -275,7 +422,7 @@ function displayMaintenanceAssignments(maintenanceItems) {
     }
 
     const viewLink = maintenanceId 
-      ? `<a class="action-link" href="../admin/maintenance/maintenancetask.html?maintenanceId=${encodeURIComponent(maintenanceId)}">View Details</a>`
+      ? `<a class="action-link" href="../admin/maintenance/maintenance_checklist_draft.html?id=${encodeURIComponent(maintenanceId)}">View Details</a>`
       : '<span style="color: #999;">-</span>';
 
     return `

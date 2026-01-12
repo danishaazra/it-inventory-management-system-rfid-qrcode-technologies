@@ -65,7 +65,7 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
   date_default_timezone_set('Asia/Kuala_Lumpur');
   
   // Get the base path for the logo
-  $logoPath = '../../images/pkt_logo.png';
+  $logoPath = '../../images/logo_dm.png';
   $currentDate = date('Y-m-d H:i:s') . ' MYT';
   
   // Extract criteria information for maintenance and inspection reports
@@ -168,8 +168,7 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
     <div class="header-left">
       <img src="' . htmlspecialchars($logoPath) . '" alt="PKT Logo" class="header-logo" onerror="this.style.display=\'none\'">
       <div class="header-text">
-        <div class="company-name">PKT LOGISTICS (M) SDN BHD</div>
-        <div class="report-type">ICT - PREVENTIVE MAINTENANCE CHECKLIST</div>
+        <div class="company-name">' . htmlspecialchars($title) . '</div>
       </div>
     </div>
     <div class="header-right">
@@ -202,10 +201,6 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
     }
     $html .= '<div class="form-info">
       <div class="form-info-grid">
-        <div class="form-info-item">
-          <span class="form-info-label">COMPANY NAME:</span>
-          <span class="form-info-value">PKT LOGISTICS (M) SDN BHD</span>
-        </div>
         <div class="form-info-item">
           <span class="form-info-label">BRANCH:</span>
           <span class="form-info-value">' . htmlspecialchars($branch ?: '-') . '</span>
