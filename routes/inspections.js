@@ -123,28 +123,32 @@ router.post('/save-checklist', async (req, res) => {
     try {
         if (!checkDBConnection(res)) return;
 
-        const { frequency, inspectionDate, dateStr, assets } = req.body;
+        const { frequency, inspectionDate, dateStr, assets, maintenanceId, branch, location, itemName } = req.body;
 
-        if (!frequency || !inspectionDate || !assets || !Array.isArray(assets)) {
+        if (!frequency || !inspectionDate) {
             return res.status(400).json({ 
                 ok: false, 
-                error: 'frequency, inspectionDate, and assets array are required' 
+                error: 'frequency and inspectionDate are required' 
             });
         }
 
+        // Allow empty assets array - just save the inspection date/status
+        const assetsArray = Array.isArray(assets) ? assets : [];
+
         // Save each asset inspection
         const savedInspections = [];
-        for (const asset of assets) {
+        
+        // Use actual maintenanceId if provided, otherwise use checklist format
+        const maintenanceIdToUse = maintenanceId || `checklist-${frequency}-${inspectionDate}`;
+        
+        for (const asset of assetsArray) {
             if (!asset.assetId || !asset.status) {
                 continue; // Skip invalid assets
             }
 
             // Find or create maintenance asset record
-            // For checklist, we use a special maintenanceId format: "checklist-{frequency}-{date}"
-            const checklistMaintenanceId = `checklist-${frequency}-${inspectionDate}`;
-            
             let maintenanceAsset = await MaintenanceAsset.findOne({
-                maintenanceId: checklistMaintenanceId,
+                maintenanceId: maintenanceIdToUse,
                 assetId: asset.assetId
             });
 
@@ -158,7 +162,7 @@ router.post('/save-checklist', async (req, res) => {
             } else {
                 // Create new
                 maintenanceAsset = new MaintenanceAsset({
-                    maintenanceId: checklistMaintenanceId,
+                    maintenanceId: maintenanceIdToUse,
                     assetId: asset.assetId,
                     inspectionStatus: asset.status === 'normal' ? 'complete' : 'open',
                     inspectionNotes: asset.remarks || '',
@@ -174,6 +178,33 @@ router.post('/save-checklist', async (req, res) => {
                 status: asset.status,
                 remarks: asset.remarks
             });
+        }
+        
+        // If no assets but maintenanceId is provided, create a record to track the inspection date
+        if (assetsArray.length === 0 && maintenanceId) {
+            // Create a marker record to indicate inspection was done (even without assets)
+            const markerRecord = await MaintenanceAsset.findOne({
+                maintenanceId: maintenanceId,
+                assetId: 'INSPECTION_DATE_MARKER'
+            });
+            
+            if (!markerRecord) {
+                const marker = new MaintenanceAsset({
+                    maintenanceId: maintenanceId,
+                    assetId: 'INSPECTION_DATE_MARKER',
+                    inspectionStatus: 'complete',
+                    inspectionNotes: `Inspection completed on ${inspectionDate} - No assets to inspect`,
+                    inspectionDate: new Date(inspectionDate),
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+                await marker.save();
+            } else {
+                markerRecord.inspectionDate = new Date(inspectionDate);
+                markerRecord.inspectionNotes = `Inspection completed on ${inspectionDate} - No assets to inspect`;
+                markerRecord.updatedAt = new Date();
+                await markerRecord.save();
+            }
         }
 
         res.json({ 

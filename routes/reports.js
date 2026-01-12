@@ -454,7 +454,7 @@ router.post('/generate-inspection', async (req, res) => {
             } else if (criteria.status === 'Faulty') {
                 filter.inspectionStatus = { $in: ['faulty', 'abnormal', 'overdue'] };
             } else {
-                filter.inspectionStatus = criteria.status;
+            filter.inspectionStatus = criteria.status;
             }
         }
 
@@ -1332,7 +1332,7 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
                                             } else if (dateObj.class === 'upcoming') {
                                                 bgColor = '#dc2626';
                                                 textColor = '#ffffff';
-                                            } else {
+                                } else {
                                                 bgColor = '#f3f4f6';
                                                 textColor = '#374151';
                                             }
