@@ -34,39 +34,130 @@ async function loadDashboardStats() {
     }
     
     // Calculate pending maintenance inspections
+    // Count all asset-date combinations that should be inspected, including uninitialized ones
     const pendingInspectionEl = document.getElementById('pending-inspection-stat');
     if (pendingInspectionEl) {
       let totalPending = 0;
       
       if (maintenanceData.ok && maintenanceData.maintenance) {
-        // For each maintenance item, count pending inspections
         const maintenanceItems = maintenanceData.maintenance;
+        console.log(`Admin Dashboard: Processing ${maintenanceItems.length} maintenance item(s)`);
         
-        // Process each maintenance item to count pending inspections
-        const inspectionPromises = maintenanceItems.map(async (item) => {
+        // Process each maintenance item to count all pending inspections
+        for (const item of maintenanceItems) {
           try {
-            const assetsResp = await fetch(`/api/maintenance/assets?maintenanceId=${encodeURIComponent(item._id)}`);
+            // Step 1: Get all assets that match this task's inspection tasks
+            const allAssetsResp = await fetch('/api/assets/list');
+            let matchingAssets = [];
+            if (allAssetsResp.ok) {
+              const allAssetsData = await allAssetsResp.json();
+              if (allAssetsData.ok && allAssetsData.assets && item.inspectionTasks) {
+                const taskNames = item.inspectionTasks.split('\n').filter(t => t.trim());
+                console.log(`Maintenance ${item._id}: Looking for assets matching tasks:`, taskNames);
+                matchingAssets = allAssetsData.assets.filter(asset => {
+                  const assetLocation = asset.locationDescription || '';
+                  const matches = taskNames.some(taskName => taskName.trim() === assetLocation.trim());
+                  if (matches) {
+                    console.log(`  Found matching asset: ${asset.assetId} (location: "${assetLocation}")`);
+                  }
+                  return matches;
+                });
+              } else {
+                console.log(`Maintenance ${item._id}: No inspectionTasks or assets data available`);
+                console.log(`  inspectionTasks:`, item.inspectionTasks);
+                console.log(`  assetsData.ok:`, allAssetsData?.ok);
+                console.log(`  assetsData.assets length:`, allAssetsData?.assets?.length);
+              }
+            } else {
+              console.error(`Maintenance ${item._id}: Failed to fetch assets list:`, allAssetsResp.status);
+            }
+            
+            console.log(`Maintenance ${item._id}: Found ${matchingAssets.length} asset(s) matching inspection tasks`);
+            
+            // Step 2: Get all scheduled dates for this task
+            let scheduledDates = [];
+            
+            // Try inspectionTaskSchedules first (task-specific schedules)
+            if (item.inspectionTaskSchedules && typeof item.inspectionTaskSchedules === 'object') {
+              console.log(`Maintenance ${item._id}: Using inspectionTaskSchedules`);
+              Object.values(item.inspectionTaskSchedules).forEach(taskSchedule => {
+                if (taskSchedule && typeof taskSchedule === 'object') {
+                  const dates = extractScheduleDates(taskSchedule, item.frequency || 'Weekly');
+                  console.log(`  Extracted ${dates.length} dates from task schedule`);
+                  scheduledDates.push(...dates);
+                }
+              });
+            }
+            
+            // Fallback to maintenanceSchedule if no task-specific schedules found
+            if (scheduledDates.length === 0 && item.maintenanceSchedule) {
+              console.log(`Maintenance ${item._id}: Using maintenanceSchedule (fallback)`);
+              scheduledDates = extractScheduleDates(item.maintenanceSchedule, item.frequency || 'Weekly');
+              console.log(`  Extracted ${scheduledDates.length} dates from maintenanceSchedule`);
+            }
+            
+            if (scheduledDates.length === 0) {
+              console.warn(`Maintenance ${item._id}: No scheduled dates found!`);
+              console.log(`  inspectionTaskSchedules:`, item.inspectionTaskSchedules);
+              console.log(`  maintenanceSchedule:`, item.maintenanceSchedule);
+              console.log(`  frequency:`, item.frequency);
+            }
+            
+            console.log(`Maintenance ${item._id}: Found ${scheduledDates.length} scheduled date(s)`);
+            
+            // Step 3: Get existing inspection records
+            const assetsUrl = `/api/maintenance/assets?maintenanceId=${encodeURIComponent(item._id)}`;
+            const assetsResp = await fetch(assetsUrl);
+            const existingInspections = new Map(); // Map: "dateKey-assetId" -> inspection record
+            
             if (assetsResp.ok) {
               const assetsData = await assetsResp.json();
               if (assetsData.ok && assetsData.assets) {
-                // Count assets with pending inspection status (not 'complete')
-                const pending = assetsData.assets.filter(asset => {
-                  const status = asset.inspectionStatus || 'open';
-                  return status !== 'complete';
-                }).length;
-                return pending;
+                assetsData.assets.forEach(ma => {
+                  if (ma.assetId && ma.inspectionDate) {
+                    const inspectionDate = new Date(ma.inspectionDate);
+                    const dateKey = formatDateKey(inspectionDate);
+                    const key = `${dateKey}-${ma.assetId}`;
+                    existingInspections.set(key, ma);
+                  }
+                });
               }
             }
+            
+            console.log(`Maintenance ${item._id}: Found ${existingInspections.size} existing inspection record(s)`);
+            
+            // Step 4: Count pending inspections
+            // For each asset-date combination, check if there's a complete inspection
+            let pendingCount = 0;
+            matchingAssets.forEach(asset => {
+              scheduledDates.forEach(date => {
+                const dateKey = formatDateKey(date);
+                const key = `${dateKey}-${asset.assetId}`;
+                const inspection = existingInspections.get(key);
+                
+                if (!inspection) {
+                  // No inspection record exists - count as pending
+                  pendingCount++;
+                } else {
+                  // Inspection record exists - check if it's complete
+                  const status = (inspection.inspectionStatus || 'pending').toLowerCase().trim();
+                  if (status !== 'complete' && status !== 'completed') {
+                    pendingCount++;
+                  }
+                }
+              });
+            });
+            
+            console.log(`Maintenance ${item._id}: ${pendingCount} pending inspection(s) (${matchingAssets.length} assets × ${scheduledDates.length} dates = ${matchingAssets.length * scheduledDates.length} total combinations)`);
+            
+            totalPending += pendingCount;
           } catch (error) {
-            console.error(`Error fetching assets for maintenance ${item._id}:`, error);
+            console.error(`Error counting pending for maintenance ${item._id}:`, error);
           }
-          return 0;
-        });
-        
-        const pendingCounts = await Promise.all(inspectionPromises);
-        totalPending = pendingCounts.reduce((sum, count) => sum + count, 0);
+        }
       }
       
+      console.log(`=== ADMIN DASHBOARD: Total Pending Inspections = ${totalPending} ===`);
       pendingInspectionEl.textContent = totalPending;
     }
     
@@ -83,6 +174,7 @@ async function loadDashboardStats() {
 }
 
 // Load today's inspections for bar chart
+// Simply count inspection records for TODAY by status
 async function loadTodayInspections() {
   try {
     const chartContainer = document.getElementById('today-inspections-chart');
@@ -106,57 +198,54 @@ async function loadTodayInspections() {
     const maintenanceItems = maintenanceData.maintenance;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayKey = formatDateKey(today);
 
     let completeCount = 0;
     let pendingCount = 0;
 
-    // Process each maintenance item to count today's inspections
-    const inspectionPromises = maintenanceItems.map(async (item) => {
+    // Count inspection records for TODAY by status
+    for (const item of maintenanceItems) {
       try {
-        const assetsResp = await fetch(`/api/maintenance/assets?maintenanceId=${encodeURIComponent(item._id)}`);
+        // Get all inspection records for this maintenance item
+        const assetsUrl = `/api/maintenance/assets?maintenanceId=${encodeURIComponent(item._id)}`;
+        const assetsResp = await fetch(assetsUrl);
+        
         if (assetsResp.ok) {
           const assetsData = await assetsResp.json();
           if (assetsData.ok && assetsData.assets) {
-            const assets = assetsData.assets;
-            
-            // Count inspections completed today
-            const completedToday = assets.filter(asset => {
-              if (asset.inspectionStatus !== 'complete') return false;
-              if (!asset.inspectionDate) return false;
-              
-              // Handle MongoDB UTCDateTime format
+            // Filter inspections for today only
+            const todayInspections = assetsData.assets.filter(ma => {
+              if (!ma.inspectionDate) return false;
               let inspectionDate;
-              if (typeof asset.inspectionDate === 'object' && asset.inspectionDate.$date) {
-                inspectionDate = new Date(asset.inspectionDate.$date);
-              } else if (typeof asset.inspectionDate === 'string' || typeof asset.inspectionDate === 'number') {
-                inspectionDate = new Date(asset.inspectionDate);
+              if (typeof ma.inspectionDate === 'object' && ma.inspectionDate.$date) {
+                inspectionDate = new Date(ma.inspectionDate.$date);
+              } else if (typeof ma.inspectionDate === 'string' || typeof ma.inspectionDate === 'number') {
+                inspectionDate = new Date(ma.inspectionDate);
               } else {
                 return false;
               }
               
               inspectionDate.setHours(0, 0, 0, 0);
-              return inspectionDate.getTime() === today.getTime();
-            }).length;
+              return !isNaN(inspectionDate.getTime()) && formatDateKey(inspectionDate) === todayKey;
+            });
             
-            // Count pending inspections (status = 'open')
-            const pending = assets.filter(asset => {
-              const status = asset.inspectionStatus || 'open';
-              return status === 'open';
-            }).length;
-            
-            return { completedToday, pending };
+            // Count by status
+            todayInspections.forEach(ma => {
+              const status = (ma.inspectionStatus || 'pending').toLowerCase().trim();
+              if (status === 'complete' || status === 'completed') {
+                completeCount++;
+              } else {
+                pendingCount++;
+              }
+            });
           }
         }
       } catch (error) {
-        console.error(`Error fetching assets for maintenance ${item._id}:`, error);
+        console.error(`Error counting today's inspections for maintenance ${item._id}:`, error);
       }
-      return { completedToday: 0, pending: 0 };
-    });
-    
-    const results = await Promise.all(inspectionPromises);
-    completeCount = results.reduce((sum, r) => sum + r.completedToday, 0);
-    pendingCount = results.reduce((sum, r) => sum + r.pending, 0);
+    }
 
+    console.log(`=== ADMIN DASHBOARD: Today's Inspections - Complete: ${completeCount}, Pending: ${pendingCount} ===`);
     updateBarChart(completeCount, pendingCount);
   } catch (error) {
     console.error('Error loading today inspections:', error);
@@ -236,6 +325,109 @@ function displayRecentAssets(assets) {
       </tr>
     `;
   }).join('');
+}
+
+// Helper function to extract scheduled dates from maintenance schedule
+// Simplified version that directly parses date strings (matching staff dashboard)
+function extractScheduleDates(schedule, frequency) {
+  const dates = [];
+  if (!schedule || typeof schedule !== 'object') {
+    return dates;
+  }
+  
+  if (!frequency) {
+    return dates;
+  }
+  
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  if (frequency === 'Weekly') {
+    months.forEach(month => {
+      if (schedule[month] && typeof schedule[month] === 'object') {
+        Object.values(schedule[month]).forEach(dateStr => {
+          if (dateStr) {
+            // Handle both date string formats and date objects
+            let date;
+            if (typeof dateStr === 'string') {
+              // Remove time portion if present
+              const normalizedDateStr = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+              date = new Date(normalizedDateStr);
+            } else if (dateStr && typeof dateStr === 'object' && dateStr.date) {
+              // Handle object format: { date: "2025-01-15" }
+              const normalizedDateStr = dateStr.date.includes('T') ? dateStr.date.split('T')[0] : dateStr.date;
+              date = new Date(normalizedDateStr);
+            } else {
+              return; // Skip invalid formats
+            }
+            
+            if (!isNaN(date.getTime())) {
+              date.setHours(0, 0, 0, 0);
+              dates.push(date);
+            }
+          }
+        });
+      }
+    });
+  } else if (frequency === 'Monthly') {
+    months.forEach(month => {
+      if (schedule[month]) {
+        let date;
+        if (typeof schedule[month] === 'string') {
+          const normalizedDateStr = schedule[month].includes('T') ? schedule[month].split('T')[0] : schedule[month];
+          date = new Date(normalizedDateStr);
+        } else if (schedule[month] && typeof schedule[month] === 'object' && schedule[month].date) {
+          const normalizedDateStr = schedule[month].date.includes('T') ? schedule[month].date.split('T')[0] : schedule[month].date;
+          date = new Date(normalizedDateStr);
+        } else {
+          return; // Skip invalid formats
+        }
+        
+        if (!isNaN(date.getTime())) {
+          date.setHours(0, 0, 0, 0);
+          dates.push(date);
+        }
+      }
+    });
+  } else if (frequency === 'Quarterly') {
+    const quarters = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+    quarters.forEach(quarter => {
+      if (schedule[quarter]) {
+        let date;
+        if (typeof schedule[quarter] === 'string') {
+          const normalizedDateStr = schedule[quarter].includes('T') ? schedule[quarter].split('T')[0] : schedule[quarter];
+          date = new Date(normalizedDateStr);
+        } else if (schedule[quarter] && typeof schedule[quarter] === 'object' && schedule[quarter].date) {
+          const normalizedDateStr = schedule[quarter].date.includes('T') ? schedule[quarter].date.split('T')[0] : schedule[quarter].date;
+          date = new Date(normalizedDateStr);
+        } else {
+          return; // Skip invalid formats
+        }
+        
+        if (!isNaN(date.getTime())) {
+          date.setHours(0, 0, 0, 0);
+          dates.push(date);
+        }
+      }
+    });
+  }
+  
+  // Sort dates chronologically
+  dates.sort((a, b) => a - b);
+  return dates;
+}
+
+// Helper function to format date as YYYY-MM-DD for comparison (same as checklist)
+function formatDateKey(date) {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) {
+    console.warn('Invalid date passed to formatDateKey:', date);
+    return '';
+  }
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Helper function to escape HTML (prevent XSS)
@@ -363,88 +555,11 @@ async function deleteSavedReport(reportId) {
 // Make deleteSavedReport available globally
 window.deleteSavedReport = deleteSavedReport;
 
-// Load maintenance assignments
-async function loadMaintenanceAssignments() {
-  try {
-    const response = await fetch('/api/maintenance/list');
-    const data = await response.json();
-
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || 'Failed to load maintenance assignments');
-    }
-
-    displayMaintenanceAssignments(data.maintenance || []);
-  } catch (error) {
-    console.error('Error loading maintenance assignments:', error);
-    const tbody = document.getElementById('maintenance-assignments-body');
-    if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #dc2626;">Error loading maintenance assignments</td></tr>';
-    }
-  }
-}
-
-// Display maintenance assignments
-function displayMaintenanceAssignments(maintenanceItems) {
-  const tbody = document.getElementById('maintenance-assignments-body');
-  if (!tbody) return;
-
-  // Filter to show only items with assigned staff, limit to 10 most recent
-  const assignedItems = maintenanceItems
-    .filter(item => item.assignedStaffName && item.assignedStaffEmail)
-    .slice(0, 10);
-
-  if (assignedItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #888;">No maintenance items with assigned staff found</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = assignedItems.map(item => {
-    const itemName = item.itemName || '-';
-    const location = item.location || '-';
-    const branch = item.branch || '-';
-    const frequency = item.frequency || '-';
-    const staffName = item.assignedStaffName || '-';
-    const staffEmail = item.assignedStaffEmail || '-';
-    const maintenanceId = item._id;
-    const totalInspections = item.totalInspections || 0;
-    const completedInspections = item.completedInspections || 0;
-    const openInspections = item.openInspections || 0;
-    
-    // Format inspection status
-    let inspectionStatus = '';
-    if (totalInspections === 0) {
-      inspectionStatus = '<span style="color: #6b7280;">No inspections</span>';
-    } else {
-      inspectionStatus = `<span style="color: #059669; font-weight: 600;">${completedInspections}/${totalInspections} completed</span>`;
-      if (openInspections > 0) {
-        inspectionStatus += ` <span style="color: #dc2626; font-weight: 600;">(${openInspections} open)</span>`;
-      }
-    }
-
-    const viewLink = maintenanceId 
-      ? `<a class="action-link" href="../admin/maintenance/maintenance_checklist_draft.html?id=${encodeURIComponent(maintenanceId)}">View Details</a>`
-      : '<span style="color: #999;">-</span>';
-
-    return `
-      <tr>
-        <td>${escapeHtml(itemName)}</td>
-        <td>${escapeHtml(location)}</td>
-        <td>${escapeHtml(branch)}</td>
-        <td>${escapeHtml(frequency)}</td>
-        <td>${escapeHtml(staffName)}</td>
-        <td>${escapeHtml(staffEmail)}</td>
-        <td>${inspectionStatus}</td>
-        <td>${viewLink}</td>
-      </tr>
-    `;
-  }).join('');
-}
 
 // Initialize dashboard
 function init() {
   loadDashboardStats();
   loadSavedReports();
-  loadMaintenanceAssignments();
 }
 
 // Start initialization

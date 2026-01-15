@@ -327,14 +327,19 @@ router.post('/generate-maintenance', async (req, res) => {
                 const taskSchedule = taskSchedules[taskName] || null;
                 const monthlySchedule = {};
 
-                // Create a map of date -> inspection status
+                // Create a map of date -> inspection status (check for fault condition)
                 const inspectionMap = new Map();
                 maintenanceAssets.forEach(ma => {
                     if (ma.inspectionDate) {
                         const dateStr = new Date(ma.inspectionDate).toISOString().split('T')[0];
+                        // Check both inspectionStatus and status (fault condition)
+                        const hasFault = ma.status === 'fault' || ma.status === 'abnormal';
+                        const isComplete = ma.inspectionStatus === 'complete';
                         inspectionMap.set(dateStr, {
                             hasInspection: true,
-                            status: ma.inspectionStatus || 'open'
+                            status: ma.inspectionStatus || 'open',
+                            hasFault: hasFault,
+                            isComplete: isComplete
                         });
                     }
                 });
@@ -362,17 +367,26 @@ router.post('/generate-maintenance', async (req, res) => {
                         const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const inspection = inspectionMap.get(dateStr);
                         
-                        // Determine cell class (completed, pending, upcoming)
+                        // Determine cell class based on inspection status and fault condition
+                        // Match image: red for fault/pending, normal (black on white) for completed without fault
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
                         const inspectionDate = new Date(date);
                         inspectionDate.setHours(0, 0, 0, 0);
                         
-                        let cellClass = 'pending'; // Default: yellow
+                        let cellClass = 'pending'; // Default: red (fault/pending)
                         if (inspection && inspection.hasInspection) {
-                            cellClass = 'completed'; // Green: has inspection
+                            if (inspection.hasFault) {
+                                cellClass = 'fault'; // Red: has fault
+                            } else if (inspection.isComplete) {
+                                cellClass = 'completed'; // Normal: completed without fault (black on white)
+                            } else {
+                                cellClass = 'pending'; // Red: pending inspection
+                            }
                         } else if (inspectionDate > today) {
-                            cellClass = 'upcoming'; // Red: future date
+                            cellClass = 'upcoming'; // Grey: future date
+                        } else {
+                            cellClass = 'pending'; // Red: past date without inspection (fault)
                         }
                         
                         monthlySchedule[monthNum][period].push({
@@ -444,24 +458,15 @@ router.post('/generate-inspection', async (req, res) => {
             }
         }
 
-        // Filter by status (Good, Attention, Faulty)
-        if (criteria.status) {
-            // Map status values: Good = completed/open, Attention = pending, Faulty = abnormal/overdue
-            if (criteria.status === 'Good') {
-                filter.inspectionStatus = { $in: ['completed', 'open', 'normal'] };
-            } else if (criteria.status === 'Attention') {
-                filter.inspectionStatus = { $in: ['pending', 'attention'] };
-            } else if (criteria.status === 'Faulty') {
-                filter.inspectionStatus = { $in: ['faulty', 'abnormal', 'overdue'] };
-            } else {
-            filter.inspectionStatus = criteria.status;
-            }
-        }
-
+        // Filter by status will be applied after matching with maintenance items
+        // We'll filter in the report generation loop to handle normal/fault logic properly
+        
         // Get inspections
         const inspections = await MaintenanceAsset.find(filter)
             .sort({ inspectionDate: -1 })
             .lean();
+        
+        console.log('Total inspections found:', inspections.length);
 
         // Get maintenance items to filter by branch, location, itemName, frequency
         let maintenanceFilter = {};
@@ -472,24 +477,125 @@ router.post('/generate-inspection', async (req, res) => {
 
         const maintenanceItems = await Maintenance.find(maintenanceFilter).lean();
         const maintenanceIds = maintenanceItems.map(m => m._id.toString());
+        
+        console.log('Maintenance items found:', maintenanceItems.length);
+        console.log('Maintenance IDs:', maintenanceIds);
 
-        // Filter inspections by maintenance IDs
-        const filteredInspections = inspections.filter(inspection => 
-            maintenanceIds.includes(inspection.maintenanceId)
-        );
+        // Filter inspections by maintenance IDs (handle both string and ObjectId formats)
+        const filteredInspections = inspections.filter(inspection => {
+            if (!inspection.maintenanceId) return false;
+            
+            let inspectionMaintenanceId;
+            try {
+                if (typeof inspection.maintenanceId === 'string') {
+                    inspectionMaintenanceId = inspection.maintenanceId;
+                } else if (inspection.maintenanceId && typeof inspection.maintenanceId.toString === 'function') {
+                    inspectionMaintenanceId = String(inspection.maintenanceId);
+                } else {
+                    inspectionMaintenanceId = String(inspection.maintenanceId);
+                }
+            } catch (e) {
+                console.error('Error converting maintenanceId:', e);
+                return false;
+            }
+            
+            return inspectionMaintenanceId && maintenanceIds.includes(inspectionMaintenanceId);
+        });
+        
+        console.log('Filtered inspections (after maintenance ID match):', filteredInspections.length);
 
-        // Build report with header info and asset details
+        // Build report grouped by maintenance item and task
         const report = [];
         let headerInfo = null;
-
-        for (const inspection of filteredInspections) {
-            const asset = await Asset.findOne({ assetId: inspection.assetId }).lean();
-            const maintenance = await Maintenance.findOne({ _id: inspection.maintenanceId }).lean();
+        
+        // If no inspections found, return empty report with default header
+        if (filteredInspections.length === 0) {
+            headerInfo = {
+                companyName: 'PKT Logistics Group',
+                reportTitle: 'Maintenance Inspection Report',
+                branch: criteria.branch || '-',
+                location: criteria.location || '-',
+                inspectionType: criteria.frequency || '-',
+                itemName: criteria.itemName || '-',
+                monthYear: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                inspectionDate: new Date().toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                })
+            };
+        } else {
+            // Group inspections by maintenance item
+            const inspectionsByMaintenance = new Map();
             
-            if (asset && maintenance) {
-                // Set header info from first inspection (all should have same maintenance item)
+            // Cache maintenance lookups to avoid duplicate queries
+            const maintenanceCache = new Map();
+            
+            for (const inspection of filteredInspections) {
+                // Handle both string and ObjectId formats for maintenanceId
+                if (!inspection.maintenanceId) continue;
+                
+                let inspectionMaintenanceId;
+                try {
+                    // Safely convert maintenanceId to string
+                    if (typeof inspection.maintenanceId === 'string') {
+                        inspectionMaintenanceId = inspection.maintenanceId;
+                    } else if (inspection.maintenanceId) {
+                        // Use valueOf() for ObjectId which is safer than toString()
+                        if (inspection.maintenanceId.valueOf) {
+                            inspectionMaintenanceId = String(inspection.maintenanceId.valueOf());
+                        } else if (inspection.maintenanceId.toString) {
+                            inspectionMaintenanceId = String(inspection.maintenanceId.toString());
+                        } else {
+                            inspectionMaintenanceId = String(inspection.maintenanceId);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error converting maintenanceId:', e, inspection.maintenanceId);
+                    continue;
+                }
+                
+                if (!inspectionMaintenanceId) continue;
+                
+                // Check cache first
+                let maintenance = maintenanceCache.get(inspectionMaintenanceId);
+                if (!maintenance) {
+                    try {
+                        // Mongoose will handle ObjectId conversion automatically
+                        // Convert to ObjectId if it's a valid hex string, otherwise use as-is
+                        const queryId = mongoose.Types.ObjectId.isValid(inspectionMaintenanceId) 
+                            ? new mongoose.Types.ObjectId(inspectionMaintenanceId) 
+                            : inspectionMaintenanceId;
+                        maintenance = await Maintenance.findOne({ _id: queryId }).lean();
+                        if (maintenance) {
+                            maintenanceCache.set(inspectionMaintenanceId, maintenance);
+                        }
+                    } catch (e) {
+                        console.error('Error finding maintenance:', e);
+                        continue;
+                    }
+                }
+                
+                if (!maintenance) continue;
+                
+                const maintenanceId = String(maintenance._id);
+                if (!inspectionsByMaintenance.has(maintenanceId)) {
+                    inspectionsByMaintenance.set(maintenanceId, {
+                        maintenance: maintenance,
+                        inspections: []
+                    });
+                }
+                inspectionsByMaintenance.get(maintenanceId).inspections.push(inspection);
+            }
+        
+            // Process each maintenance item and group by task
+            for (const [maintenanceId, data] of inspectionsByMaintenance) {
+                const maintenance = data.maintenance;
+                const itemInspections = data.inspections;
+                
+                // Set header info from first maintenance item
                 if (!headerInfo) {
-                    const inspectionDate = inspection.inspectionDate ? new Date(inspection.inspectionDate) : new Date();
+                    const inspectionDate = itemInspections[0]?.inspectionDate ? new Date(itemInspections[0].inspectionDate) : new Date();
                     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                                       'July', 'August', 'September', 'October', 'November', 'December'];
                     
@@ -508,39 +614,173 @@ router.post('/generate-inspection', async (req, res) => {
                         }) || '-'
                     };
                 }
-
-                // Map inspection status to report status
-                let status = 'Good';
-                if (inspection.inspectionStatus === 'pending' || inspection.inspectionStatus === 'attention') {
-                    status = 'Attention';
-                } else if (inspection.inspectionStatus === 'faulty' || inspection.inspectionStatus === 'abnormal' || inspection.inspectionStatus === 'overdue') {
-                    status = 'Faulty';
+                
+                // Parse inspection tasks from maintenance item
+                const tasks = [];
+                if (maintenance.inspectionTasks) {
+                    const taskLines = String(maintenance.inspectionTasks).split('\n');
+                    taskLines.forEach(task => {
+                        const trimmed = task.trim();
+                        if (trimmed) tasks.push(trimmed);
+                    });
                 }
-
-                // Format inspection date as DD/MM/YYYY
-                let formattedDate = '-';
-                if (inspection.inspectionDate) {
-                    const date = new Date(inspection.inspectionDate);
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const year = date.getFullYear();
-                    formattedDate = `${day}/${month}/${year}`;
+                
+                if (tasks.length === 0) {
+                    tasks.push('No tasks defined');
                 }
-
-                report.push({
-                    'Asset ID': asset.assetId || '-', // Will be replaced with row number in display
-                    'Asset Name': asset.assetDescription || '-',
-                    'Serial Number': asset.serialNo || asset.serialNumber || '-',
-                    'Inspection Date': formattedDate,
-                    'Status': status,
-                    'Remarks': inspection.inspectionNotes || '-'
-                });
+                
+                // Process each inspection directly using assetId
+                for (const inspection of itemInspections) {
+                    // Get asset directly from inspection's assetId
+                    const asset = await Asset.findOne({ assetId: inspection.assetId }).lean();
+                    if (!asset) {
+                        console.log('Asset not found for assetId:', inspection.assetId);
+                        continue;
+                    }
+                    
+                    console.log('Processing inspection:', {
+                        assetId: inspection.assetId,
+                        inspectionStatus: inspection.inspectionStatus,
+                        status: inspection.status,
+                        maintenanceId: inspection.maintenanceId
+                    });
+                    
+                    // Determine which task this inspection belongs to
+                    // Try to match by asset's locationDescription or use first task as default
+                    let taskName = tasks[0] || 'No tasks defined';
+                    if (asset.locationDescription) {
+                        // Try to find matching task by locationDescription
+                        const matchingTask = tasks.find(task => 
+                            task.toLowerCase() === asset.locationDescription.toLowerCase() ||
+                            asset.locationDescription.toLowerCase().includes(task.toLowerCase())
+                        );
+                        if (matchingTask) {
+                            taskName = matchingTask;
+                        }
+                    }
+                    
+                    // Use actual status values from database (no mapping)
+                    // Priority: inspection.status (normal/fault/abnormal) or inspectionStatus (open/pending/complete)
+                    let status = inspection.status || inspection.inspectionStatus || 'normal';
+                    
+                    // Apply status filter from criteria if specified (normal or fault)
+                    if (criteria.status) {
+                        if (criteria.status === 'normal') {
+                            // Normal: status is 'normal' OR (inspectionStatus is complete/completed AND status is not fault/abnormal)
+                            const isNormal = (inspection.status === 'normal' || !inspection.status) ||
+                                           ((inspection.inspectionStatus === 'complete' || inspection.inspectionStatus === 'completed') && 
+                                           inspection.status !== 'fault' && inspection.status !== 'abnormal' && inspection.status !== 'faulty');
+                            if (!isNormal) {
+                                console.log('Skipping inspection - not normal:', {
+                                    assetId: asset.assetId,
+                                    status: inspection.status,
+                                    inspectionStatus: inspection.inspectionStatus,
+                                    isNormal: isNormal
+                                });
+                                continue; // Skip this inspection
+                            }
+                        } else if (criteria.status === 'fault') {
+                            // Fault: status is fault/abnormal/faulty OR inspectionStatus is faulty/overdue
+                            const isFault = inspection.status === 'fault' || 
+                                          inspection.status === 'abnormal' || 
+                                          inspection.status === 'faulty' ||
+                                          inspection.inspectionStatus === 'faulty' || 
+                                          inspection.inspectionStatus === 'overdue';
+                            if (!isFault) {
+                                console.log('Skipping inspection - not fault:', {
+                                    assetId: asset.assetId,
+                                    status: inspection.status,
+                                    inspectionStatus: inspection.inspectionStatus,
+                                    isFault: isFault
+                                });
+                                continue; // Skip this inspection
+                            }
+                        } else if (status !== criteria.status) {
+                            continue; // Skip if exact match required
+                        }
+                    }
+                    
+                    console.log('Adding inspection to report:', {
+                        assetId: asset.assetId,
+                        status: status,
+                        taskName: taskName
+                    });
+                    
+                    // Format inspection date as DD/MM/YYYY
+                    let formattedDate = '-';
+                    if (inspection.inspectionDate) {
+                        const date = new Date(inspection.inspectionDate);
+                        if (!isNaN(date.getTime())) {
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const year = date.getFullYear();
+                            formattedDate = `${day}/${month}/${year}`;
+                        }
+                    }
+                    
+                    report.push({
+                        'Task': taskName,
+                        'Asset ID': asset.assetId || '-',
+                        'Asset Name': asset.assetDescription || '-',
+                        'Serial Number': asset.serialNo || asset.serialNumber || '-',
+                        'Inspection Date': formattedDate,
+                        'Status': status,
+                        'Remarks': inspection.inspectionNotes || inspection.remarks || '-',
+                        'Inspector': inspection.inspectorName || inspection.inspector || '-'
+                    });
+                }
             }
         }
+        
+        // Sort by task, then by asset ID
+        report.sort((a, b) => {
+            if (a['Task'] !== b['Task']) {
+                return a['Task'].localeCompare(b['Task']);
+            }
+            return (a['Asset ID'] || '').localeCompare(b['Asset ID'] || '');
+        });
+        
+        // Calculate totals based on actual report data (excluding any existing TOTAL row)
+        const dataRows = report.filter(r => r['Task'] !== 'TOTAL');
+        const totals = {
+            total: dataRows.length,
+            normal: dataRows.filter(r => r['Status'] === 'normal' || r['Status'] === 'complete' || r['Status'] === 'completed').length,
+            fault: dataRows.filter(r => r['Status'] === 'fault' || r['Status'] === 'abnormal' || r['Status'] === 'faulty').length,
+            open: dataRows.filter(r => r['Status'] === 'open' || r['Status'] === 'pending').length
+        };
+        
+        // Remove any existing TOTAL row before adding new one
+        const finalReport = report.filter(r => r['Task'] !== 'TOTAL');
+        
+        // Add summary row at the end with accurate totals
+        finalReport.push({
+            'Task': 'TOTAL',
+            'Asset ID': '',
+            'Asset Name': '',
+            'Serial Number': '',
+            'Inspection Date': '',
+            'Status': `Total: ${totals.total} | Normal: ${totals.normal} | Fault: ${totals.fault} | Open: ${totals.open}`,
+            'Remarks': '',
+            'Inspector': ''
+        });
+
+        // Ensure all data is serializable (no circular references or complex objects)
+        const serializableReport = finalReport.map(row => {
+            const cleanRow = {};
+            for (const [key, value] of Object.entries(row)) {
+                // Convert any complex objects to strings
+                if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+                    cleanRow[key] = String(value);
+                } else {
+                    cleanRow[key] = value;
+                }
+            }
+            return cleanRow;
+        });
 
         res.json({ 
             ok: true, 
-            report: report,
+            report: serializableReport,
             headerInfo: headerInfo || {
                 companyName: 'PKT Logistics Group',
                 reportTitle: 'Maintenance Inspection Report',
@@ -812,7 +1052,7 @@ router.post('/save', async (req, res) => {
     try {
         if (!checkDBConnection(res)) return;
 
-        const { reportType, reportName, criteria } = req.body;
+        const { reportType, reportName, criteria, reportData, headerInfo } = req.body;
 
         if (!reportType || !reportName) {
             return res.status(400).json({ ok: false, error: 'reportType and reportName are required' });
@@ -822,7 +1062,9 @@ router.post('/save', async (req, res) => {
         const report = new Report({
             reportType,
             reportName,
-            criteria,
+            criteria: criteria || {},
+            reportData: reportData || [],
+            headerInfo: headerInfo || null,
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -884,7 +1126,9 @@ router.get('/load', async (req, res) => {
             report: {
                 reportType: report.reportType,
                 reportName: report.reportName,
-                criteria: report.criteria
+                criteria: report.criteria || {},
+                reportData: report.reportData || [],
+                headerInfo: report.headerInfo || null
             }
         });
     } catch (error) {
@@ -899,19 +1143,114 @@ router.post('/export', async (req, res) => {
         // Handle both JSON and form data
         let reportType, format, reportData, criteria;
         
+        console.log('=== RAW REQUEST BODY ===');
+        console.log('req.body keys:', Object.keys(req.body));
+        console.log('req.body.reportType:', req.body.reportType);
+        console.log('req.body.format:', req.body.format);
+        console.log('req.body.reportData type:', typeof req.body.reportData);
+        console.log('req.body.reportData length:', req.body.reportData ? req.body.reportData.length : 'N/A');
+        console.log('req.body.criteria type:', typeof req.body.criteria);
+        
         if (req.body.reportData && typeof req.body.reportData === 'string') {
             // Form data - parse JSON strings
             reportType = req.body.reportType;
             format = req.body.format;
-            reportData = JSON.parse(req.body.reportData);
-            criteria = req.body.criteria ? JSON.parse(req.body.criteria) : {};
+            
+            let parsedData;
+            try {
+                parsedData = JSON.parse(req.body.reportData);
+                console.log('Parsed reportData successfully');
+                console.log('Parsed data type:', typeof parsedData);
+                console.log('Parsed data is array:', Array.isArray(parsedData));
+                console.log('Parsed data keys:', parsedData && typeof parsedData === 'object' ? Object.keys(parsedData) : 'N/A');
+            } catch (e) {
+                console.error('Error parsing reportData JSON:', e);
+                return res.status(400).json({ ok: false, error: 'Invalid reportData JSON: ' + e.message });
+            }
+            
+            // Extract report array and criteria from { report: [...], criteria: {...} } structure
+            if (Array.isArray(parsedData)) {
+                reportData = parsedData;
+                console.log('reportData is direct array, length:', reportData.length);
+            } else if (parsedData && typeof parsedData === 'object') {
+                // Structure: { report: [...], criteria: {...} }
+                reportData = parsedData.report;
+                console.log('Extracted report from object, length:', reportData ? reportData.length : 'N/A');
+                
+                // Extract criteria from parsedData if it exists
+                if (parsedData.criteria) {
+                    criteria = parsedData.criteria;
+                    console.log('Extracted criteria from parsedData');
+                }
+            } else {
+                console.error('Unexpected parsedData structure:', typeof parsedData);
+                return res.status(400).json({ ok: false, error: 'Invalid reportData structure' });
+            }
+            
+            // Also check req.body.criteria (form field)
+            if (req.body.criteria) {
+                try {
+                    const parsedCriteria = typeof req.body.criteria === 'string' ? JSON.parse(req.body.criteria) : req.body.criteria;
+                    criteria = { ...(criteria || {}), ...parsedCriteria };
+                    console.log('Merged criteria from form field');
+                } catch (e) {
+                    console.warn('Could not parse criteria from form field:', e);
+                    // If not JSON, use as is
+                    if (typeof req.body.criteria === 'object') {
+                        criteria = { ...(criteria || {}), ...req.body.criteria };
+                    }
+                }
+            }
+            
+            // If no criteria found, use empty object
+            if (!criteria) criteria = {};
+            
+            console.log('Final reportData type:', typeof reportData);
+            console.log('Final reportData is array:', Array.isArray(reportData));
+            console.log('Final reportData length:', Array.isArray(reportData) ? reportData.length : 'N/A');
         } else {
             // JSON data
-            ({ reportType, format, reportData, criteria } = req.body);
+            ({ reportType, format, criteria } = req.body);
+            const rawData = req.body.reportData;
+            // Extract report array from { report: [...] } structure
+            if (Array.isArray(rawData)) {
+                reportData = rawData;
+            } else {
+                reportData = rawData?.report || rawData;
+                // Extract criteria from rawData if it exists
+                if (rawData?.criteria) {
+                    criteria = { ...(criteria || {}), ...rawData.criteria };
+                }
+            }
         }
 
-        if (!reportType || !format || !reportData) {
-            return res.status(400).json({ ok: false, error: 'reportType, format, and reportData are required' });
+        console.log('=== EXPORT PARSING RESULT ===');
+        console.log('reportType:', reportType);
+        console.log('format:', format);
+        console.log('criteria:', criteria);
+        console.log('reportData type:', typeof reportData);
+        console.log('reportData is array:', Array.isArray(reportData));
+        console.log('reportData length:', Array.isArray(reportData) ? reportData.length : 'N/A');
+
+        if (!reportType || !format) {
+            console.error('Missing reportType or format');
+            return res.status(400).json({ ok: false, error: 'reportType and format are required' });
+        }
+
+        if (!reportData) {
+            console.error('Missing reportData');
+            return res.status(400).json({ ok: false, error: 'reportData is required' });
+        }
+
+        // Ensure reportData is an array
+        if (!Array.isArray(reportData)) {
+            console.error('reportData is not an array:', typeof reportData);
+            console.error('reportData value:', reportData);
+            return res.status(400).json({ ok: false, error: 'reportData must be an array. Received: ' + typeof reportData });
+        }
+
+        if (reportData.length === 0) {
+            console.warn('reportData is empty array');
         }
 
         const titles = {
@@ -930,6 +1269,10 @@ router.post('/export', async (req, res) => {
         console.log('Report Type:', reportType);
         console.log('Format:', format);
         console.log('Title being used:', title);
+        console.log('Criteria:', criteria);
+        console.log('Report Data Type:', typeof reportData);
+        console.log('Report Data Is Array:', Array.isArray(reportData));
+        console.log('Report Data Length:', Array.isArray(reportData) ? reportData.length : 'N/A');
         console.log('Report Data Sample:', Array.isArray(reportData) && reportData.length > 0 ? JSON.stringify(reportData[0], null, 2) : 'No data');
 
         if (format === 'csv') {
@@ -960,15 +1303,100 @@ router.post('/export', async (req, res) => {
             // For PDF, return HTML that can be printed
             // In production, you might want to use a library like puppeteer or pdfkit
             console.log('Generating PDF with title:', title, 'for reportType:', reportType);
-            // Extract headerInfo if data is in new format
+            // Extract headerInfo and criteria if data is in new format
             let headerInfo = null;
-            if (reportData && !Array.isArray(reportData) && reportData.headerInfo) {
-                headerInfo = reportData.headerInfo;
+            let extractedCriteria = criteria || {};
+            
+            // Check if reportData is an object with nested structure
+            if (reportData && !Array.isArray(reportData) && typeof reportData === 'object') {
+                if (reportData.headerInfo) {
+                    headerInfo = reportData.headerInfo;
+                }
+                if (reportData.criteria) {
+                    extractedCriteria = { ...extractedCriteria, ...reportData.criteria };
+                }
+                // Extract the actual report array
                 reportData = reportData.report || reportData;
             } else if (req.body.headerInfo) {
-                headerInfo = req.body.headerInfo;
+                headerInfo = typeof req.body.headerInfo === 'string' ? JSON.parse(req.body.headerInfo) : req.body.headerInfo;
             }
-            const html = generatePDFHTML(reportData, title, reportType, criteria || {}, headerInfo);
+            
+            // For maintenance reports, extract headerInfo from criteria and first item
+            if (reportType === 'maintenance' && Array.isArray(reportData) && reportData.length > 0) {
+                const firstItem = reportData[0];
+                
+                // Build headerInfo if not already set
+                if (!headerInfo) {
+                    headerInfo = {
+                        companyName: title,
+                        branch: firstItem.branch || extractedCriteria.branch || '-',
+                        location: firstItem.location || extractedCriteria.location || '-',
+                        itemName: firstItem.itemName || extractedCriteria.itemName || '-',
+                        month: firstItem.month || 'NOV',
+                        year: extractedCriteria.year || firstItem.year || new Date().getFullYear(),
+                        frequency: extractedCriteria.frequency || firstItem.frequency || 'Monthly'
+                    };
+                } else {
+                    // Merge with first item data if headerInfo exists but missing fields
+                    headerInfo = {
+                        companyName: headerInfo.companyName || title,
+                        branch: headerInfo.branch || firstItem.branch || extractedCriteria.branch || '-',
+                        location: headerInfo.location || firstItem.location || extractedCriteria.location || '-',
+                        itemName: headerInfo.itemName || firstItem.itemName || extractedCriteria.itemName || '-',
+                        month: headerInfo.month || firstItem.month || 'NOV',
+                        year: headerInfo.year || extractedCriteria.year || firstItem.year || new Date().getFullYear(),
+                        frequency: headerInfo.frequency || extractedCriteria.frequency || firstItem.frequency || 'Monthly'
+                    };
+                }
+            }
+            
+            console.log('=== PDF EXPORT DEBUG ===');
+            console.log('headerInfo:', JSON.stringify(headerInfo, null, 2));
+            console.log('extractedCriteria:', JSON.stringify(extractedCriteria, null, 2));
+            console.log('reportData type:', typeof reportData);
+            console.log('reportData is array:', Array.isArray(reportData));
+            console.log('reportData length:', Array.isArray(reportData) ? reportData.length : 'N/A');
+            if (Array.isArray(reportData) && reportData.length > 0) {
+                console.log('First item keys:', Object.keys(reportData[0]));
+                console.log('First item has schedule:', !!reportData[0].schedule);
+                console.log('First item sample:', JSON.stringify(reportData[0], null, 2));
+            } else {
+                console.error('ERROR: reportData is empty or not an array!');
+                console.error('reportData value:', reportData);
+                console.error('req.body:', JSON.stringify(req.body, null, 2));
+            }
+            
+            // Only generate PDF if we have data
+            if (!Array.isArray(reportData) || reportData.length === 0) {
+                const errorHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Export Error</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
+    .error { color: red; font-size: 18px; margin: 20px 0; }
+    .debug { font-size: 12px; color: #666; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Export Error</h1>
+  <p class="error">No data available to export.</p>
+  <p>Please generate a report with data first, then try exporting again.</p>
+  <div class="debug">
+    <p>Debug Info:</p>
+    <p>Report Type: ${reportType || 'N/A'}</p>
+    <p>Format: ${format || 'N/A'}</p>
+    <p>Data Type: ${typeof reportData}</p>
+    <p>Data Length: ${Array.isArray(reportData) ? reportData.length : 'N/A'}</p>
+  </div>
+</body>
+</html>`;
+                res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                return res.send(errorHtml);
+            }
+            
+            const html = generatePDFHTML(reportData, title, reportType, extractedCriteria, headerInfo);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.send(html);
         } else {
@@ -999,8 +1427,9 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
     const logoPath = '/images/logo_dm.png';
     
     // Get header info for checklist/maintenance reports
-    let headerInfo = null;
-        if (reportType === 'maintenance' && Array.isArray(data) && data.length > 0) {
+    // Use passed headerInfo if available, otherwise extract from data
+    let headerInfo = headerInfoFromRequest;
+    if (!headerInfo && reportType === 'maintenance' && Array.isArray(data) && data.length > 0) {
         const firstItem = data[0];
         const titles = {
             'asset': 'Asset Report',
@@ -1009,12 +1438,12 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
         };
         headerInfo = {
             companyName: titles[reportType] || 'Report',
-            branch: firstItem.branch || '-',
-            location: firstItem.location || '-',
-            itemName: firstItem.itemName || '-',
+            branch: firstItem.branch || criteria.branch || '-',
+            location: firstItem.location || criteria.location || '-',
+            itemName: firstItem.itemName || criteria.itemName || '-',
             month: firstItem.month || 'NOV',
-            year: firstItem.year || new Date().getFullYear(),
-            frequency: firstItem.frequency || 'Monthly'
+            year: criteria.year || firstItem.year || new Date().getFullYear(),
+            frequency: criteria.frequency || firstItem.frequency || 'Monthly'
         };
     }
     
@@ -1209,7 +1638,11 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
     <div class="header-left">
       <img src="${logoPath}" alt="PKT Logo" class="header-logo" onerror="this.style.display='none'">
       <div class="header-text">
-        <div class="company-name">${escapeHtml(title)}</div>
+        <div style="font-size: 9px; color: #666; margin-top: 4px;">
+          <span>Form No: PKT-FR71</span> | 
+          <span>Revision No: 02</span> | 
+          <span>Effective Date: 28 JUL 2025</span>
+        </div>
       </div>
     </div>
     <div class="header-right">
@@ -1221,30 +1654,34 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
     if (headerInfo) {
         html += `
   <div class="checklist-info">
-    <div class="checklist-info-grid">
+    <div class="checklist-info-grid" style="grid-template-columns: repeat(3, 1fr);">
       <div class="checklist-info-item">
-        <span class="checklist-info-label">BRANCH:</span>
-        <span>${escapeHtml(headerInfo.branch)}</span>
+        <span class="checklist-info-label">Name:</span>
+        <span>PKT LOGISTICS(M) SDN BHD</span>
       </div>
       <div class="checklist-info-item">
-        <span class="checklist-info-label">LOCATION:</span>
-        <span>${escapeHtml(headerInfo.location)}</span>
+        <span class="checklist-info-label">Location:</span>
+        <span>${escapeHtml(headerInfo.location || 'HQ - SHAH ALAM, LOT 10')}</span>
       </div>
       <div class="checklist-info-item">
-        <span class="checklist-info-label">ITEM NAME:</span>
-        <span>${escapeHtml(headerInfo.itemName)}</span>
+        <span class="checklist-info-label">Room:</span>
+        <span>SERVER ROOM</span>
       </div>
       <div class="checklist-info-item">
-        <span class="checklist-info-label">MONTH:</span>
-        <span>${escapeHtml(headerInfo.month)}</span>
+        <span class="checklist-info-label">Item Name:</span>
+        <span style="color: #dc2626; font-weight: 600;">${escapeHtml(headerInfo.itemName)}</span>
       </div>
       <div class="checklist-info-item">
-        <span class="checklist-info-label">YEAR:</span>
-        <span>${escapeHtml(headerInfo.year)}</span>
+        <span class="checklist-info-label">Month:</span>
+        <span>${escapeHtml(headerInfo.month || 'NOV')}</span>
+      </div>
+      <div class="checklist-info-item">
+        <span class="checklist-info-label">Year:</span>
+        <span>${escapeHtml(headerInfo.year || new Date().getFullYear())}</span>
       </div>
     </div>
     <div class="checklist-check">
-      <span class="checklist-info-label">CHECK:</span>
+      <span class="checklist-info-label">Checklist Frequency:</span>
       <div class="check-option">
         <span class="check-box ${headerInfo.frequency === 'Weekly' ? 'checked' : ''}">${headerInfo.frequency === 'Weekly' ? '✓' : ''}</span>
         <span>Weekly</span>
@@ -1263,6 +1700,24 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
     
     html += `  <h1>${escapeHtml(title)}</h1>`;
 
+    // Debug logging
+    console.log('=== PDF HTML DATA CHECK ===');
+    console.log('Data type:', typeof data);
+    console.log('Is array:', Array.isArray(data));
+    console.log('Data length:', Array.isArray(data) ? data.length : 'N/A');
+    console.log('Report Type:', reportType);
+    if (Array.isArray(data) && data.length > 0) {
+        console.log('Data sample:', JSON.stringify(data[0], null, 2));
+        console.log('First Item Keys:', Object.keys(data[0]));
+        console.log('First Item Schedule:', data[0].schedule ? 'Has schedule' : 'No schedule');
+        if (data[0].schedule) {
+            console.log('Schedule type:', typeof data[0].schedule);
+            console.log('Schedule keys:', Object.keys(data[0].schedule));
+        }
+    } else {
+        console.log('No data or not an array');
+    }
+
     if (Array.isArray(data) && data.length > 0) {
         // Check if data has checklist structure (has schedule property with month/period structure)
         const hasChecklistStructure = data.some(item => 
@@ -1273,23 +1728,28 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
         console.log('=== PDF GENERATION CHECK ===');
         console.log('Report Type:', reportType);
         console.log('Has Checklist Structure:', hasChecklistStructure);
-        console.log('First Item Keys:', data[0] ? Object.keys(data[0]) : 'No data');
-        console.log('First Item Schedule:', data[0] && data[0].schedule ? 'Has schedule' : 'No schedule');
         
         // For maintenance/checklist reports, ALWAYS use checklist format
         // Maintenance reports should always display as checklist table
         if (reportType === 'maintenance') {
             // Special formatting for checklist/maintenance report with colored date squares
-            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-            html += '<table><thead><tr>';
-            html += '<th>NO</th><th>INSPECTION HARDWARE</th>';
+            // Match exact format from image: First row has "INSPECTION HARDWARE" and month names
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            html += '<table><thead>';
+            // First header row: "INSPECTION HARDWARE" and month names (exactly as in image)
+            html += '<tr>';
+            html += '<th rowspan="2" style="width: 40px; text-align: center; vertical-align: middle;">NO</th>';
+            html += '<th rowspan="2" style="width: 250px; text-align: left; vertical-align: middle; padding-left: 8px;">INSPECTION HARDWARE</th>';
             months.forEach(month => {
-                html += `<th colspan="4">${month}</th>`;
+                html += `<th colspan="4" style="text-align: center; font-weight: 700; font-size: 10px; vertical-align: middle;">${month}</th>`;
             });
-            html += '</tr><tr><th></th><th></th>';
+            html += '</tr>';
+            // Second header row: period numbers (1, 2, 3, 4) under each month
+            html += '<tr>';
             for (let i = 0; i < 12; i++) {
                 for (let p = 1; p <= 4; p++) {
-                    html += `<th>${p}</th>`;
+                    html += `<th style="text-align: center; font-weight: 600; font-size: 9px; vertical-align: middle;">${p}</th>`;
                 }
             }
             html += '</tr></thead><tbody>';
@@ -1307,42 +1767,54 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
                 
                 tasks.forEach(task => {
                     html += '<tr>';
-                    html += `<td>${rowNum}</td>`;
-                    html += `<td>${escapeHtml(task || '-')}</td>`;
+                    html += `<td style="text-align: center; font-weight: 600;">${rowNum}</td>`;
+                    html += `<td style="text-align: left; padding-left: 8px;">${escapeHtml(task || '-')}</td>`;
                     
                     for (let month = 1; month <= 12; month++) {
                         for (let period = 1; period <= 4; period++) {
                             if (schedule[month] && schedule[month][period]) {
                                 const dates = schedule[month][period];
-                                html += '<td style="text-align: center; padding: 2px; white-space: nowrap; font-size: 0;">';
+                                html += '<td style="text-align: center; padding: 4px; vertical-align: middle;">';
                                 
                                 if (Array.isArray(dates) && dates.length > 0) {
                                     // Check if dates are objects with day and class
                                     const firstDate = dates[0];
                                     if (typeof firstDate === 'object' && firstDate.day) {
                                         // New format: dates are objects with {day, class}
-                                        dates.forEach(dateObj => {
+                                        dates.forEach((dateObj, idx) => {
                                             let bgColor, textColor, borderColor;
+                                            // Match checklist colors exactly: green for completed, red for fault, black for pending, grey for upcoming
                                             if (dateObj.class === 'completed') {
-                                                bgColor = '#16a34a';
-                                                textColor = '#ffffff';
+                                                bgColor = '#16a34a'; // Green background
+                                                textColor = '#ffffff'; // White text
+                                                borderColor = '#15803d';
+                                            } else if (dateObj.class === 'fault') {
+                                                bgColor = '#dc2626'; // Red background
+                                                textColor = '#ffffff'; // White text
+                                                borderColor = '#b91c1c';
                                             } else if (dateObj.class === 'pending') {
-                                                bgColor = '#fef3c7';
-                                                textColor = '#92400e';
+                                                bgColor = '#000000'; // Black background
+                                                textColor = '#ffffff'; // White text
+                                                borderColor = '#000000';
                                             } else if (dateObj.class === 'upcoming') {
-                                                bgColor = '#dc2626';
+                                                bgColor = '#9ca3af'; // Grey background
+                                                textColor = '#000000'; // Black text
+                                                borderColor = '#9ca3af';
+                                            } else {
+                                                bgColor = '#000000'; // Default: black for pending
                                                 textColor = '#ffffff';
-                                } else {
-                                                bgColor = '#f3f4f6';
-                                                textColor = '#374151';
+                                                borderColor = '#000000';
                                             }
                                             
-                                            html += `<span style="display: inline-block; width: 16px; height: 16px; background: ${bgColor}; color: ${textColor}; border-radius: 2px; text-align: center; line-height: 16px; font-size: 8px; font-weight: 600; margin: 0; vertical-align: middle;">${escapeHtml(dateObj.day)}</span>`;
+                                            // Add spacing between multiple dates in same cell
+                                            const marginRight = idx < dates.length - 1 ? '3px' : '0';
+                                            html += `<span style="display: inline-block; width: 22px; height: 22px; background: ${bgColor}; color: ${textColor}; border: 1px solid ${borderColor}; border-radius: 2px; text-align: center; line-height: 22px; font-size: 10px; font-weight: 600; margin-right: ${marginRight}; vertical-align: middle;">${escapeHtml(dateObj.day)}</span>`;
                                         });
                                     } else {
-                                        // Old format: dates are just strings
-                                        dates.forEach(date => {
-                                            html += `<span style="display: inline-block; width: 16px; height: 16px; background: #fef3c7; color: #92400e; border-radius: 2px; text-align: center; line-height: 16px; font-size: 8px; font-weight: 600; margin: 0; vertical-align: middle;">${escapeHtml(String(date))}</span>`;
+                                        // Old format: dates are just strings - display as normal (black text on white)
+                                        dates.forEach((date, idx) => {
+                                            const marginRight = idx < dates.length - 1 ? '3px' : '0';
+                                            html += `<span style="display: inline-block; width: 22px; height: 22px; background: #ffffff; color: #000000; border: 1px solid #000000; border-radius: 2px; text-align: center; line-height: 22px; font-size: 10px; font-weight: 600; margin-right: ${marginRight}; vertical-align: middle;">${escapeHtml(String(date))}</span>`;
                                         });
                                     }
                                 } else {
@@ -1351,7 +1823,7 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
                                 
                                 html += '</td>';
                             } else {
-                                html += '<td></td>';
+                                html += '<td style="padding: 4px;"></td>';
                             }
                         }
                     }
@@ -1413,20 +1885,36 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
     </div>
   </div>`;
             
-            // Create table with specific columns
+            // Create table with specific columns (including Task)
             html += '<table><thead><tr>';
+            html += '<th>Task</th>';
             html += '<th>Asset ID</th>';
             html += '<th>Asset Name</th>';
             html += '<th>Serial Number</th>';
             html += '<th>Inspection Date</th>';
             html += '<th>Status</th>';
             html += '<th>Remarks</th>';
+            html += '<th>Inspector</th>';
             html += '</tr></thead><tbody>';
             
-            let rowNum = 1;
-            data.forEach(item => {
+            let currentTask = '';
+            data.forEach((item, index) => {
+                const isTotalRow = item['Task'] === 'TOTAL';
+                
                 html += '<tr>';
-                html += `<td>${rowNum}</td>`;
+                if (isTotalRow) {
+                    html += `<td style="background: #f1f3f5; font-weight: 700;">${escapeHtml(item['Task'] || '-')}</td>`;
+                } else {
+                    // Only show task name if different from previous
+                    if (item['Task'] !== currentTask) {
+                        html += `<td style="font-weight: 600;">${escapeHtml(item['Task'] || '-')}</td>`;
+                        currentTask = item['Task'];
+                    } else {
+                        html += '<td></td>'; // Empty for same task
+                    }
+                }
+                
+                html += `<td>${escapeHtml(item['Asset ID'] || '-')}</td>`;
                 html += `<td>${escapeHtml(item['Asset Name'] || '-')}</td>`;
                 html += `<td>${escapeHtml(item['Serial Number'] || '-')}</td>`;
                 html += `<td>${escapeHtml(item['Inspection Date'] || '-')}</td>`;
@@ -1438,10 +1926,15 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
                 else if (status === 'Attention') statusColor = '#f59e0b';
                 else if (status === 'Faulty') statusColor = '#dc2626';
                 
-                html += `<td style="color: ${statusColor}; font-weight: 600;">${escapeHtml(status)}</td>`;
+                if (isTotalRow) {
+                    html += `<td style="background: #f1f3f5; font-weight: 700;">${escapeHtml(status)}</td>`;
+                } else {
+                    html += `<td style="color: ${statusColor}; font-weight: 600;">${escapeHtml(status)}</td>`;
+                }
+                
                 html += `<td>${escapeHtml(item['Remarks'] || '-')}</td>`;
+                html += `<td>${escapeHtml(item['Inspector'] || '-')}</td>`;
                 html += '</tr>';
-                rowNum++;
             });
             
             html += '</tbody></table>';
@@ -1465,7 +1958,8 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
             html += '</tbody></table>';
         }
     } else {
-        html += '<p>No data available</p>';
+        html += '<p style="color: red; font-weight: bold; padding: 20px; text-align: center;">No data available for export.</p>';
+        html += '<p style="text-align: center; color: #666;">Please generate a report with data first.</p>';
     }
 
     html += `<div class="footer">Total Records: ${Array.isArray(data) ? data.length : 0}</div>

@@ -4,6 +4,10 @@
 let currentMaintenance = null;
 let currentTaskText = '';
 let maintenanceAssets = [];
+let currentTaskSchedule = null; // Store the task-specific schedule
+let allScheduledDates = []; // Store all scheduled dates
+let currentDisplayMonth = new Date().getMonth(); // Current month being displayed (0-11)
+let currentDisplayYear = new Date().getFullYear(); // Current year being displayed
 
 // Get URL parameters
 const urlParams = new URLSearchParams(window.location.search);
@@ -49,22 +53,916 @@ async function loadTaskDetails() {
       taskTitle.textContent = currentTaskText;
     }
 
-    // Set back link
+    // Load task-specific schedule from inspection_tasks collection
+    await loadTaskSchedule();
+
+    // Set back link - always go back to maintenance checklist
     const backLink = document.getElementById('back-link');
     if (backLink && currentMaintenance) {
-      const backUrl = `maintenance_checklist_draft.html?id=${encodeURIComponent(currentMaintenance._id)}&branch=${encodeURIComponent(currentMaintenance.branch)}&location=${encodeURIComponent(currentMaintenance.location)}&itemName=${encodeURIComponent(currentMaintenance.itemName)}&frequency=${encodeURIComponent(currentMaintenance.frequency)}`;
-      backLink.href = backUrl;
+      backLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Always go back to maintenance checklist draft page
+        const backUrl = `maintenance_checklist_draft.html?id=${encodeURIComponent(currentMaintenance._id)}&branch=${encodeURIComponent(currentMaintenance.branch)}&location=${encodeURIComponent(currentMaintenance.location)}&itemName=${encodeURIComponent(currentMaintenance.itemName)}&frequency=${encodeURIComponent(currentMaintenance.frequency)}`;
+        window.location.href = backUrl;
+      });
     }
 
-    // Load assets
-    await loadAssets();
+    // Load dates from schedule and display them
+    await loadAndDisplayDates();
   } catch (error) {
     console.error('Error loading task details:', error);
     document.body.innerHTML = `<div style="padding: 2rem; text-align: center;"><h1>Error</h1><p>${error.message || 'Failed to load task details'}</p><a href="maintenance_checklist_draft.html">← Back</a></div>`;
   }
 }
 
-// Load assets based on locationDescription matching taskName
+// Load task-specific schedule from inspection_tasks collection
+async function loadTaskSchedule() {
+  try {
+    if (!maintenanceId || !currentTaskText) {
+      console.log('No maintenanceId or taskText, using maintenance schedule');
+      currentTaskSchedule = currentMaintenance?.maintenanceSchedule || {};
+      return;
+    }
+
+    console.log(`Loading schedule for task: "${currentTaskText}" from inspection_tasks collection`);
+    
+    // Load schedule from inspection_tasks collection
+    const response = await fetch(`/api/maintenance/inspection-task?maintenanceId=${encodeURIComponent(maintenanceId)}&taskName=${encodeURIComponent(currentTaskText)}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.ok && data.task && data.task.schedule) {
+        currentTaskSchedule = data.task.schedule;
+        console.log('✓ Loaded task-specific schedule from inspection_tasks:', currentTaskSchedule);
+      } else {
+        // Fallback to maintenance schedule if task-specific schedule not found
+        console.log('No task-specific schedule found, using maintenance schedule');
+        currentTaskSchedule = currentMaintenance?.maintenanceSchedule || {};
+      }
+    } else {
+      // Fallback to maintenance schedule if API fails
+      console.warn('Failed to load task schedule, using maintenance schedule');
+      currentTaskSchedule = currentMaintenance?.maintenanceSchedule || {};
+    }
+  } catch (error) {
+    console.error('Error loading task schedule:', error);
+    // Fallback to maintenance schedule
+    currentTaskSchedule = currentMaintenance?.maintenanceSchedule || {};
+  }
+}
+
+// Extract all dates from schedule
+function extractDatesFromSchedule(schedule, frequency) {
+  const dates = [];
+  if (!schedule || typeof schedule !== 'object') {
+    return dates;
+  }
+  
+  const currentYear = new Date().getFullYear();
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  if (frequency === 'Weekly') {
+    months.forEach(month => {
+      if (schedule[month] && typeof schedule[month] === 'object') {
+        Object.values(schedule[month]).forEach(dateStr => {
+          if (dateStr) {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+              dates.push(date);
+            }
+          }
+        });
+      }
+    });
+  } else if (frequency === 'Monthly') {
+    months.forEach(month => {
+      if (schedule[month]) {
+        const date = new Date(schedule[month]);
+        if (!isNaN(date.getTime())) {
+          dates.push(date);
+        }
+      }
+    });
+  } else if (frequency === 'Quarterly') {
+    const quarters = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+    quarters.forEach(quarter => {
+      if (schedule[quarter]) {
+        const date = new Date(schedule[quarter]);
+        if (!isNaN(date.getTime())) {
+          dates.push(date);
+        }
+      }
+    });
+  }
+  
+  // Sort dates chronologically
+  dates.sort((a, b) => a - b);
+  return dates;
+}
+
+// Load and display dates from schedule
+async function loadAndDisplayDates() {
+  const assetsTableWrapper = document.getElementById('assets-table-wrapper');
+  if (!assetsTableWrapper) {
+    console.error('assets-table-wrapper element not found');
+    return;
+  }
+  
+  // Get schedule to use
+  const scheduleToUse = currentTaskSchedule || currentMaintenance?.maintenanceSchedule || {};
+  const frequency = currentMaintenance?.frequency || 'Weekly';
+  
+  // Extract all dates from schedule
+  allScheduledDates = extractDatesFromSchedule(scheduleToUse, frequency);
+  
+  if (allScheduledDates.length === 0) {
+    assetsTableWrapper.innerHTML = `
+      <div class="no-assets">
+        <p>No scheduled dates found for this inspection task.</p>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">Please add dates to the schedule using the edit button.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Set initial display month/year to the first scheduled date or current month
+  if (allScheduledDates.length > 0) {
+    const firstDate = allScheduledDates[0];
+    currentDisplayMonth = firstDate.getMonth();
+    currentDisplayYear = firstDate.getFullYear();
+  } else {
+    const now = new Date();
+    currentDisplayMonth = now.getMonth();
+    currentDisplayYear = now.getFullYear();
+  }
+  
+  // Load inspection data for all dates
+  await loadInspectionDataForDates(allScheduledDates);
+  
+  // Display calendar for current month
+  displayCalendarForMonth();
+}
+
+// Load inspection data for all dates
+async function loadInspectionDataForDates(dates) {
+  if (!maintenanceId || !currentTaskText) {
+    return;
+  }
+  
+  try {
+    // First, load all assets to find which ones match this task
+    const assetsResp = await fetch('/api/assets/list');
+    let matchingAssetIds = [];
+    
+    if (assetsResp.ok) {
+      const assetsData = await assetsResp.json();
+      if (assetsData.ok && assetsData.assets) {
+        // Find assets where locationDescription matches task name
+        const matchingAssets = assetsData.assets.filter(asset => {
+          const assetLocation = asset.locationDescription || '';
+          return assetLocation.trim() === currentTaskText.trim();
+        });
+        matchingAssetIds = matchingAssets.map(asset => asset.assetId);
+        console.log(`Found ${matchingAssetIds.length} asset(s) matching task "${currentTaskText}"`);
+      }
+    }
+    
+    // Load all maintenance assets for this maintenance item
+    const response = await fetch(`/api/maintenance/assets?maintenanceId=${encodeURIComponent(maintenanceId)}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.ok && data.assets) {
+        // Store inspection data by date - ONLY for assets matching this task
+        window.inspectionDataByDate = window.inspectionDataByDate || {};
+        
+        dates.forEach(date => {
+          const dateKey = formatDateForStorage(date);
+          window.inspectionDataByDate[dateKey] = [];
+          
+          // Filter inspections for this date AND this task's assets only
+          data.assets.forEach(ma => {
+            // Only include inspections for assets that match this task
+            if (matchingAssetIds.length === 0 || matchingAssetIds.includes(ma.assetId)) {
+              if (ma.inspectionDate) {
+                const inspectionDate = new Date(ma.inspectionDate);
+                const inspectionDateKey = formatDateForStorage(inspectionDate);
+                
+                if (inspectionDateKey === dateKey) {
+                  // Debug: Log what we're receiving from the API
+                  console.log(`Raw data from API for ${ma.assetId}:`, {
+                    assetId: ma.assetId,
+                    status: ma.status,
+                    inspectionStatus: ma.inspectionStatus,
+                    fullObject: ma
+                  });
+                  
+                  // Ensure all MaintenanceAsset fields are included, especially 'status'
+                  // The 'status' field should be 'normal' or 'fault' from MaintenanceAsset
+                  const inspectionData = {
+                    assetId: ma.assetId,
+                    inspectionStatus: ma.inspectionStatus || 'pending',
+                    status: ma.status || 'normal', // This is the fault condition: 'normal' or 'fault'
+                    inspectionDate: ma.inspectionDate,
+                    inspectionNotes: ma.inspectionNotes,
+                    inspectorId: ma.inspectorId,
+                    inspectorName: ma.inspectorName,
+                    solved: ma.solved,
+                    createdAt: ma.createdAt,
+                    updatedAt: ma.updatedAt
+                  };
+                  
+                  console.log(`Created inspection data for ${ma.assetId} on ${dateKey}:`, {
+                    status: inspectionData.status,
+                    inspectionStatus: inspectionData.inspectionStatus,
+                    fullData: inspectionData
+                  });
+                  
+                  window.inspectionDataByDate[dateKey].push(inspectionData);
+                }
+              }
+            }
+          });
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error loading inspection data:', error);
+  }
+}
+
+// Display calendar for current month
+function displayCalendarForMonth() {
+  const assetsTableWrapper = document.getElementById('assets-table-wrapper');
+  if (!assetsTableWrapper) {
+    return;
+  }
+  
+  if (allScheduledDates.length === 0) {
+    assetsTableWrapper.innerHTML = `
+      <div class="no-assets">
+        <p>No scheduled dates found for this inspection task.</p>
+        <p style="margin-top: 0.5rem; font-size: 0.875rem; color: #6b7280;">Please add dates to the schedule using the edit button.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Filter dates for current month
+  const datesForMonth = allScheduledDates.filter(date => {
+    return date.getFullYear() === currentDisplayYear && date.getMonth() === currentDisplayMonth;
+  });
+  
+  // Get available years and months from scheduled dates
+  const availableYears = [...new Set(allScheduledDates.map(d => d.getFullYear()))].sort();
+  const availableMonths = [...new Set(allScheduledDates
+    .filter(d => d.getFullYear() === currentDisplayYear)
+    .map(d => d.getMonth()))].sort();
+  
+  // Generate calendar HTML (async)
+  generateMonthCalendarWithNavigation(
+    currentDisplayYear, 
+    currentDisplayMonth, 
+    datesForMonth,
+    availableYears,
+    availableMonths
+  ).then(calendarHTML => {
+    assetsTableWrapper.innerHTML = `
+      <div class="calendar-container">
+        ${calendarHTML}
+      </div>
+    `;
+  });
+}
+
+// Navigate to previous month
+window.navigatePreviousMonth = function() {
+  currentDisplayMonth--;
+  if (currentDisplayMonth < 0) {
+    currentDisplayMonth = 11;
+    currentDisplayYear--;
+  }
+  displayCalendarForMonth();
+};
+
+// Navigate to next month
+window.navigateNextMonth = function() {
+  currentDisplayMonth++;
+  if (currentDisplayMonth > 11) {
+    currentDisplayMonth = 0;
+    currentDisplayYear++;
+  }
+  displayCalendarForMonth();
+};
+
+// Change year
+window.changeYear = function(year) {
+  currentDisplayYear = parseInt(year);
+  // Find first available month in the new year, or use current month if available
+  const monthsInYear = [...new Set(allScheduledDates
+    .filter(d => d.getFullYear() === currentDisplayYear)
+    .map(d => d.getMonth()))].sort();
+  
+  if (monthsInYear.length > 0) {
+    currentDisplayMonth = monthsInYear[0];
+  }
+  displayCalendarForMonth();
+};
+
+// Generate calendar for a specific month with navigation
+async function generateMonthCalendarWithNavigation(year, month, scheduledDates, availableYears, availableMonths) {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Get first day of month and number of days
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay();
+  
+  // Check if previous/next month navigation is available
+  const hasPreviousMonth = allScheduledDates.some(d => {
+    let prevMonth = month - 1;
+    let prevYear = year;
+    if (prevMonth < 0) {
+      prevMonth = 11;
+      prevYear--;
+    }
+    return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+  });
+  
+  const hasNextMonth = allScheduledDates.some(d => {
+    let nextMonth = month + 1;
+    let nextYear = year;
+    if (nextMonth > 11) {
+      nextMonth = 0;
+      nextYear++;
+    }
+    return d.getFullYear() === nextYear && d.getMonth() === nextMonth;
+  });
+  
+  // Load assets to match to this task (for filtering inspections)
+  let matchingAssetIds = [];
+  try {
+    const assetsResp = await fetch('/api/assets/list');
+    if (assetsResp.ok) {
+      const assetsData = await assetsResp.json();
+      if (assetsData.ok && assetsData.assets) {
+        const matchingAssets = assetsData.assets.filter(asset => {
+          const assetLocation = asset.locationDescription || '';
+          return assetLocation.trim() === currentTaskText.trim();
+        });
+        matchingAssetIds = matchingAssets.map(asset => asset.assetId);
+        console.log(`Calendar: Found ${matchingAssetIds.length} asset(s) matching task "${currentTaskText}"`);
+      }
+    }
+  } catch (error) {
+    console.warn('Could not load assets for calendar filtering:', error);
+  }
+  
+  // Create a map of scheduled dates for quick lookup
+  const scheduledDatesMap = {};
+  scheduledDates.forEach(date => {
+    const dateKey = formatDateForStorage(date);
+    const allInspections = window.inspectionDataByDate?.[dateKey] || [];
+    
+    // Filter inspections to only those for assets matching THIS task
+    const inspections = matchingAssetIds.length > 0 
+      ? allInspections.filter(inspection => matchingAssetIds.includes(inspection.assetId))
+      : allInspections; // Fallback if assets not loaded yet
+    
+    // Calculate status based on THIS task's inspections only
+    let statusClass = 'pending';
+    let statusText = 'Pending';
+    let inspectionCount = 0;
+    let hasFault = false;
+    
+    // FIRST: Check if date is in the future (upcoming dates should not be clickable)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+    const isUpcomingDate = dateOnly > today;
+    
+    if (isUpcomingDate) {
+      // If date is upcoming, mark as upcoming and don't count inspections
+      statusClass = 'upcoming';
+      statusText = 'Upcoming';
+      inspectionCount = 0;
+    } else if (inspections.length > 0) {
+      // Only process inspections for past/today dates
+      inspectionCount = inspections.length;
+      const faultInspections = inspections.filter(i => i.status === 'fault' || i.status === 'abnormal');
+      const completeInspections = inspections.filter(i => i.inspectionStatus === 'complete');
+      const normalInspections = inspections.filter(i => i.status === 'normal' || (i.status !== 'fault' && i.status !== 'abnormal'));
+      
+      // Priority 1: If ANY inspection has fault, show RED (regardless of completion status)
+      if (faultInspections.length > 0) {
+        statusClass = 'fault';
+        statusText = 'Fault';
+        hasFault = true;
+      } 
+      // Priority 2: If ALL inspections are complete AND all are normal, show GREEN
+      else if (completeInspections.length === inspections.length && normalInspections.length === inspections.length && inspections.length > 0) {
+        statusClass = 'complete';
+        statusText = 'Complete';
+      } 
+      // Otherwise: Pending/In Progress
+      else {
+        statusClass = 'pending';
+        statusText = 'In Progress';
+      }
+    } else {
+      // No inspections and not upcoming - show as pending
+      statusClass = 'pending';
+      statusText = 'Pending';
+    }
+    
+    scheduledDatesMap[dateKey] = {
+      statusClass,
+      statusText,
+      inspectionCount,
+      hasFault,
+      date
+    };
+  });
+  
+  // Generate calendar grid
+  let calendarRows = [];
+  let currentRow = [];
+  
+  // Empty cells for days before month starts
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    currentRow.push('<td class="calendar-day empty"></td>');
+  }
+  
+  // Days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDate = new Date(year, month, day);
+    const dateKey = formatDateForStorage(currentDate);
+    const scheduledDate = scheduledDatesMap[dateKey];
+    
+    let cellHTML = '';
+    if (scheduledDate) {
+      // This date is scheduled - only make it clickable if it's not upcoming
+      const isUpcoming = scheduledDate.statusClass === 'upcoming';
+      const clickHandler = isUpcoming ? '' : `onclick="viewInspectionDetails('${dateKey}')"`;
+      const cursorStyle = isUpcoming ? 'style="cursor: not-allowed;"' : '';
+      cellHTML = `
+        <td class="calendar-day scheduled ${scheduledDate.statusClass}" ${clickHandler} ${cursorStyle}>
+          <div class="calendar-day-number">${day}</div>
+          <div class="calendar-day-status">
+            <span class="status-indicator ${scheduledDate.statusClass}"></span>
+          </div>
+          ${scheduledDate.inspectionCount > 0 ? `<div class="calendar-day-count">${scheduledDate.inspectionCount}</div>` : ''}
+        </td>
+      `;
+    } else {
+      // Regular day (not scheduled)
+      cellHTML = `
+        <td class="calendar-day">
+          <div class="calendar-day-number">${day}</div>
+        </td>
+      `;
+    }
+    
+    currentRow.push(cellHTML);
+    
+    // If we've filled a week (7 days), start a new row
+    if (currentRow.length === 7) {
+      calendarRows.push(`<tr>${currentRow.join('')}</tr>`);
+      currentRow = [];
+    }
+  }
+  
+  // Fill remaining cells to complete the last week
+  if (currentRow.length > 0) {
+    while (currentRow.length < 7) {
+      currentRow.push('<td class="calendar-day empty"></td>');
+    }
+    calendarRows.push(`<tr>${currentRow.join('')}</tr>`);
+  }
+  
+  // Generate year dropdown options
+  const yearOptions = availableYears.map(y => 
+    `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`
+  ).join('');
+  
+  return `
+    <div class="calendar-month">
+      <div class="calendar-month-header">
+        <div class="calendar-nav-left">
+          <button class="calendar-nav-btn" onclick="navigatePreviousMonth()" ${!hasPreviousMonth ? 'disabled' : ''} title="Previous Month">
+            <span>←</span>
+          </button>
+        </div>
+        <div class="calendar-nav-center">
+          <h3>${monthNames[month]}</h3>
+          <select class="calendar-year-select" onchange="changeYear(this.value)">
+            ${yearOptions}
+          </select>
+        </div>
+        <div class="calendar-nav-right">
+          <button class="calendar-nav-btn" onclick="navigateNextMonth()" ${!hasNextMonth ? 'disabled' : ''} title="Next Month">
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+      <table class="calendar-table">
+        <thead>
+          <tr>
+            ${dayNames.map(day => `<th class="calendar-weekday">${day}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${calendarRows.join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Generate calendar for a specific month (kept for backward compatibility)
+async function generateMonthCalendar(year, month, scheduledDates) {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Get first day of month and number of days
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDayOfWeek = firstDay.getDay();
+  
+  // Load assets to match to this task (for filtering inspections)
+  let matchingAssetIds = [];
+  try {
+    const assetsResp = await fetch('/api/assets/list');
+    if (assetsResp.ok) {
+      const assetsData = await assetsResp.json();
+      if (assetsData.ok && assetsData.assets) {
+        const matchingAssets = assetsData.assets.filter(asset => {
+          const assetLocation = asset.locationDescription || '';
+          return assetLocation.trim() === currentTaskText.trim();
+        });
+        matchingAssetIds = matchingAssets.map(asset => asset.assetId);
+        console.log(`Calendar: Found ${matchingAssetIds.length} asset(s) matching task "${currentTaskText}"`);
+      }
+    }
+  } catch (error) {
+    console.warn('Could not load assets for calendar filtering:', error);
+  }
+  
+  // Create a map of scheduled dates for quick lookup
+  const scheduledDatesMap = {};
+  scheduledDates.forEach(date => {
+    const dateKey = formatDateForStorage(date);
+    const allInspections = window.inspectionDataByDate?.[dateKey] || [];
+    
+    // Filter inspections to only those for assets matching THIS task
+    const inspections = matchingAssetIds.length > 0 
+      ? allInspections.filter(inspection => matchingAssetIds.includes(inspection.assetId))
+      : allInspections; // Fallback if assets not loaded
+    
+    // Calculate status based on THIS task's inspections only
+    let statusClass = 'pending';
+    let statusText = 'Pending';
+    let inspectionCount = 0;
+    let hasFault = false;
+    
+    // FIRST: Check if date is in the future (upcoming dates should not be clickable)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+    const isUpcomingDate = dateOnly > today;
+    
+    if (isUpcomingDate) {
+      // If date is upcoming, mark as upcoming and don't count inspections
+      statusClass = 'upcoming';
+      statusText = 'Upcoming';
+      inspectionCount = 0;
+    } else if (inspections.length > 0) {
+      // Only process inspections for past/today dates
+      inspectionCount = inspections.length;
+      const faultInspections = inspections.filter(i => i.status === 'fault' || i.status === 'abnormal');
+      const completeInspections = inspections.filter(i => i.inspectionStatus === 'complete');
+      const normalInspections = inspections.filter(i => i.status === 'normal' || (i.status !== 'fault' && i.status !== 'abnormal'));
+      
+      // Priority 1: If ANY inspection has fault, show RED (regardless of completion status)
+      if (faultInspections.length > 0) {
+        statusClass = 'fault';
+        statusText = 'Fault';
+        hasFault = true;
+      } 
+      // Priority 2: If ALL inspections are complete AND all are normal, show GREEN
+      else if (completeInspections.length === inspections.length && normalInspections.length === inspections.length && inspections.length > 0) {
+        statusClass = 'complete';
+        statusText = 'Complete';
+      } 
+      // Otherwise: Pending/In Progress
+      else {
+        statusClass = 'pending';
+        statusText = 'In Progress';
+      }
+    } else {
+      // No inspections and not upcoming - show as pending
+      statusClass = 'pending';
+      statusText = 'Pending';
+    }
+    
+    scheduledDatesMap[dateKey] = {
+      statusClass,
+      statusText,
+      inspectionCount,
+      hasFault,
+      date
+    };
+  });
+  
+  // Generate calendar grid
+  let calendarRows = [];
+  let currentRow = [];
+  
+  // Empty cells for days before month starts
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    currentRow.push('<td class="calendar-day empty"></td>');
+  }
+  
+  // Days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDate = new Date(year, month, day);
+    const dateKey = formatDateForStorage(currentDate);
+    const scheduledDate = scheduledDatesMap[dateKey];
+    
+    let cellHTML = '';
+    if (scheduledDate) {
+      // This date is scheduled - only make it clickable if it's not upcoming
+      const isUpcoming = scheduledDate.statusClass === 'upcoming';
+      const clickHandler = isUpcoming ? '' : `onclick="viewInspectionDetails('${dateKey}')"`;
+      const cursorStyle = isUpcoming ? 'style="cursor: not-allowed;"' : '';
+      cellHTML = `
+        <td class="calendar-day scheduled ${scheduledDate.statusClass}" ${clickHandler} ${cursorStyle}>
+          <div class="calendar-day-number">${day}</div>
+          <div class="calendar-day-status">
+            <span class="status-indicator ${scheduledDate.statusClass}"></span>
+          </div>
+          ${scheduledDate.inspectionCount > 0 ? `<div class="calendar-day-count">${scheduledDate.inspectionCount}</div>` : ''}
+        </td>
+      `;
+    } else {
+      // Regular day (not scheduled)
+      cellHTML = `
+        <td class="calendar-day">
+          <div class="calendar-day-number">${day}</div>
+        </td>
+      `;
+    }
+    
+    currentRow.push(cellHTML);
+    
+    // If we've filled a week (7 days), start a new row
+    if (currentRow.length === 7) {
+      calendarRows.push(`<tr>${currentRow.join('')}</tr>`);
+      currentRow = [];
+    }
+  }
+  
+  // Fill remaining cells to complete the last week
+  if (currentRow.length > 0) {
+    while (currentRow.length < 7) {
+      currentRow.push('<td class="calendar-day empty"></td>');
+    }
+    calendarRows.push(`<tr>${currentRow.join('')}</tr>`);
+  }
+  
+  return `
+    <div class="calendar-month">
+      <div class="calendar-month-header">
+        <h3>${monthNames[month]} ${year}</h3>
+      </div>
+      <table class="calendar-table">
+        <thead>
+          <tr>
+            ${dayNames.map(day => `<th class="calendar-weekday">${day}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${calendarRows.join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// View inspection details for a specific date
+window.viewInspectionDetails = function(dateKey) {
+  const inspections = window.inspectionDataByDate?.[dateKey] || [];
+  const date = new Date(dateKey);
+  const dateStr = formatDateForDisplay(date);
+  
+  // Load assets for this task to show all assets (inspected and not inspected)
+  loadAssetsForDate(dateKey, inspections, dateStr);
+};
+
+// Load assets for a specific date and display inspection details
+async function loadAssetsForDate(dateKey, inspections, dateStr) {
+  const assetsTableWrapper = document.getElementById('assets-table-wrapper');
+  if (!assetsTableWrapper) {
+    return;
+  }
+  
+  // Show loading
+  assetsTableWrapper.innerHTML = '<div class="loading">Loading inspection details...</div>';
+  
+  try {
+    // Load all assets for this task
+    const resp = await fetch('/api/assets/list');
+    const data = await resp.json();
+    
+    if (resp.ok && data.ok && data.assets) {
+      // Filter assets where locationDescription matches taskName
+      const matchingAssets = data.assets.filter(asset => {
+        const assetLocation = asset.locationDescription || '';
+        return assetLocation.trim() === currentTaskText.trim();
+      });
+      
+      // Create a map of assetId -> inspection for this date
+      // Ensure status field is properly set (normalize 'abnormal' to 'fault')
+      const inspectionMap = {};
+      inspections.forEach(inspection => {
+        if (inspection.assetId) {
+          // Debug: Log the inspection object to see what fields are available
+          console.log(`Inspection for ${inspection.assetId}:`, {
+            status: inspection.status,
+            inspectionStatus: inspection.inspectionStatus,
+            assetId: inspection.assetId,
+            fullObject: inspection
+          });
+          
+          // Normalize status field: 'abnormal' -> 'fault', ensure it's set
+          // The status field should come from the MaintenanceAsset document
+          // Only normalize if inspectionStatus is 'complete', otherwise keep as is
+          const normalizedInspection = {
+            ...inspection,
+            status: inspection.status === 'abnormal' ? 'fault' : (inspection.status || 'normal')
+          };
+          inspectionMap[inspection.assetId] = normalizedInspection;
+        }
+      });
+      
+      // Display inspection details
+      displayInspectionDetailsForDate(matchingAssets, inspectionMap, dateKey, dateStr);
+      } else {
+      assetsTableWrapper.innerHTML = `
+        <div class="no-assets">
+          <p>Failed to load assets.</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading assets:', error);
+    assetsTableWrapper.innerHTML = `
+      <div class="no-assets">
+        <p>Error loading assets: ${error.message}</p>
+      </div>
+    `;
+  }
+}
+
+// Display inspection details for a specific date
+function displayInspectionDetailsForDate(assets, inspectionMap, dateKey, dateStr) {
+  const assetsTableWrapper = document.getElementById('assets-table-wrapper');
+  if (!assetsTableWrapper) {
+    return;
+  }
+  
+  if (assets.length === 0) {
+    assetsTableWrapper.innerHTML = `
+      <div class="no-assets">
+        <p>No assets found for this inspection task.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const table = document.createElement('table');
+  table.className = 'assets-table';
+  
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th colspan="6" style="text-align: center; padding: 1rem; background: #f9fafb;">
+          <div style="display: flex; justify-content: center; align-items: center;">
+            <div>
+              <strong>Inspection Date: ${dateStr}</strong>
+            </div>
+          </div>
+        </th>
+      </tr>
+      <tr>
+        <th>Asset ID</th>
+        <th>Asset Description</th>
+        <th>Inspection Status</th>
+        <th>Fault Condition</th>
+        <th>Staff in Charge</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${assets.map(asset => {
+        const inspection = inspectionMap[asset.assetId];
+        const inspectionStatus = inspection?.inspectionStatus || 'pending';
+        
+        // Determine inspection status display
+        let statusClass = inspectionStatus === 'complete' ? 'complete' : 'pending';
+        let statusText = inspectionStatus === 'complete' ? 'Complete' : 'Pending';
+        
+        // Determine fault condition display:
+        // - If no inspection exists, show "Pending"
+        // - If inspection exists and status is 'fault' or 'abnormal', show "Fault"
+        // - If inspection exists and status is 'normal' or missing, show "Normal"
+        let faultClass, faultText;
+        if (!inspection || inspectionStatus === 'pending' || inspectionStatus === 'open') {
+          // No inspection yet or inspection not complete
+          faultClass = 'pending';
+          faultText = 'Pending';
+        } else {
+          // Inspection exists - check the status field
+          // IMPORTANT: Read the status field directly from inspection object
+          const faultStatus = inspection.status;
+          
+          // Debug: Log what we're reading for display
+          console.log(`Displaying fault condition for ${asset.assetId}:`, {
+            inspectionExists: !!inspection,
+            inspectionStatus: inspectionStatus,
+            faultStatus: faultStatus,
+            inspectionStatusField: inspection?.inspectionStatus,
+            statusField: inspection?.status,
+            fullInspection: inspection
+          });
+          
+          if (faultStatus === 'fault' || faultStatus === 'abnormal') {
+            faultClass = 'fault';
+            faultText = 'Fault';
+          } else if (faultStatus === 'normal') {
+            faultClass = 'normal';
+            faultText = 'Normal';
+          } else {
+            // If status is missing or unexpected, default to normal
+            console.warn(`Unexpected status value for ${asset.assetId}:`, faultStatus);
+            faultClass = 'normal';
+            faultText = 'Normal';
+          }
+        }
+        
+        const staffInCharge = inspection?.inspectorName || inspection?.inspectorId || '-';
+        
+        // Build URL for view more button
+        const viewMoreUrl = `inspection_asset_details.html?assetId=${encodeURIComponent(asset.assetId || '')}&maintenanceId=${encodeURIComponent(maintenanceId || '')}`;
+        
+        return `
+          <tr>
+            <td>${escapeHtml(asset.assetId || '-')}</td>
+            <td>${escapeHtml(asset.assetDescription || '-')}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td><span class="status-badge ${faultClass}">${faultText}</span></td>
+            <td>${escapeHtml(staffInCharge)}</td>
+            <td>
+              <a href="${viewMoreUrl}" class="view-more-btn" style="display: inline-block; padding: 0.4rem 0.8rem; background: #140958; color: white; text-decoration: none; border-radius: 6px; font-size: 0.875rem; font-weight: 600; transition: all 0.2s;">
+                View More
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('')}
+    </tbody>
+  `;
+  
+  assetsTableWrapper.innerHTML = '';
+  assetsTableWrapper.appendChild(table);
+}
+
+// Helper functions
+function formatDateForStorage(date) {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateForDisplay(date) {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+// Load assets based on locationDescription matching taskName (kept for backward compatibility)
 async function loadAssets() {
   try {
     if (!currentTaskText || currentTaskText.trim() === '') {
@@ -405,8 +1303,12 @@ function openEditMaintenanceModal() {
   }
   
   // Generate calendar based on current maintenance frequency
+  // Use task-specific schedule if available, otherwise fallback to maintenance schedule
+  const scheduleToUse = currentTaskSchedule || currentMaintenance?.maintenanceSchedule || {};
+  
   if (currentMaintenance && currentMaintenance.frequency && scheduleCalendar) {
-    generateScheduleCalendarForEdit(currentMaintenance.frequency, currentMaintenance.maintenanceSchedule || {});
+    console.log('Generating calendar with schedule:', scheduleToUse);
+    generateScheduleCalendarForEdit(currentMaintenance.frequency, scheduleToUse);
   }
   
   // Show the modal
@@ -998,10 +1900,53 @@ async function saveEditMaintenance() {
   const scheduleCalendar = document.getElementById('edit-schedule-calendar');
   if (scheduleCalendar) {
     const scheduleData = {};
+    const frequency = currentMaintenance.frequency || 'Weekly';
+    
+    // For weekly frequency, rebuild the entire month structure to handle deletions properly
+    if (frequency === 'Weekly') {
+      const monthDivs = scheduleCalendar.querySelectorAll('[data-month]');
+      monthDivs.forEach(monthDiv => {
+        const month = monthDiv.dataset.month;
+        const weeksDiv = monthDiv.querySelector('.calendar-weeks');
+        if (weeksDiv) {
+          const weekInputs = weeksDiv.querySelectorAll('.calendar-date-input');
+          if (weekInputs.length > 0) {
+            scheduleData[month] = {};
+            
+            // Only add weeks that have values (handles deletions)
+            weekInputs.forEach(input => {
+              if (input.value) {
+                const nameParts = input.name.match(/schedule\[(.*?)\]\[(.*?)\]/);
+                if (nameParts && nameParts[2]) {
+                  const weekKey = nameParts[2]; // e.g., "Week1"
+                  let dateValue = input.value;
+                  if (dateValue.includes('T')) {
+                    dateValue = dateValue.split('T')[0];
+                  }
+                  scheduleData[month][weekKey] = dateValue;
+                }
+              }
+            });
+            
+            // If month has no weeks with values, don't include it
+            if (Object.keys(scheduleData[month]).length === 0) {
+              delete scheduleData[month];
+            }
+          }
+        }
+      });
+    } else {
+      // For Monthly and Quarterly, use the original logic
     const scheduleInputs = scheduleCalendar.querySelectorAll('[name^="schedule"]');
     
     scheduleInputs.forEach(input => {
-      if (input.value && !input.disabled) { // Only include enabled (future) dates
+        if (input.value) {
+          // Normalize date to YYYY-MM-DD format (remove time if present)
+          let dateValue = input.value;
+          if (dateValue.includes('T')) {
+            dateValue = dateValue.split('T')[0];
+          }
+          
         const nameParts = input.name.match(/schedule\[(.*?)\](?:\[(.*?)\])?/);
         if (nameParts) {
           const key1 = nameParts[1];
@@ -1009,47 +1954,71 @@ async function saveEditMaintenance() {
           if (key2) {
             // Weekly: schedule[January][Week1]
             if (!scheduleData[key1]) scheduleData[key1] = {};
-            scheduleData[key1][key2] = input.value;
+              scheduleData[key1][key2] = dateValue;
           } else {
             // Monthly/Quarterly: schedule[January] or schedule[Q1 (Jan-Mar)]
-            scheduleData[key1] = input.value;
-          }
-        }
-      } else if (input.value && input.disabled) {
-        // Include past dates (disabled) as read-only - preserve them
-        const nameParts = input.name.match(/schedule\[(.*?)\](?:\[(.*?)\])?/);
-        if (nameParts) {
-          const key1 = nameParts[1];
-          const key2 = nameParts[2];
-          if (key2) {
-            if (!scheduleData[key1]) scheduleData[key1] = {};
-            scheduleData[key1][key2] = input.value;
-          } else {
-            scheduleData[key1] = input.value;
-          }
-        }
-      }
-    });
-    
-    // Merge with existing schedule to preserve past dates
-    const existingSchedule = currentMaintenance.maintenanceSchedule || {};
-    if (Object.keys(existingSchedule).length > 0) {
-      // Preserve existing schedule structure
-      Object.keys(existingSchedule).forEach(key => {
-        if (!scheduleData[key]) {
-          scheduleData[key] = existingSchedule[key];
-        } else if (typeof existingSchedule[key] === 'object' && typeof scheduleData[key] === 'object') {
-          // Merge weekly schedules
-          Object.keys(existingSchedule[key]).forEach(subKey => {
-            if (!scheduleData[key][subKey]) {
-              scheduleData[key][subKey] = existingSchedule[key][subKey];
+              scheduleData[key1] = dateValue;
             }
-          });
+          }
         }
       });
     }
     
-    updateData.maintenanceSchedule = scheduleData;
+    // DO NOT save to maintenanceSchedule - each task has its own schedule in inspection_tasks collection
+    // updateData.maintenanceSchedule = scheduleData; // REMOVED - tasks have individual schedules
+    
+    console.log('Collected schedule data from edit form:', JSON.stringify(scheduleData, null, 2));
+    
+    // ALWAYS save to inspection_tasks collection (this is the single source of truth for task schedules)
+    // This ensures the schedule is available in both checklist and task detail pages
+    if (scheduleData && Object.keys(scheduleData).length > 0) {
+      try {
+        const taskResponse = await fetch('/api/maintenance/inspection-task', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            maintenanceId: maintenanceId,
+            taskName: newTaskText || currentTaskText,
+            schedule: scheduleData
+          })
+        });
+        
+        if (taskResponse.ok) {
+          const taskData = await taskResponse.json();
+          if (taskData.ok) {
+            console.log('✓ Schedule also saved to inspection_tasks collection');
+            console.log('Saved schedule:', JSON.stringify(scheduleData, null, 2));
+          } else {
+            console.warn('⚠ Could not save to inspection_tasks collection:', taskData.error);
+          }
+        } else {
+          const errorText = await taskResponse.text();
+          console.warn('⚠ Could not save to inspection_tasks collection, HTTP status:', taskResponse.status, errorText);
+        }
+      } catch (error) {
+        console.warn('⚠ Error saving to inspection_tasks collection:', error);
+        // Don't fail the whole update if this fails
+      }
+    } else {
+      console.log('No schedule data to save (empty or all deleted)');
+      // If schedule is empty, still try to save null to clear it
+      try {
+        const taskResponse = await fetch('/api/maintenance/inspection-task', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            maintenanceId: maintenanceId,
+            taskName: newTaskText || currentTaskText,
+            schedule: null
+          })
+        });
+        if (taskResponse.ok) {
+          console.log('✓ Cleared schedule in inspection_tasks collection');
+        }
+      } catch (error) {
+        console.warn('⚠ Error clearing schedule:', error);
+      }
+    }
   }
   
   try {
@@ -1073,8 +2042,11 @@ async function saveEditMaintenance() {
     currentTaskText = newTaskText;
     currentMaintenance.inspectionTasks = updateData.inspectionTasks;
     
-    if (updateData.maintenanceSchedule) {
-      currentMaintenance.maintenanceSchedule = updateData.maintenanceSchedule;
+    // Update the task schedule in local state (from inspection_tasks collection, not maintenanceSchedule)
+    if (scheduleData && Object.keys(scheduleData).length > 0) {
+      currentTaskSchedule = scheduleData;
+    } else {
+      currentTaskSchedule = null;
     }
     
     // Update UI

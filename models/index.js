@@ -7,6 +7,7 @@ const MONGO_DB = process.env.MONGO_DB || 'it_inventory';
 const userSchema = new mongoose.Schema({
     name: String,
     email: { type: String, required: true, unique: true },
+    password: { type: String, required: false }, // Optional for backward compatibility
     role: { type: String, enum: ['admin', 'staff'], required: true },
     created_at: { type: Date, default: Date.now },
     lastLogin: { type: Date, default: Date.now }
@@ -58,7 +59,8 @@ const maintenanceSchema = new mongoose.Schema({
 const maintenanceAssetSchema = new mongoose.Schema({
     maintenanceId: String,
     assetId: String,
-    inspectionStatus: { type: String, default: 'open' },
+    inspectionStatus: { type: String, default: 'open' }, // 'complete' when inspection is done, 'open' when pending
+    status: { type: String, default: 'normal' }, // 'normal' or 'abnormal' (fault condition)
     inspectionDate: Date,
     inspectionNotes: String,
     inspectorId: String,
@@ -84,6 +86,8 @@ const reportSchema = new mongoose.Schema({
     reportType: String,
     reportName: String,
     criteria: mongoose.Schema.Types.Mixed,
+    reportData: mongoose.Schema.Types.Mixed, // Store the actual report data
+    headerInfo: mongoose.Schema.Types.Mixed, // Store header info for reports that need it
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 }, { collection: 'reports' });

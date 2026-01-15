@@ -942,13 +942,13 @@
 
 
     .date-cell.pending {
-      background: #fef3c7;
-      color: #92400e;
+      background: #000000;
+      color: #ffffff;
       font-weight: 600;
     }
 
     .date-cell.pending:hover {
-      background: #fde68a;
+      background: #1a1a1a;
       transform: scale(1.05);
     }
 
@@ -971,6 +971,18 @@
       font-weight: 700;
     }
 
+    .date-cell.fault {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .date-cell.fault:hover {
+      background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+      transform: scale(1.05);
+    }
+
     .date-cell.locked {
       background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
       color: #ffffff;
@@ -979,10 +991,11 @@
     }
 
     .date-cell.upcoming {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      color: #ffffff;
+      background: #9ca3af;
+      color: #000000;
       cursor: not-allowed;
       opacity: 0.9;
+      font-weight: 600;
     }
 
     /* Inspection Modal */
@@ -1406,7 +1419,7 @@
       display: flex;
       gap: 2rem;
       flex-wrap: wrap;
-      font-size: 0.85rem;
+      font-size: 0.7rem;
     }
 
     .add-modal-overlay {
@@ -1681,13 +1694,18 @@
       background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     }
 
-    .legend-color.upcoming {
+    .legend-color.fault {
       background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
     }
 
     .legend-color.pending {
-      background: #fef3c7;
-      border-color: #f59e0b;
+      background: #000000;
+      border-color: #000000;
+    }
+
+    .legend-color.upcoming {
+      background: #9ca3af;
+      border-color: #9ca3af;
     }
 
     .legend-color.locked {
@@ -1777,6 +1795,7 @@
       }
     }
   </style>
+  <script src="../shared/auth-check.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script type="module">
     import '../shared/init.js';
@@ -1852,15 +1871,19 @@
         <div class="legend">
           <div class="legend-item">
             <div class="legend-color completed"></div>
-            <span><strong>Green</strong> - Complete inspections</span>
+            <span style="font-size: 0.7rem;"><strong>Green</strong> - Complete inspections</span>
           </div>
           <div class="legend-item">
-            <div class="legend-color upcoming"></div>
-            <span><strong>Red</strong> - Upcoming inspections</span>
+            <div class="legend-color fault"></div>
+            <span style="font-size: 0.7rem;"><strong>Red</strong> - Fault conditions</span>
           </div>
           <div class="legend-item">
             <div class="legend-color pending"></div>
-            <span><strong>Yellow</strong> - Pending (inspections still ongoing)</span>
+            <span style="font-size: 0.7rem;"><strong>Black</strong> - Pending (inspections still ongoing)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color upcoming"></div>
+            <span style="font-size: 0.7rem;"><strong>Grey</strong> - Upcoming inspections</span>
           </div>
         </div>
       </div>
