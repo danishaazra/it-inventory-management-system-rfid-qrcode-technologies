@@ -3,11 +3,35 @@ require '../api/db.php';
 
 $reportType = $_POST['reportType'] ?? '';
 $format = $_POST['format'] ?? 'csv';
-$reportData = json_decode($_POST['reportData'] ?? '[]', true);
+$reportDataRaw = json_decode($_POST['reportData'] ?? '[]', true);
 $criteria = json_decode($_POST['criteria'] ?? '{}', true);
 
-if (empty($reportType) || empty($reportData)) {
-  die('Invalid export request');
+// Extract the actual report array from the data structure
+// JavaScript sends { report: [...] } or just the array
+$reportData = [];
+if (is_array($reportDataRaw)) {
+  if (isset($reportDataRaw['report']) && is_array($reportDataRaw['report'])) {
+    // Structure: { report: [...] }
+    $reportData = $reportDataRaw['report'];
+  } elseif (!empty($reportDataRaw) && !isset($reportDataRaw[0]) && is_array($reportDataRaw)) {
+    // Might be an object with numeric keys or empty
+    // Try to get the first element
+    $firstKey = array_key_first($reportDataRaw);
+    if ($firstKey !== null && is_array($reportDataRaw[$firstKey])) {
+      $reportData = $reportDataRaw;
+    }
+  } else {
+    // Structure: [...] (direct array)
+    $reportData = $reportDataRaw;
+  }
+}
+
+if (empty($reportType)) {
+  die('Invalid export request: Missing reportType');
+}
+
+if (empty($reportData) || !is_array($reportData)) {
+  die('Invalid export request: Missing or invalid reportData');
 }
 
 // Get report title
@@ -245,10 +269,10 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
   $html .= '<h1>' . htmlspecialchars($title) . '</h1>';
   
   // Handle checklist format differently
-  if ($reportType === 'checklist' && !empty($data)) {
+  if ($reportType === 'checklist' && !empty($data) && is_array($data)) {
     // Generate checklist table with monthly grid
     $html .= generateChecklistTable($data, $criteria);
-  } elseif (!empty($data)) {
+  } elseif (!empty($data) && is_array($data) && isset($data[0]) && is_array($data[0])) {
     $html .= '<table>';
     
     // Headers
@@ -263,14 +287,19 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
     foreach ($data as $row) {
       $html .= '<tr>';
       foreach ($headers as $header) {
-        $html .= '<td>' . htmlspecialchars($row[$header] ?? '') . '</td>';
+        $value = $row[$header] ?? '';
+        // Handle null, false, empty values
+        if ($value === null || $value === false) {
+          $value = '-';
+        }
+        $html .= '<td>' . htmlspecialchars($value) . '</td>';
       }
       $html .= '</tr>';
     }
     
     $html .= '</tbody></table>';
   } else {
-    $html .= '<p>No data available</p>';
+    $html .= '<p style="color: red; font-weight: bold; padding: 20px;">No data available for export.</p>';
   }
   
   // Calculate total records (for checklist, count tasks)

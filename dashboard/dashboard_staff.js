@@ -43,69 +43,67 @@ async function loadDashboardStats() {
     console.log('Assigned maintenance data:', maintenanceData);
     
     if (!maintenanceData.ok || !maintenanceData.maintenance) {
+      console.warn('No assigned maintenance tasks found or API error');
       updateStats(0, 0, 0, []);
       return;
     }
     
     const assignedTasks = maintenanceData.maintenance;
     const totalTasks = assignedTasks.length;
+    console.log(`Found ${totalTasks} assigned maintenance task(s)`);
     
-    // Fetch all assets for all assigned maintenance tasks to calculate pending/completed
+    // Fetch all inspection records to calculate pending/completed
     let totalPending = 0;
-    let completedThisMonth = 0;
+    let totalCompleted = 0; // Total completed inspections (don't care about normal/fault)
     const taskDetails = [];
-    
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
     // Process each maintenance task
     for (const task of assignedTasks) {
       try {
+        // Get all inspection records for this maintenance task
         const assetsUrl = `/api/maintenance/assets?maintenanceId=${encodeURIComponent(task._id)}`;
         const assetsResp = await fetch(assetsUrl);
+        
+        let pendingCount = 0;
+        let completedCount = 0;
+        let allInspections = [];
         
         if (assetsResp.ok) {
           const assetsData = await assetsResp.json();
           if (assetsData.ok && assetsData.assets) {
-            const assets = assetsData.assets;
+            allInspections = assetsData.assets;
             
-            // Count pending (status = 'open')
-            const pending = assets.filter(a => (a.inspectionStatus || 'open') === 'open').length;
-            totalPending += pending;
-            
-            // Count completed this month
-            const completed = assets.filter(a => {
-              if (a.inspectionStatus !== 'complete') return false;
-              if (!a.inspectionDate) return false;
-              
-              // Handle MongoDB UTCDateTime format
-              let inspectionDate;
-              if (typeof a.inspectionDate === 'object' && a.inspectionDate.$date) {
-                inspectionDate = new Date(a.inspectionDate.$date);
-              } else if (typeof a.inspectionDate === 'string' || typeof a.inspectionDate === 'number') {
-                inspectionDate = new Date(a.inspectionDate);
-              } else {
-                return false;
-              }
-              
-              inspectionDate.setHours(0, 0, 0, 0);
-              return inspectionDate >= startOfMonth;
+            // Count pending: all inspection records where inspectionStatus !== 'complete' (black cells)
+            pendingCount = allInspections.filter(ma => {
+              const status = (ma.inspectionStatus || 'pending').toLowerCase().trim();
+              return status !== 'complete' && status !== 'completed';
             }).length;
-            completedThisMonth += completed;
             
-            // Calculate next due date for task
-            const nextDueDate = calculateNextDueDate(task.maintenanceSchedule, task.frequency);
-            const status = getTaskStatus(nextDueDate, assets);
-            
-            taskDetails.push({
-              ...task,
-              assetCount: assets.length,
-              pendingCount: pending,
-              nextDueDate: nextDueDate,
-              status: status
-            });
+            // Count completed: all inspection records where inspectionStatus === 'complete' (don't care about normal/fault)
+            completedCount = allInspections.filter(ma => {
+              const status = (ma.inspectionStatus || 'pending').toLowerCase().trim();
+              return status === 'complete' || status === 'completed';
+            }).length;
           }
         }
+        
+        console.log(`Task ${task._id}: ${pendingCount} pending, ${completedCount} completed out of ${allInspections.length} total`);
+        
+        totalPending += pendingCount;
+        totalCompleted += completedCount;
+        
+        // Calculate next due date for task
+        const nextDueDate = calculateNextDueDate(task.maintenanceSchedule, task.frequency);
+        const status = getTaskStatus(nextDueDate, allInspections);
+        
+        taskDetails.push({
+          ...task,
+          assetCount: allInspections.length,
+          pendingCount: pendingCount,
+          completedCount: completedCount,
+          nextDueDate: nextDueDate,
+          status: status
+        });
       } catch (error) {
         console.error(`Error loading assets for task ${task._id}:`, error);
       }
@@ -118,12 +116,78 @@ async function loadDashboardStats() {
       return new Date(a.nextDueDate) - new Date(b.nextDueDate);
     });
     
-    updateStats(totalTasks, totalPending, completedThisMonth, taskDetails);
+    console.log(`=== FINAL DASHBOARD STATS ===`);
+    console.log(`Total Tasks: ${totalTasks}`);
+    console.log(`Total Pending Inspections: ${totalPending}`);
+    console.log(`Total Completed Inspections: ${totalCompleted}`);
+    console.log(`Task Details: ${taskDetails.length} tasks`);
+    
+    updateStats(totalTasks, totalPending, totalCompleted, taskDetails);
     
   } catch (error) {
     console.error('Error loading dashboard stats:', error);
     updateStats(0, 0, 0, []);
   }
+}
+
+// Helper function to extract dates from schedule
+function extractDatesFromSchedule(schedule, frequency) {
+  const dates = [];
+  if (!schedule || typeof schedule !== 'object') {
+    return dates;
+  }
+  
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  if (frequency === 'Weekly') {
+    months.forEach(month => {
+      if (schedule[month] && typeof schedule[month] === 'object') {
+        Object.values(schedule[month]).forEach(dateStr => {
+          if (dateStr) {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+              dates.push(date);
+            }
+          }
+        });
+      }
+    });
+  } else if (frequency === 'Monthly') {
+    months.forEach(month => {
+      if (schedule[month]) {
+        const date = new Date(schedule[month]);
+        if (!isNaN(date.getTime())) {
+          dates.push(date);
+        }
+      }
+    });
+  } else if (frequency === 'Quarterly') {
+    const quarters = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+    quarters.forEach(quarter => {
+      if (schedule[quarter]) {
+        const date = new Date(schedule[quarter]);
+        if (!isNaN(date.getTime())) {
+          dates.push(date);
+        }
+      }
+    });
+  }
+  
+  // Sort dates chronologically
+  dates.sort((a, b) => a - b);
+  return dates;
+}
+
+// Helper function to format date as YYYY-MM-DD key
+function formatDateKey(date) {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Helper function to parse dates
@@ -212,7 +276,7 @@ function getTaskStatus(nextDueDate, assets) {
 }
 
 // Update statistics display
-function updateStats(totalTasks, pendingInspections, completedThisMonth, taskDetails) {
+function updateStats(totalTasks, pendingInspections, totalCompleted, taskDetails) {
   // Update stat cards - find by their parent card's h2 text
   const cards = document.querySelectorAll('.dashboard-card');
   cards.forEach(card => {
@@ -224,12 +288,21 @@ function updateStats(totalTasks, pendingInspections, completedThisMonth, taskDet
           statValue.textContent = totalTasks;
         } else if (h2.textContent.includes('Pending Inspections')) {
           statValue.textContent = pendingInspections;
+        } else if (h2.textContent.includes('Completed Inspections')) {
+          statValue.textContent = totalCompleted;
         } else if (h2.textContent.includes('Completed Tasks')) {
-          statValue.textContent = completedThisMonth;
+          // Fallback for old text
+          statValue.textContent = totalCompleted;
         }
       }
     }
   });
+  
+  // Also update by ID if it exists
+  const completedStatEl = document.getElementById('completed-inspection-stat');
+  if (completedStatEl) {
+    completedStatEl.textContent = totalCompleted;
+  }
   
   // Update task table
   const tbody = document.querySelector('.asset-table tbody');

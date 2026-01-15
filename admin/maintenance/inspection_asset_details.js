@@ -9,36 +9,89 @@ const maintenanceId = urlParams.get('maintenanceId');
 // State
 let assetData = null;
 let inspectionData = null;
+let maintenanceData = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  updateBackLink();
   loadAssetDetails();
   loadUserInfo();
+  
+  // Reload inspection data when page becomes visible (in case inspection was just submitted)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && assetId && maintenanceId) {
+      console.log('Page visible again, reloading inspection data...');
+      loadAssetDetails();
+    }
+  });
+  
+  // Also listen for focus event (when user switches back to tab)
+  window.addEventListener('focus', () => {
+    if (assetId && maintenanceId) {
+      console.log('Window focused, reloading inspection data...');
+      loadAssetDetails();
+    }
+  });
 });
 
-// Update back link
+// Update back link to go to maintenance checklist draft
 function updateBackLink() {
   const backLink = document.getElementById('back-link');
-  if (backLink && maintenanceId) {
-    backLink.href = `inspection_task_detail.html?maintenanceId=${encodeURIComponent(maintenanceId)}&taskIndex=0`;
-  } else if (backLink) {
+  if (!backLink) return;
+  
+  if (maintenanceData && maintenanceData._id) {
+    // Construct URL with all required parameters for maintenance_checklist_draft.html
+    const backUrl = `maintenance_checklist_draft.html?id=${encodeURIComponent(maintenanceData._id)}&branch=${encodeURIComponent(maintenanceData.branch || '')}&location=${encodeURIComponent(maintenanceData.location || '')}&itemName=${encodeURIComponent(maintenanceData.itemName || '')}&frequency=${encodeURIComponent(maintenanceData.frequency || '')}`;
+    backLink.href = backUrl;
+    backLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = backUrl;
+    });
+  } else if (maintenanceId) {
+    // If we have maintenanceId but no maintenanceData yet, load it first
+    loadMaintenanceDataForBackLink();
+  } else {
+    // Fallback to maintenance.html if no maintenanceId
     backLink.href = 'maintenance.html';
   }
 }
 
-// Load user info
-async function loadUserInfo() {
+// Load maintenance data specifically for back link (if not already loaded)
+async function loadMaintenanceDataForBackLink() {
+  if (!maintenanceId) return;
+  
   try {
-    const resp = await fetch('/api/auth/me');
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.ok && data.user) {
-        const userNameEl = document.getElementById('user-name');
-        const userAvatarEl = document.getElementById('user-avatar');
-        if (userNameEl) userNameEl.textContent = data.user.name || data.user.username || 'admin';
-        if (userAvatarEl) userAvatarEl.textContent = (data.user.name || data.user.username || 'U').charAt(0).toUpperCase();
-      }
+    const maintenanceResp = await fetch(`/api/maintenance/get?maintenanceId=${encodeURIComponent(maintenanceId)}`);
+    const maintenanceDataResp = await maintenanceResp.json();
+    
+    if (maintenanceResp.ok && maintenanceDataResp.ok && maintenanceDataResp.maintenance) {
+      maintenanceData = maintenanceDataResp.maintenance;
+      updateBackLink();
+    }
+  } catch (error) {
+    console.warn('Could not load maintenance data for back link:', error);
+    // Fallback to maintenance.html
+    const backLink = document.getElementById('back-link');
+    if (backLink) {
+      backLink.href = 'maintenance.html';
+    }
+  }
+}
+
+// Load user info from sessionStorage (same as other admin pages)
+function loadUserInfo() {
+  try {
+    // Get user info from sessionStorage (set during login)
+    const userName = sessionStorage.getItem('userName') || 'admin';
+    const userEmail = sessionStorage.getItem('userEmail') || '';
+    
+    const userNameEl = document.getElementById('user-name');
+    const userAvatarEl = document.getElementById('user-avatar');
+    
+    if (userNameEl) {
+      userNameEl.textContent = userName;
+    }
+    if (userAvatarEl) {
+      userAvatarEl.textContent = userName.charAt(0).toUpperCase();
     }
   } catch (error) {
     console.error('Error loading user info:', error);
@@ -62,34 +115,72 @@ async function loadAssetDetails() {
       return;
     }
 
-    // Load inspection data if maintenanceId is provided
+    // Load inspection data from maintenance_assets collection (primary source)
     let inspectionData = null;
     let maintenanceData = null;
     
+    try {
+      // Load from maintenance_assets collection via /api/inspections/get endpoint
+      // This endpoint now queries maintenance_assets collection only
+      const inspectionResp = await fetch(`/api/inspections/get?assetId=${encodeURIComponent(assetId)}`);
+      if (inspectionResp.ok) {
+        const inspectionDataResp = await inspectionResp.json();
+        if (inspectionDataResp.ok && inspectionDataResp.inspection) {
+          inspectionData = inspectionDataResp.inspection;
+          console.log('✓ Found inspection from maintenance_assets collection:', inspectionData);
+        }
+      }
+    } catch (error) {
+      console.warn('Could not load from maintenance_assets collection:', error);
+    }
+    
+    // Fallback: Try maintenance endpoint if main endpoint didn't work
+    if (!inspectionData || !inspectionData.notes) {
+      try {
+        let directInspectionResp;
+        if (maintenanceId) {
+          directInspectionResp = await fetch(`/api/maintenance/asset-inspection?assetId=${encodeURIComponent(assetId)}&maintenanceId=${encodeURIComponent(maintenanceId)}`);
+        } else {
+          directInspectionResp = await fetch(`/api/maintenance/asset-inspection?assetId=${encodeURIComponent(assetId)}`);
+        }
+        
+        if (directInspectionResp.ok) {
+          const directInspectionData = await directInspectionResp.json();
+          if (directInspectionData.ok && directInspectionData.inspection) {
+            // Map maintenance_assets format to expected format
+            inspectionData = {
+              assetId: directInspectionData.inspection.assetId,
+              notes: directInspectionData.inspection.inspectionNotes || directInspectionData.inspection.notes,
+              solved: directInspectionData.inspection.solved,
+              inspectionStatus: directInspectionData.inspection.inspectionStatus,
+              inspectionDate: directInspectionData.inspection.inspectionDate,
+              status: directInspectionData.inspection.status
+            };
+            console.log('✓ Found inspection from maintenance_assets (fallback endpoint):', inspectionData);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load inspection via maintenance endpoint:', error);
+      }
+    }
+    
+    // Load maintenance data if maintenanceId is provided (for staff in charge)
     if (maintenanceId) {
       try {
-        // Load maintenance item to get staff information
         const maintenanceResp = await fetch(`/api/maintenance/get?maintenanceId=${encodeURIComponent(maintenanceId)}`);
         const maintenanceDataResp = await maintenanceResp.json();
         
         if (maintenanceResp.ok && maintenanceDataResp.ok && maintenanceDataResp.maintenance) {
           maintenanceData = maintenanceDataResp.maintenance;
         }
-        
-        // Load inspection data for the asset
-        const inspectionResp = await fetch(`/api/maintenance/assets?maintenanceId=${encodeURIComponent(maintenanceId)}`);
-        const inspectionDataResp = await inspectionResp.json();
-        
-        if (inspectionResp.ok && inspectionDataResp.ok && inspectionDataResp.assets) {
-          // Find the specific asset in the maintenance assets
-          inspectionData = inspectionDataResp.assets.find(a => a.assetId === assetId);
-        }
       } catch (error) {
-        console.error('Error loading inspection data:', error);
-        // Continue without inspection data
+        console.warn('Could not load maintenance data:', error);
       }
     }
 
+    // Update back link after loading maintenance data
+    updateBackLink();
+    
     displayAssetDetails(assetData.asset, inspectionData, maintenanceData);
   } catch (error) {
     console.error('Error loading asset details:', error);
@@ -108,52 +199,99 @@ function displayAssetDetails(asset, inspection, maintenance) {
                         maintenance?.staffName || 
                         inspection?.assignedStaffName || 
                         inspection?.staffName || 
+                        inspection?.inspectorName ||
                         '-';
   
-  const dateInspection = inspection?.inspectionDate || 
-                         inspection?.dateInspected || 
-                         inspection?.date || 
-                         '-';
-  
-  const inspectionStatus = inspection?.inspectionStatus || 
-                           inspection?.status || 
-                           'pending';
-  
-  const remark = inspection?.remark || 
-                 inspection?.inspectionNotes || 
-                 inspection?.notes || 
-                 '-';
-
-  // Determine status display (Good or Fault)
-  let statusClass = 'good';
-  let statusText = 'Good';
-  
-  // Check if inspection has been completed and has a result
-  if (inspectionStatus === 'complete' || inspectionStatus === 'abnormal') {
-    // Check if there's a specific result/status field indicating fault
-    const actualStatus = inspection?.inspectionResult || 
-                         inspection?.result || 
-                         inspection?.status;
-    
-    // If solved is false or status indicates fault
-    if (inspection?.solved === false || 
-        actualStatus === 'Fault' || 
-        actualStatus === 'fault' || 
-        actualStatus === 'bad' ||
-        actualStatus === 'abnormal') {
-      statusClass = 'fault';
-      statusText = 'Fault';
+  // Get inspection date - handle both Date objects and ISO strings
+  let dateInspection = '-';
+  if (inspection?.inspectionDate) {
+    if (inspection.inspectionDate instanceof Date) {
+      dateInspection = inspection.inspectionDate.toISOString();
+    } else if (typeof inspection.inspectionDate === 'string') {
+      dateInspection = inspection.inspectionDate;
+    } else if (inspection.inspectionDate.$date) {
+      // Handle MongoDB extended JSON format
+      dateInspection = inspection.inspectionDate.$date;
     } else {
-      statusClass = 'good';
-      statusText = 'Good';
+      // Try to convert to string
+      dateInspection = String(inspection.inspectionDate);
     }
-  } else if (inspectionStatus === 'fault' || inspectionStatus === 'Fault') {
+  }
+  
+  // Get inspection status - check both 'status' (from form: normal/fault) and 'inspectionStatus' (legacy: complete/open)
+  // Priority: status field (normal/fault) > inspectionStatus (complete/open) > default to pending
+  let inspectionStatus = inspection?.status || 
+                         inspection?.inspectionStatus || 
+                         'pending';
+  
+  // Convert legacy inspectionStatus values to normal/fault format
+  if (inspectionStatus === 'complete') {
+    inspectionStatus = 'normal';
+  } else if (inspectionStatus === 'open' && inspection?.solved === false) {
+    inspectionStatus = 'fault'; // Map to 'fault' instead of 'abnormal'
+  } else if (inspectionStatus === 'open' && inspection?.solved === true) {
+    inspectionStatus = 'normal';
+  }
+  
+  // Handle legacy 'abnormal' status - map to 'fault'
+  if (inspectionStatus === 'abnormal') {
+    inspectionStatus = 'fault';
+  }
+  
+  // Get remark - check multiple possible field names (prioritize 'notes' from inspections collection)
+  const remark = inspection?.notes || 
+                 inspection?.inspectionNotes || 
+                 inspection?.remark || 
+                 inspection?.remarks ||
+                 '-';
+  
+  console.log('Displaying asset details:', {
+    assetId: asset?.assetId,
+    hasInspection: !!inspection,
+    inspectionStatus: inspectionStatus,
+    remark: remark,
+    inspectionDate: dateInspection,
+    solved: inspection?.solved,
+    inspectionObject: inspection
+  });
+
+  // Determine fault condition display (Normal/Fault)
+  // Status should be 'normal' or 'fault' from the inspection form dropdown
+  let statusClass = 'good';
+  let statusText = 'Normal'; // Default to Normal
+  
+  // Get the actual fault condition from the status field (not inspectionStatus)
+  // Priority: inspection.status (from maintenance_assets) > inspectionStatus (legacy)
+  let faultStatus = inspection?.status;
+  
+  // If status is not directly available, try to infer from other fields
+  if (!faultStatus || faultStatus === 'pending' || faultStatus === 'open') {
+    // Check if solved field indicates fault
+    if (inspection?.solved === false) {
+      faultStatus = 'fault';
+    } else if (inspection?.solved === true) {
+      faultStatus = 'normal';
+    } else {
+      faultStatus = inspection?.status || 'normal';
+    }
+  }
+  
+  // Normalize 'abnormal' to 'fault' for consistency
+  if (faultStatus === 'abnormal') {
+    faultStatus = 'fault';
+  }
+  
+  // Check for 'normal' or 'fault' status (from inspection form dropdown)
+  if (faultStatus === 'normal' || faultStatus === 'complete') {
+    statusClass = 'good';
+    statusText = 'Normal';
+  } else if (faultStatus === 'fault') {
     statusClass = 'fault';
     statusText = 'Fault';
-  } else if (inspectionStatus === 'pending' || inspectionStatus === 'upcoming') {
-    // If not yet inspected, show as pending
+  } else {
+    // Default to Normal for any other status
     statusClass = 'good';
-    statusText = 'Pending';
+    statusText = 'Normal';
   }
 
   contentDiv.innerHTML = `
@@ -185,6 +323,15 @@ function displayAssetDetails(asset, inspection, maintenance) {
       <div class="detail-item">
         <span class="detail-label">Inspection Status</span>
         <span class="detail-value">
+          <span class="status-badge ${inspection?.inspectionStatus === 'complete' || inspection?.inspectionStatus === 'completed' ? 'good' : 'pending'}">
+            ${inspection?.inspectionStatus === 'complete' || inspection?.inspectionStatus === 'completed' ? 'Complete' : 'Incomplete'}
+          </span>
+        </span>
+      </div>
+      
+      <div class="detail-item">
+        <span class="detail-label">Inspection Fault</span>
+        <span class="detail-value">
           <span class="status-badge ${statusClass}">${statusText}</span>
         </span>
       </div>
@@ -208,7 +355,7 @@ function showError(message) {
         <h2>Error</h2>
         <p>${escapeHtml(message)}</p>
         <p style="margin-top: 1rem;">
-          <a href="${maintenanceId ? `inspection_task_detail.html?maintenanceId=${encodeURIComponent(maintenanceId)}&taskIndex=0` : 'maintenance.html'}" style="color: #140958; font-weight: 600; text-decoration: none;">
+          <a href="${maintenanceData && maintenanceData._id ? `maintenance_checklist_draft.html?id=${encodeURIComponent(maintenanceData._id)}&branch=${encodeURIComponent(maintenanceData.branch || '')}&location=${encodeURIComponent(maintenanceData.location || '')}&itemName=${encodeURIComponent(maintenanceData.itemName || '')}&frequency=${encodeURIComponent(maintenanceData.frequency || '')}` : 'maintenance.html'}" style="color: #140958; font-weight: 600; text-decoration: none;">
             ← Back
           </a>
         </p>

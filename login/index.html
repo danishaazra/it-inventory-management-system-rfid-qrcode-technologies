@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Select Role • IT Inventory</title>
+  <title>Sign In • IT Inventory</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     * {
       margin: 0;
@@ -18,122 +20,71 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       min-height: 100vh;
       display: flex;
+      background: #ffffff;
+      color: #1a1a1a;
+      overflow: hidden;
+    }
+
+    .auth-container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .logo-panel {
+      width: 33.333%;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
-      padding: 1rem;
-      color: #1a1a1a;
     }
 
-    .auth-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #0a0529 0%, #140958 50%, #1a0d6b 100%);
-      z-index: -1;
+    .logo-panel .logo-text {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 2px;
     }
 
-    .auth-bg::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: url('../images/bg.png');
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: cover;
-      opacity: 0.3;
-    }
-
-    .auth {
-      width: 100%;
-      max-width: 900px;
-      position: relative;
-    }
-
-    .auth-card {
+    .form-panel {
+      width: 66.666%;
       background: #ffffff;
-      border-radius: 16px;
-      padding: 3rem 4rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
     }
 
-    .brand {
-      display: flex;
-      align-items: flex-start;
-      gap: 1.5rem;
+    .auth-form-container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .auth-title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1a1a1a;
       margin-bottom: 2.5rem;
     }
 
-    .logo {
-      width: 60px;
-      height: 60px;
-      flex-shrink: 0;
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .logo img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-
-    .brand-copy {
-      flex: 1;
-    }
-
-    .brand-copy h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 0.5rem;
-      line-height: 1.2;
-    }
-
-    .brand-copy p {
-      font-size: 0.875rem;
-      color: #666;
-      line-height: 1.5;
-    }
-
     .field {
-      margin-bottom: 1rem;
-      position: relative;
-    }
-
-    .field label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #333;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
     }
 
     .field input {
       width: 100%;
-      padding: 0.75rem 1rem;
-      font-size: 0.9375rem;
-      border: 2px solid #e5e5e5;
-      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
       background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
       color: #1a1a1a;
-      transition: all 0.2s;
       font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .field input::placeholder {
+      color: #999999;
     }
 
     .field input:focus {
@@ -142,194 +93,453 @@
       box-shadow: 0 0 0 3px rgba(20, 9, 88, 0.1);
     }
 
-    .field input::placeholder {
-      color: #999;
-    }
-
-    .field .error {
-      display: block;
-      color: #d32f2f;
-      font-size: 0.8125rem;
-      margin-top: 0.375rem;
-      min-height: 1.25rem;
-    }
-
-    .field input[aria-invalid="true"] {
-      border-color: #d32f2f;
-    }
-
-    .role-select-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 2rem;
-      text-align: center;
-    }
-
-    .role-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .role-btn {
-      width: 100%;
-      padding: 0.875rem 1.5rem;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      border: 2px solid #e5e5e5;
-      border-radius: 8px;
-      background: #ffffff;
-      color: #1a1a1a;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      text-decoration: none;
-      font-family: inherit;
-    }
-
-    .role-btn:hover {
-      border-color: #140958;
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: #ffffff;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
-    }
-
-    .role-btn:active {
-      transform: translateY(0);
-    }
-
-    .role-icon {
-      font-size: 1.25rem;
-    }
-
-    .role-btn.admin {
-      border-color: #f6c945;
-    }
-
-    .role-btn.admin:hover {
-      background: linear-gradient(135deg, #f6c945 0%, #ff9b3d 100%);
-      border-color: #f6c945;
-      color: #1a1a1a;
-    }
-
-    .role-btn.staff {
-      border-color: #3b82f6;
-    }
-
-    .role-btn.staff:hover {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      border-color: #3b82f6;
-      color: #ffffff;
+    .field input:-webkit-autofill,
+    .field input:-webkit-autofill:hover,
+    .field input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #1a1a1a;
+      -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
+      transition: background-color 5000s ease-in-out 0s;
     }
 
     .btn {
       width: 100%;
-      padding: 0.875rem 1.5rem;
-      font-size: 0.9375rem;
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
       font-weight: 600;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
+      color: #ffffff;
       cursor: pointer;
       transition: all 0.2s;
       font-family: inherit;
+      margin-top: 1rem;
     }
 
-    .btn.primary {
-      background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
-      color: white;
-      margin-bottom: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: 700;
-    }
-
-    .btn.primary:hover:not(:disabled) {
+    .btn:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(20, 9, 88, 0.3);
     }
 
-    .btn.primary:active:not(:disabled) {
-      transform: translateY(0);
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
     }
 
-    .btn.primary:disabled {
-      opacity: 0.6;
+    .btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
     }
 
-    .back-link {
-      display: block;
+    .switch-form {
       text-align: center;
-      margin-top: 1rem;
-      color: #140958;
-      text-decoration: none;
-      font-weight: 500;
+      margin-top: 2rem;
+      color: #666666;
       font-size: 0.875rem;
-      transition: color 0.2s;
     }
 
-    .back-link:hover {
-      color: #1a0d6b;
+    .switch-form a {
+      color: #140958;
       text-decoration: underline;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      font-weight: 500;
     }
 
-    @media (max-width: 480px) {
-      .auth-card {
-        padding: 2rem 1.5rem;
-      }
+    .switch-form a:hover {
+      opacity: 0.7;
+    }
 
-      .role-buttons {
+    .error-message {
+      background: rgba(220, 38, 38, 0.2);
+      color: #ff6b6b;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      display: none;
+      border: 1px solid rgba(220, 38, 38, 0.5);
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      display: none;
+      border: 1px solid rgba(34, 197, 94, 0.5);
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    /* Hide forms by default */
+    .form-section {
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .auth-container {
         flex-direction: column;
-        gap: 1rem;
       }
 
-      .role-btn {
+      .logo-panel {
         width: 100%;
+        height: 20vh;
       }
 
-      .brand {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+      .logo-panel .logo-text {
+        font-size: 2.5rem;
+      }
+
+      .form-panel {
+        width: 100%;
+        height: 80vh;
       }
     }
   </style>
 </head>
 <body>
-  <div class="auth-bg" aria-hidden="true"></div>
-  <main class="auth">
-    <section class="auth-card" role="dialog" aria-labelledby="auth-title" aria-describedby="auth-desc">
-      <div class="brand">
-        <div class="logo">
-          <img src="../images/logo_dm.png" alt="PKT Logistics logo" onerror="this.style.display='none'">
+  <div class="auth-container">
+    <!-- Left Panel - Logo -->
+    <div class="logo-panel">
+      <div class="logo-text">DM</div>
+    </div>
+
+    <!-- Right Panel - Form -->
+    <div class="form-panel">
+      <div class="auth-form-container">
+        <!-- Sign In Form -->
+        <div id="signin-form" class="form-section active">
+          <h1 class="auth-title">Sign in</h1>
+          
+          <div id="signin-error" class="error-message"></div>
+
+          <form id="login-form" onsubmit="return false;">
+            <div class="field">
+              <input 
+                id="login-email" 
+                name="email" 
+                type="email" 
+                placeholder="Email" 
+                required 
+                autocomplete="email"
+              />
+            </div>
+
+            <div class="field">
+              <input 
+                id="login-password" 
+                name="password" 
+                type="password" 
+                placeholder="Password" 
+                required 
+                autocomplete="current-password"
+              />
+            </div>
+
+            <button type="submit" id="login-btn" class="btn">Sign in</button>
+          </form>
+
+          <div class="switch-form">
+            Don't have an account? <a id="switch-to-signup">Sign up</a>
+          </div>
         </div>
-        <div class="brand-copy">
-          <h1 id="auth-title">An Information Technology (IT) Inventory Management System</h1>
-          <p id="auth-desc">Manage your IT assets using RFID & QR Code Technologies</p>
+
+        <!-- Sign Up Form -->
+        <div id="signup-form" class="form-section">
+          <h1 class="auth-title">Sign up</h1>
+          
+          <div id="signup-error" class="error-message"></div>
+          <div id="signup-success" class="success-message"></div>
+
+          <form id="register-form" onsubmit="return false;">
+            <div class="field">
+              <input 
+                id="register-name" 
+                name="name" 
+                type="text" 
+                placeholder="Name" 
+                required 
+                autocomplete="name"
+              />
+            </div>
+
+            <div class="field">
+              <input 
+                id="register-email" 
+                name="email" 
+                type="email" 
+                placeholder="Email" 
+                required 
+                autocomplete="email"
+              />
+            </div>
+
+            <div class="field">
+              <input 
+                id="register-password" 
+                name="password" 
+                type="password" 
+                placeholder="Password" 
+                required 
+                autocomplete="new-password"
+                minlength="6"
+              />
+            </div>
+
+            <button type="submit" id="register-btn" class="btn">Sign up</button>
+          </form>
+
+          <div class="switch-form">
+            Already have an account? <a id="switch-to-signin">Sign in</a>
+          </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <h2 class="role-select-title">Select Your Role</h2>
+  <script>
+    // Form switching
+    document.addEventListener('DOMContentLoaded', function() {
+      const signinForm = document.getElementById('signin-form');
+      const signupForm = document.getElementById('signup-form');
+      const switchToSignup = document.getElementById('switch-to-signup');
+      const switchToSignin = document.getElementById('switch-to-signin');
 
-      <div class="role-buttons">
-        <a href="login.html?role=admin" class="role-btn admin">
-          <span class="role-icon">👤</span>
-          <span>Admin</span>
-        </a>
-        <a href="login.html?role=staff" class="role-btn staff">
-          <span class="role-icon">👥</span>
-          <span>Staff</span>
-        </a>
-      </div>
+      if (switchToSignup) {
+        switchToSignup.addEventListener('click', function() {
+          signinForm.classList.remove('active');
+          signupForm.classList.add('active');
+          // Clear errors
+          document.getElementById('signin-error').classList.remove('show');
+        });
+      }
 
-    </section>
-  </main>
+      if (switchToSignin) {
+        switchToSignin.addEventListener('click', function() {
+          signupForm.classList.remove('active');
+          signinForm.classList.add('active');
+          // Clear errors
+          document.getElementById('signup-error').classList.remove('show');
+          document.getElementById('signup-success').classList.remove('show');
+        });
+      }
+
+      // Login form submission
+      const loginForm = document.getElementById('login-form');
+      const emailInput = document.getElementById('login-email');
+      const passwordInput = document.getElementById('login-password');
+      const loginBtn = document.getElementById('login-btn');
+      const signinError = document.getElementById('signin-error');
+
+      if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          const email = emailInput.value.trim();
+          const password = passwordInput.value;
+
+          // Basic validation
+          if (!email || !password) {
+            showError(signinError, 'Please fill in all fields');
+            return;
+          }
+
+          if (!isValidEmail(email)) {
+            showError(signinError, 'Please enter a valid email address');
+            return;
+          }
+
+          // Disable button during login
+          loginBtn.disabled = true;
+          loginBtn.textContent = 'Signing in...';
+
+          try {
+            // Use relative URL since we're already on the Node.js server
+            const apiUrl = '/api/login';
+            
+            console.log('Attempting login with:', { email: email, password: '***' });
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                email: email,
+                password: password
+              })
+            });
+
+            // Check if response is ok
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ error: 'Network error occurred' }));
+              console.error('Login error response:', errorData);
+              showError(signinError, errorData.error || `Login failed (${response.status}). Please check your email and password.`);
+              loginBtn.disabled = false;
+              loginBtn.textContent = 'Sign in';
+              return;
+            }
+
+            const result = await response.json();
+            console.log('Login success:', result);
+
+            if (!result.ok) {
+              showError(signinError, result.error || 'Login failed. Please check your email and password.');
+              loginBtn.disabled = false;
+              loginBtn.textContent = 'Sign in';
+              return;
+            }
+
+            // Store user info in sessionStorage
+            sessionStorage.setItem('userName', result.user.name);
+            sessionStorage.setItem('userEmail', result.user.email);
+            sessionStorage.setItem('userRole', result.user.role);
+            sessionStorage.setItem('userId', result.user.id);
+            
+            if (result.user.role === 'staff') {
+              sessionStorage.setItem('staffId', result.user.id);
+            }
+
+            // Redirect to appropriate dashboard
+            const userRole = result.user.role;
+            if (userRole === 'staff') {
+              window.location.href = '../dashboard/dashboard_staff.html';
+            } else {
+              window.location.href = '../dashboard/dashboard_admin.html';
+            }
+          } catch (error) {
+            console.error('Login error:', error);
+            showError(signinError, 'Network error. Please check your connection and try again.');
+            loginBtn.disabled = false;
+            loginBtn.textContent = 'Sign in';
+          }
+        });
+      }
+
+      // Registration form submission
+      const registerForm = document.getElementById('register-form');
+      const registerBtn = document.getElementById('register-btn');
+      const signupError = document.getElementById('signup-error');
+      const signupSuccess = document.getElementById('signup-success');
+
+      if (registerForm) {
+        registerForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          const name = document.getElementById('register-name').value.trim();
+          const email = document.getElementById('register-email').value.trim();
+          const password = document.getElementById('register-password').value;
+
+          // Hide previous messages
+          signupError.classList.remove('show');
+          signupSuccess.classList.remove('show');
+
+          // Basic validation
+          if (!name || !email || !password) {
+            showError(signupError, 'Please fill in all fields');
+            return;
+          }
+
+          if (!isValidEmail(email)) {
+            showError(signupError, 'Please enter a valid email address');
+            return;
+          }
+
+          if (password.length < 6) {
+            showError(signupError, 'Password must be at least 6 characters long');
+            return;
+          }
+
+          // Disable button during registration
+          registerBtn.disabled = true;
+          registerBtn.textContent = 'Signing up...';
+
+          try {
+            // Use relative URL since we're already on the Node.js server
+            const apiUrl = '/api/register';
+            
+            console.log('Attempting registration with:', { name: name, email: email, password: '***' });
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                name: name,
+                email: email,
+                password: password,
+                role: 'staff'
+              })
+            });
+
+            const result = await response.json();
+
+            if (!result.ok) {
+              showError(signupError, result.error || 'Registration failed. Please try again.');
+              registerBtn.disabled = false;
+              registerBtn.textContent = 'Sign up';
+              return;
+            }
+
+            // Show success message
+            showSuccess(signupSuccess, 'Account created successfully! Redirecting to sign in...');
+            
+            // Clear form
+            registerForm.reset();
+            
+            // Switch to sign in form after 2 seconds
+            setTimeout(() => {
+              signupForm.classList.remove('active');
+              signinForm.classList.add('active');
+              signupSuccess.classList.remove('show');
+              // Pre-fill email in login form
+              emailInput.value = email;
+            }, 2000);
+
+            registerBtn.disabled = false;
+            registerBtn.textContent = 'Sign up';
+          } catch (error) {
+            console.error('Registration error:', error);
+            showError(signupError, 'Network error. Please check your connection and try again.');
+            registerBtn.disabled = false;
+            registerBtn.textContent = 'Sign up';
+          }
+        });
+      }
+    });
+
+    function showError(element, message) {
+      if (element) {
+        element.textContent = message;
+        element.classList.add('show');
+        setTimeout(() => {
+          element.classList.remove('show');
+        }, 5000);
+      }
+    }
+
+    function showSuccess(element, message) {
+      if (element) {
+        element.textContent = message;
+        element.classList.add('show');
+      }
+    }
+
+    function isValidEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+  </script>
 </body>
 </html>
-
