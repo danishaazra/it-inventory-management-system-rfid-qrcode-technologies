@@ -5,6 +5,7 @@
 const urlParams = new URLSearchParams(window.location.search);
 const assetId = urlParams.get('assetId');
 const maintenanceId = urlParams.get('maintenanceId');
+const inspectionDate = urlParams.get('inspectionDate'); // Get the specific inspection date
 
 // State
 let assetData = null;
@@ -122,12 +123,24 @@ async function loadAssetDetails() {
     try {
       // Load from maintenance_assets collection via /api/inspections/get endpoint
       // This endpoint now queries maintenance_assets collection only
-      const inspectionResp = await fetch(`/api/inspections/get?assetId=${encodeURIComponent(assetId)}`);
+      // Include inspectionDate parameter if provided to filter by specific date
+      let inspectionUrl = `/api/inspections/get?assetId=${encodeURIComponent(assetId)}`;
+      if (maintenanceId) {
+        inspectionUrl += `&maintenanceId=${encodeURIComponent(maintenanceId)}`;
+      }
+      if (inspectionDate) {
+        // Format date as YYYY-MM-DD if needed
+        const dateStr = inspectionDate.includes('T') ? inspectionDate.split('T')[0] : inspectionDate;
+        inspectionUrl += `&inspectionDate=${encodeURIComponent(dateStr)}`;
+        console.log('Loading inspection for specific date:', dateStr);
+      }
+      
+      const inspectionResp = await fetch(inspectionUrl);
       if (inspectionResp.ok) {
         const inspectionDataResp = await inspectionResp.json();
         if (inspectionDataResp.ok && inspectionDataResp.inspection) {
           inspectionData = inspectionDataResp.inspection;
-          console.log('✓ Found inspection from maintenance_assets collection:', inspectionData);
+          console.log('✓ Found inspection from maintenance_assets collection for date:', inspectionDate, inspectionData);
         }
       }
     } catch (error) {
@@ -137,12 +150,15 @@ async function loadAssetDetails() {
     // Fallback: Try maintenance endpoint if main endpoint didn't work
     if (!inspectionData || !inspectionData.notes) {
       try {
-        let directInspectionResp;
+        let fallbackUrl = `/api/maintenance/asset-inspection?assetId=${encodeURIComponent(assetId)}`;
         if (maintenanceId) {
-          directInspectionResp = await fetch(`/api/maintenance/asset-inspection?assetId=${encodeURIComponent(assetId)}&maintenanceId=${encodeURIComponent(maintenanceId)}`);
-        } else {
-          directInspectionResp = await fetch(`/api/maintenance/asset-inspection?assetId=${encodeURIComponent(assetId)}`);
+          fallbackUrl += `&maintenanceId=${encodeURIComponent(maintenanceId)}`;
         }
+        if (inspectionDate) {
+          const dateStr = inspectionDate.includes('T') ? inspectionDate.split('T')[0] : inspectionDate;
+          fallbackUrl += `&inspectionDate=${encodeURIComponent(dateStr)}`;
+        }
+        const directInspectionResp = await fetch(fallbackUrl);
         
         if (directInspectionResp.ok) {
           const directInspectionData = await directInspectionResp.json();
@@ -202,9 +218,13 @@ function displayAssetDetails(asset, inspection, maintenance) {
                         inspection?.inspectorName ||
                         '-';
   
-  // Get inspection date - handle both Date objects and ISO strings
+  // Get inspection date - prioritize URL parameter, then inspection data
   let dateInspection = '-';
-  if (inspection?.inspectionDate) {
+  if (inspectionDate) {
+    // Use the date from URL parameter (specific date clicked)
+    dateInspection = inspectionDate;
+  } else if (inspection?.inspectionDate) {
+    // Fallback to inspection date from data
     if (inspection.inspectionDate instanceof Date) {
       dateInspection = inspection.inspectionDate.toISOString();
     } else if (typeof inspection.inspectionDate === 'string') {
