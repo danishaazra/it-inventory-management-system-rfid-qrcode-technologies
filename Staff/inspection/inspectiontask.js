@@ -966,7 +966,18 @@ async function renderCalendarGrid() {
           inspectionData,
           item
         );
-        const cellClass = getDateCellClass(date, inspection, completionStatus.allComplete, completionStatus.hasFault);
+        
+        // Also check the direct inspection's status field for fault condition
+        // This ensures we catch fault status even if checkTaskCompleteForDate didn't find it
+        let hasDirectFault = false;
+        if (inspection && (inspection.status === 'fault' || inspection.status === 'abnormal')) {
+          hasDirectFault = true;
+        }
+        
+        // Use the fault status from either checkTaskCompleteForDate or direct inspection
+        const finalHasFault = completionStatus.hasFault || hasDirectFault;
+        
+        const cellClass = getDateCellClass(date, inspection, completionStatus.allComplete, finalHasFault);
         
         // If multiple dates fall in same week, keep the first one (or you could combine them)
         if (!weekCells[weekIndex]) {
@@ -1509,7 +1520,13 @@ function getDateCellClass(date, inspection, allTasksComplete = false, hasFault =
   inspectionDate.setHours(0, 0, 0, 0);
   
   // PRIORITY 1: If ANY inspection has fault status, show RED (even if others are complete)
+  // Check both hasFault parameter AND individual inspection status
   if (hasFault) {
+    return 'fault'; // Red - fault condition detected
+  }
+  
+  // Also check individual inspection status for fault (in case hasFault wasn't set correctly)
+  if (inspection && (inspection.status === 'fault' || inspection.status === 'abnormal')) {
     return 'fault'; // Red - fault condition detected
   }
   
