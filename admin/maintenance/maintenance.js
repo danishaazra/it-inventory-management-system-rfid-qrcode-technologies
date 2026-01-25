@@ -1,34 +1,29 @@
-// Maintenance Checklist Page
-// Shows all maintenance items with Branch, Location, Item Name, and Staff In Charge
 
-// DOM Elements
 const maintenanceItemsTbody = document.getElementById('maintenance-items-tbody');
-const filterYear = document.getElementById('filter-year');
 const filterFrequency = document.getElementById('filter-frequency');
 const filterSearch = document.getElementById('filter-search');
 const prevPageBtn = document.getElementById('prev-page-btn');
 const nextPageBtn = document.getElementById('next-page-btn');
 const pageInfo = document.getElementById('page-info');
 
-// Add Maintenance Elements
+
 let addBtn, addForm;
 let addModalOverlay, closeAddModalBtn, cancelAddBtn, frequencySelect, scheduleContainer, scheduleCalendar;
 
-// State
+
 let allMaintenanceItems = [];
 let filteredItems = [];
 let currentPage = 1;
 const itemsPerPage = 10;
 
-// Initialize
+
 document.addEventListener('DOMContentLoaded', () => {
   initAddMaintenanceElements();
-  initializeYearFilter();
   initializeEventListeners();
   loadMaintenanceItems();
 });
 
-// Initialize Add Maintenance elements
+
 function initAddMaintenanceElements() {
   addBtn = document.getElementById('add-maintenance-btn');
   addForm = document.getElementById('add-maintenance-form');
@@ -40,26 +35,8 @@ function initAddMaintenanceElements() {
   scheduleCalendar = document.getElementById('add-schedule-calendar');
 }
 
-// Initialize year filter with current year and previous/next years
-function initializeYearFilter() {
-  const currentYear = new Date().getFullYear();
-  for (let i = currentYear - 2; i <= currentYear + 2; i++) {
-    const option = document.createElement('option');
-    option.value = i;
-    option.textContent = i;
-    if (i === currentYear) {
-      option.selected = true;
-    }
-    filterYear.appendChild(option);
-  }
-}
-
 // Initialize event listeners
 function initializeEventListeners() {
-  filterYear.addEventListener('change', () => {
-    currentPage = 1;
-    applyFilters();
-  });
   filterFrequency.addEventListener('change', () => {
     currentPage = 1;
     applyFilters();
@@ -114,12 +91,10 @@ async function loadMaintenanceItems() {
 
 // Apply filters
 function applyFilters() {
-  const year = filterYear.value;
   const frequency = filterFrequency.value;
   const search = filterSearch.value.toLowerCase().trim();
   
   filteredItems = allMaintenanceItems.filter(item => {
-    // Year filter (not applicable for maintenance items, but kept for future use)
     // Frequency filter
     if (frequency && item.frequency !== frequency) {
       return false;

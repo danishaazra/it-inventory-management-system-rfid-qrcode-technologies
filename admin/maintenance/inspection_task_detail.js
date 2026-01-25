@@ -873,36 +873,35 @@ function displayInspectionDetailsForDate(assets, inspectionMap, dateKey, dateStr
     <tbody>
       ${assets.map(asset => {
         const inspection = inspectionMap[asset.assetId];
-        const inspectionStatus = inspection?.inspectionStatus || 'pending';
+        // Get inspectionStatus from inspection map first, then fallback to asset's inspectionStatus from maintenance_assets
+        const inspectionStatus = inspection?.inspectionStatus || asset.inspectionStatus || 'pending';
         
         // Determine inspection status display
         let statusClass = inspectionStatus === 'complete' ? 'complete' : 'pending';
         let statusText = inspectionStatus === 'complete' ? 'Complete' : 'Pending';
         
         // Determine fault condition display:
-        // - If no inspection exists, show "Pending"
-        // - If inspection exists and status is 'fault' or 'abnormal', show "Fault"
-        // - If inspection exists and status is 'normal' or missing, show "Normal"
+        // - If inspectionStatus is 'complete', show the status (normal/fault)
+        // - If inspectionStatus is 'pending' or 'open', show "Pending"
+        // - Use status from inspection object first, then fallback to asset.status from maintenance_assets
         let faultClass, faultText;
-        if (!inspection || inspectionStatus === 'pending' || inspectionStatus === 'open') {
-          // No inspection yet or inspection not complete
-          faultClass = 'pending';
-          faultText = 'Pending';
-        } else {
-          // Inspection exists - check the status field
-          // IMPORTANT: Read the status field directly from inspection object
-          const faultStatus = inspection.status;
-          
-          // Debug: Log what we're reading for display
-          console.log(`Displaying fault condition for ${asset.assetId}:`, {
-            inspectionExists: !!inspection,
-            inspectionStatus: inspectionStatus,
-            faultStatus: faultStatus,
-            inspectionStatusField: inspection?.inspectionStatus,
-            statusField: inspection?.status,
-            fullInspection: inspection
-          });
-          
+        
+        // Get fault status from inspection or asset
+        const faultStatus = inspection?.status || asset.status;
+        
+        // Debug: Log what we're reading for display
+        console.log(`Displaying fault condition for ${asset.assetId}:`, {
+          inspectionExists: !!inspection,
+          inspectionStatus: inspectionStatus,
+          faultStatus: faultStatus,
+          inspectionStatusField: inspection?.inspectionStatus,
+          statusField: inspection?.status,
+          assetStatusField: asset.status,
+          fullInspection: inspection
+        });
+        
+        if (inspectionStatus === 'complete' || inspectionStatus === 'completed') {
+          // Inspection is complete - show the fault condition
           if (faultStatus === 'fault' || faultStatus === 'abnormal') {
             faultClass = 'fault';
             faultText = 'Fault';
@@ -910,17 +909,34 @@ function displayInspectionDetailsForDate(assets, inspectionMap, dateKey, dateStr
             faultClass = 'normal';
             faultText = 'Normal';
           } else {
-            // If status is missing or unexpected, default to normal
-            console.warn(`Unexpected status value for ${asset.assetId}:`, faultStatus);
+            // If status is missing but inspection is complete, default to normal
             faultClass = 'normal';
             faultText = 'Normal';
           }
+        } else {
+          // Inspection not complete yet - show pending
+          faultClass = 'pending';
+          faultText = 'Pending';
         }
         
         const staffInCharge = inspection?.inspectorName || inspection?.inspectorId || '-';
         
-        // Build URL for view more button
-        const viewMoreUrl = `inspection_asset_details.html?assetId=${encodeURIComponent(asset.assetId || '')}&maintenanceId=${encodeURIComponent(maintenanceId || '')}`;
+        // Build URL for view more button - include the inspection date so each date shows its own details
+        // Use dateKey (YYYY-MM-DD format) if available, otherwise format inspectionDate
+        let inspectionDateParam = '';
+        if (dateKey) {
+          inspectionDateParam = `&inspectionDate=${encodeURIComponent(dateKey)}`;
+        } else if (inspection?.inspectionDate) {
+          // Format inspectionDate to YYYY-MM-DD if it's a Date object or ISO string
+          let dateStr = inspection.inspectionDate;
+          if (dateStr instanceof Date) {
+            dateStr = formatDateForStorage(dateStr);
+          } else if (typeof dateStr === 'string' && dateStr.includes('T')) {
+            dateStr = dateStr.split('T')[0];
+          }
+          inspectionDateParam = `&inspectionDate=${encodeURIComponent(dateStr)}`;
+        }
+        const viewMoreUrl = `inspection_asset_details.html?assetId=${encodeURIComponent(asset.assetId || '')}&maintenanceId=${encodeURIComponent(maintenanceId || '')}${inspectionDateParam}`;
         
         return `
           <tr>
@@ -1000,6 +1016,7 @@ async function loadAssets() {
               if (ma.assetId) {
                 statusMap[ma.assetId] = {
                   inspectionStatus: ma.inspectionStatus || 'open',
+                  status: ma.status || 'normal', // Include status field (fault condition: normal/fault)
                   inspectionNotes: ma.inspectionNotes,
                   solved: ma.solved || false,
                   inspectionDate: ma.inspectionDate
@@ -1011,6 +1028,7 @@ async function loadAssets() {
             maintenanceAssets = matchingAssets.map(asset => ({
               ...asset,
               inspectionStatus: statusMap[asset.assetId]?.inspectionStatus || 'open',
+              status: statusMap[asset.assetId]?.status || 'normal', // Include status field
               inspectionNotes: statusMap[asset.assetId]?.inspectionNotes || '',
               solved: statusMap[asset.assetId]?.solved || false,
               inspectionDate: statusMap[asset.assetId]?.inspectionDate || null
@@ -1020,6 +1038,7 @@ async function loadAssets() {
             maintenanceAssets = matchingAssets.map(asset => ({
               ...asset,
               inspectionStatus: 'open',
+              status: 'normal', // Default status
               inspectionNotes: '',
               solved: false,
               inspectionDate: null
@@ -1030,6 +1049,7 @@ async function loadAssets() {
           maintenanceAssets = matchingAssets.map(asset => ({
             ...asset,
             inspectionStatus: 'open',
+            status: 'normal', // Default status
             inspectionNotes: '',
             solved: false,
             inspectionDate: null
@@ -1039,6 +1059,7 @@ async function loadAssets() {
         maintenanceAssets = matchingAssets.map(asset => ({
           ...asset,
           inspectionStatus: 'open',
+          status: 'normal', // Default status
           inspectionNotes: '',
           solved: false,
           inspectionDate: null
@@ -1897,9 +1918,9 @@ async function saveEditMaintenance() {
   updateData.inspectionTasks = currentTasks.join('\n');
   
   // Get calendar/schedule update
+  let scheduleData = {}; // Declare outside if block so it's accessible later
   const scheduleCalendar = document.getElementById('edit-schedule-calendar');
   if (scheduleCalendar) {
-    const scheduleData = {};
     const frequency = currentMaintenance.frequency || 'Weekly';
     
     // For weekly frequency, rebuild the entire month structure to handle deletions properly
