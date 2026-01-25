@@ -408,10 +408,20 @@ router.post('/delete', async (req, res) => {
         }
 
         const assetId = data.assetId.trim();
+        
+        // First, delete all related maintenance_asset records (inspection records) with this assetId
+        const maintenanceAssetResult = await MaintenanceAsset.deleteMany({ assetId });
+        console.log(`Deleted ${maintenanceAssetResult.deletedCount} maintenance_asset record(s) for asset ${assetId}`);
+        
+        // Then delete the asset itself
         const result = await Asset.deleteOne({ assetId });
 
         if (result.deletedCount > 0) {
-            res.json({ ok: true, message: 'Asset deleted successfully' });
+            res.json({ 
+                ok: true, 
+                message: 'Asset deleted successfully',
+                deletedMaintenanceAssets: maintenanceAssetResult.deletedCount
+            });
         } else {
             res.status(404).json({ ok: false, error: 'Asset not found' });
         }

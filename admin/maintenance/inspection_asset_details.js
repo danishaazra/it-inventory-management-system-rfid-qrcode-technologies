@@ -11,6 +11,7 @@ const inspectionDate = urlParams.get('inspectionDate'); // Get the specific insp
 let assetData = null;
 let inspectionData = null;
 let maintenanceData = null;
+let maintenanceAssetData = null; // Store maintenance_assets data for fallback
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -142,6 +143,21 @@ async function loadAssetDetails() {
           inspectionData = inspectionDataResp.inspection;
           console.log('✓ Found inspection from maintenance_assets collection for date:', inspectionDate, inspectionData);
         }
+      } else if (inspectionResp.status === 404 && inspectionDate) {
+        // If exact date not found, try without date filter to get latest inspection
+        console.log('No inspection found for exact date, trying to get latest inspection...');
+        let fallbackUrl = `/api/inspections/get?assetId=${encodeURIComponent(assetId)}`;
+        if (maintenanceId) {
+          fallbackUrl += `&maintenanceId=${encodeURIComponent(maintenanceId)}`;
+        }
+        const fallbackResp = await fetch(fallbackUrl);
+        if (fallbackResp.ok) {
+          const fallbackDataResp = await fallbackResp.json();
+          if (fallbackDataResp.ok && fallbackDataResp.inspection) {
+            inspectionData = fallbackDataResp.inspection;
+            console.log('✓ Found latest inspection (fallback, different date):', inspectionData);
+          }
+        }
       }
     } catch (error) {
       console.warn('Could not load from maintenance_assets collection:', error);
@@ -189,6 +205,27 @@ async function loadAssetDetails() {
         if (maintenanceResp.ok && maintenanceDataResp.ok && maintenanceDataResp.maintenance) {
           maintenanceData = maintenanceDataResp.maintenance;
         }
+        
+        // Also load maintenance_assets for this asset to get status fallback (matching table logic)
+        // Load ALL maintenance_assets for this asset (not filtered by date) so we can find the matching one
+        if (assetId) {
+          try {
+            // Note: The /api/maintenance/assets endpoint doesn't support date filtering,
+            // so we load all records and filter client-side if needed
+            const maUrl = `/api/maintenance/assets?maintenanceId=${encodeURIComponent(maintenanceId)}`;
+            const maResp = await fetch(maUrl);
+            if (maResp.ok) {
+              const maData = await maResp.json();
+              if (maData.ok && maData.assets) {
+                // Filter to only this assetId
+                maintenanceAssetData = maData.assets.filter(asset => asset.assetId === assetId);
+                console.log('✓ Loaded maintenance_assets for fallback:', maintenanceAssetData);
+              }
+            }
+          } catch (error) {
+            console.warn('Could not load maintenance_assets for fallback:', error);
+          }
+        }
       } catch (error) {
         console.warn('Could not load maintenance data:', error);
       }
@@ -197,7 +234,7 @@ async function loadAssetDetails() {
     // Update back link after loading maintenance data
     updateBackLink();
     
-    displayAssetDetails(assetData.asset, inspectionData, maintenanceData);
+    displayAssetDetails(assetData.asset, inspectionData, maintenanceData, maintenanceAssetData);
   } catch (error) {
     console.error('Error loading asset details:', error);
     showError(`Failed to load asset details: ${error.message || 'Network error'}`);
@@ -205,7 +242,7 @@ async function loadAssetDetails() {
 }
 
 // Display asset details
-function displayAssetDetails(asset, inspection, maintenance) {
+function displayAssetDetails(asset, inspection, maintenance, maintenanceAssets = null) {
   const contentDiv = document.getElementById('asset-details-content');
   if (!contentDiv) return;
 
@@ -258,60 +295,112 @@ function displayAssetDetails(asset, inspection, maintenance) {
     inspectionStatus = 'fault';
   }
   
-  // Get remark - check multiple possible field names (prioritize 'notes' from inspections collection)
-  const remark = inspection?.notes || 
-                 inspection?.inspectionNotes || 
-                 inspection?.remark || 
-                 inspection?.remarks ||
-                 '-';
-  
   console.log('Displaying asset details:', {
     assetId: asset?.assetId,
     hasInspection: !!inspection,
     inspectionStatus: inspectionStatus,
-    remark: remark,
     inspectionDate: dateInspection,
     solved: inspection?.solved,
     inspectionObject: inspection
   });
 
-  // Determine fault condition display (Normal/Fault)
-  // Status should be 'normal' or 'fault' from the inspection form dropdown
-  let statusClass = 'good';
-  let statusText = 'Normal'; // Default to Normal
+  // Get inspection status (complete/pending) - match table logic exactly
+  // Use same fallback chain as table: inspection?.inspectionStatus || asset.inspectionStatus || 'pending'
+  // Fallback to maintenance_assets data if inspection data is not available
+  let inspectionStatusValue = inspection?.inspectionStatus;
   
-  // Get the actual fault condition from the status field (not inspectionStatus)
-  // Priority: inspection.status (from maintenance_assets) > inspectionStatus (legacy)
+  // Get the actual fault condition from the status field - match table logic exactly
+  // Table uses: inspection?.status || asset.status
+  // Fallback to maintenance_assets data if available
   let faultStatus = inspection?.status;
   
-  // If status is not directly available, try to infer from other fields
-  if (!faultStatus || faultStatus === 'pending' || faultStatus === 'open') {
-    // Check if solved field indicates fault
-    if (inspection?.solved === false) {
-      faultStatus = 'fault';
-    } else if (inspection?.solved === true) {
-      faultStatus = 'normal';
-    } else {
-      faultStatus = inspection?.status || 'normal';
+  // Find the matching maintenance_asset record (for fallback data)
+  // If we have an inspectionDate, filter by it, otherwise use the latest
+  let maRecord = null;
+  if (maintenanceAssets && maintenanceAssets.length > 0) {
+    if (inspectionDate) {
+      const dateStr = inspectionDate.includes('T') ? inspectionDate.split('T')[0] : inspectionDate;
+      maRecord = maintenanceAssets.find(ma => {
+        if (!ma.inspectionDate) return false;
+        const maDateStr = ma.inspectionDate.includes('T') ? ma.inspectionDate.split('T')[0] : ma.inspectionDate;
+        return maDateStr === dateStr;
+      });
+    }
+    // If no match by date or no date specified, use the first/latest record
+    if (!maRecord && maintenanceAssets.length > 0) {
+      maRecord = maintenanceAssets[0];
     }
   }
   
-  // Normalize 'abnormal' to 'fault' for consistency
-  if (faultStatus === 'abnormal') {
-    faultStatus = 'fault';
+  // Use maintenance_assets data as fallback for inspectionStatus
+  if (!inspectionStatusValue && maRecord && maRecord.inspectionStatus) {
+    inspectionStatusValue = maRecord.inspectionStatus;
+    console.log('Got inspectionStatus from maintenance_assets fallback:', inspectionStatusValue);
   }
   
-  // Check for 'normal' or 'fault' status (from inspection form dropdown)
-  if (faultStatus === 'normal' || faultStatus === 'complete') {
-    statusClass = 'good';
-    statusText = 'Normal';
-  } else if (faultStatus === 'fault') {
-    statusClass = 'fault';
-    statusText = 'Fault';
+  // Use maintenance_assets data as fallback for faultStatus
+  if (!faultStatus && maRecord && maRecord.status) {
+    faultStatus = maRecord.status;
+    console.log('Got faultStatus from maintenance_assets fallback:', faultStatus);
+  }
+  
+  // Default to 'pending' if still not found
+  if (!inspectionStatusValue) {
+    inspectionStatusValue = 'pending';
+  }
+  
+  // If we have maRecord but no inspection data, create a minimal inspection object for display
+  if (!inspection && maRecord) {
+    inspection = {
+      inspectionStatus: maRecord.inspectionStatus || 'pending',
+      status: maRecord.status || 'normal',
+      inspectionNotes: maRecord.inspectionNotes || maRecord.notes || '',
+      inspectionDate: maRecord.inspectionDate || null,
+      inspectorName: maRecord.inspectorName || null
+    };
+    console.log('Created inspection object from maintenance_assets:', inspection);
+  }
+  
+  // Get remark - check multiple possible field names (prioritize 'notes' from inspections collection)
+  // Also check maintenanceAssets if inspection data is not available
+  const remark = inspection?.notes || 
+                 inspection?.inspectionNotes || 
+                 inspection?.remark || 
+                 inspection?.remarks ||
+                 (maRecord ? (maRecord.inspectionNotes || maRecord.notes || '-') : '-');
+  
+  // Debug: Log what we're reading for display
+  console.log('Displaying fault condition:', {
+    inspectionExists: !!inspection,
+    inspectionStatus: inspectionStatusValue,
+    faultStatus: faultStatus,
+    inspectionStatusField: inspection?.inspectionStatus,
+    statusField: inspection?.status,
+    fullInspection: inspection
+  });
+  
+  // Determine fault condition display (Normal/Fault) - initialize variables
+  let statusClass = 'good';
+  let statusText = 'Normal'; // Default to Normal
+  
+  // Only show fault condition if inspection is complete - match table logic exactly
+  if (inspectionStatusValue === 'complete' || inspectionStatusValue === 'completed') {
+    // Inspection is complete - show the fault condition
+    if (faultStatus === 'fault' || faultStatus === 'abnormal') {
+      statusClass = 'fault';
+      statusText = 'Fault';
+    } else if (faultStatus === 'normal') {
+      statusClass = 'good';
+      statusText = 'Normal';
+    } else {
+      // If status is missing but inspection is complete, default to normal (match table logic)
+      statusClass = 'good';
+      statusText = 'Normal';
+    }
   } else {
-    // Default to Normal for any other status
-    statusClass = 'good';
-    statusText = 'Normal';
+    // Inspection not complete yet - show pending (match table logic)
+    statusClass = 'pending';
+    statusText = 'Pending';
   }
 
   contentDiv.innerHTML = `
@@ -343,8 +432,8 @@ function displayAssetDetails(asset, inspection, maintenance) {
       <div class="detail-item">
         <span class="detail-label">Inspection Status</span>
         <span class="detail-value">
-          <span class="status-badge ${inspection?.inspectionStatus === 'complete' || inspection?.inspectionStatus === 'completed' ? 'good' : 'pending'}">
-            ${inspection?.inspectionStatus === 'complete' || inspection?.inspectionStatus === 'completed' ? 'Complete' : 'Incomplete'}
+          <span class="status-badge ${inspectionStatusValue === 'complete' || inspectionStatusValue === 'completed' ? 'good' : 'pending'}">
+            ${inspectionStatusValue === 'complete' || inspectionStatusValue === 'completed' ? 'Complete' : 'Incomplete'}
           </span>
         </span>
       </div>

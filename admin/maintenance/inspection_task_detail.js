@@ -515,7 +515,6 @@ async function generateMonthCalendarWithNavigation(year, month, scheduledDates, 
           <div class="calendar-day-status">
             <span class="status-indicator ${scheduledDate.statusClass}"></span>
           </div>
-          ${scheduledDate.inspectionCount > 0 ? `<div class="calendar-day-count">${scheduledDate.inspectionCount}</div>` : ''}
         </td>
       `;
     } else {
@@ -708,7 +707,6 @@ async function generateMonthCalendar(year, month, scheduledDates) {
           <div class="calendar-day-status">
             <span class="status-indicator ${scheduledDate.statusClass}"></span>
           </div>
-          ${scheduledDate.inspectionCount > 0 ? `<div class="calendar-day-count">${scheduledDate.inspectionCount}</div>` : ''}
         </td>
       `;
     } else {

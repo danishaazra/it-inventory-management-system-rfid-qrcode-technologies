@@ -281,21 +281,19 @@ function updateStats(totalTasks, pendingInspections, totalCompleted, taskDetails
   const cards = document.querySelectorAll('.dashboard-card');
   cards.forEach(card => {
     const h2 = card.querySelector('h2');
-    if (h2) {
-      const statValue = card.querySelector('.stat-value');
-      if (statValue) {
-        if (h2.textContent.includes('Total Assigned')) {
-          statValue.textContent = totalTasks;
-        } else if (h2.textContent.includes('Pending Inspections')) {
-          statValue.textContent = pendingInspections;
-        } else if (h2.textContent.includes('Completed Inspections')) {
-          statValue.textContent = totalCompleted;
-        } else if (h2.textContent.includes('Completed Tasks')) {
-          // Fallback for old text
-          statValue.textContent = totalCompleted;
+      if (h2) {
+        const statValue = card.querySelector('.stat-value');
+        if (statValue) {
+          if (h2.textContent.includes('Total Assigned')) {
+            statValue.textContent = totalTasks;
+          } else if (h2.textContent.includes('Completed Inspections')) {
+            statValue.textContent = totalCompleted;
+          } else if (h2.textContent.includes('Completed Tasks')) {
+            // Fallback for old text
+            statValue.textContent = totalCompleted;
+          }
         }
       }
-    }
   });
   
   // Also update by ID if it exists
