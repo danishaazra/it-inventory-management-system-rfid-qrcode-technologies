@@ -1398,6 +1398,7 @@ router.post('/export', async (req, res) => {
             
             const html = generatePDFHTML(reportData, title, reportType, extractedCriteria, headerInfo);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
             res.send(html);
         } else {
             return res.status(400).json({ ok: false, error: 'Invalid format. Use "csv" or "pdf"' });
@@ -1424,7 +1425,7 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
     console.log('Final Title:', title);
     
     const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }) + ' MYT';
-    const logoPath = '/images/logo_dm.png';
+    const logoText = 'Inventory Maintenance Inspection v1.0';
     
     // Get header info for checklist/maintenance reports
     // Use passed headerInfo if available, otherwise extract from data
@@ -1482,10 +1483,12 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
       align-items: center; 
       gap: 12px; 
     }
-    .header-logo { 
-      width: 60px; 
-      height: 60px; 
-      object-fit: contain; 
+    .header-logo-text { 
+      font-size: 12px; 
+      font-weight: bold; 
+      color: #140958; 
+      max-width: 120px;
+      line-height: 1.2;
     }
     .header-text { 
       display: flex; 
@@ -1636,7 +1639,7 @@ function generatePDFHTML(data, title, reportType, criteria, headerInfoFromReques
 <body>
   <div class="header">
     <div class="header-left">
-      <img src="${logoPath}" alt="PKT Logo" class="header-logo" onerror="this.style.display='none'">
+      <div class="header-logo-text">${escapeHtml(logoText)}</div>
       <div class="header-text">
         <div style="font-size: 9px; color: #666; margin-top: 4px;">
           <span>Form No: PKT-FR71</span> | 
