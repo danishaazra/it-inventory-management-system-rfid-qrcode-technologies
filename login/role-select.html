@@ -71,8 +71,9 @@
     }
 
     .logo {
-      width: 60px;
-      height: 60px;
+      min-width: 120px;
+      max-width: 200px;
+      padding: 12px;
       flex-shrink: 0;
       background: linear-gradient(135deg, #140958 0%, #1a0d6b 100%);
       border-radius: 8px;
@@ -80,9 +81,10 @@
       align-items: center;
       justify-content: center;
       color: white;
-      font-weight: 700;
-      font-size: 0.875rem;
-      text-transform: uppercase;
+      font-weight: 600;
+      font-size: 1.25rem;
+      text-align: left;
+      line-height: 1.2;
       letter-spacing: 0.5px;
     }
 
@@ -292,7 +294,7 @@
     <section class="auth-card" role="dialog" aria-labelledby="auth-title" aria-describedby="auth-desc">
       <div class="brand">
         <div class="logo">
-          <img src="../images/logo_dm.png" alt="PKT Logistics logo" onerror="this.style.display='none'">
+          <span>Inventory Maintenance Inspection v1.0</span>
         </div>
         <div class="brand-copy">
           <h1 id="auth-title">An Information Technology (IT) Inventory Management System</h1>

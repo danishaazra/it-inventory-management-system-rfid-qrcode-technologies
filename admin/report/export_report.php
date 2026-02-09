@@ -88,8 +88,8 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
   // Set timezone to Malaysia Time (MYT)
   date_default_timezone_set('Asia/Kuala_Lumpur');
   
-  // Get the base path for the logo
-  $logoPath = '../../images/logo_dm.png';
+  // Logo/branding text for reports
+  $logoText = 'Inventory Maintenance Inspection v1.0';
   $currentDate = date('Y-m-d H:i:s') . ' MYT';
   
   // Extract criteria information for maintenance and inspection reports
@@ -165,7 +165,7 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
     body { font-family: Arial, sans-serif; margin: 20px; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #140958; }
     .header-left { display: flex; align-items: center; gap: 15px; }
-    .header-logo { width: 80px; height: 80px; object-fit: contain; }
+    .header-logo-text { font-size: 14px; font-weight: bold; color: #140958; max-width: 150px; line-height: 1.2; }
     .header-text { display: flex; flex-direction: column; }
     .company-name { font-size: 18px; font-weight: bold; color: #140958; margin-bottom: 5px; }
     .report-type { font-size: 14px; color: #333; font-weight: 600; }
@@ -190,7 +190,7 @@ function exportPDF($data, $title, $reportType = '', $criteria = []) {
 <body>
   <div class="header">
     <div class="header-left">
-      <img src="' . htmlspecialchars($logoPath) . '" alt="PKT Logo" class="header-logo" onerror="this.style.display=\'none\'">
+      <div class="header-logo-text">' . htmlspecialchars($logoText) . '</div>
       <div class="header-text">
         <div class="company-name">' . htmlspecialchars($title) . '</div>
       </div>

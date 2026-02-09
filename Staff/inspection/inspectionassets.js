@@ -918,9 +918,10 @@ function displayInspectionDetailsForDate(assets, inspectionMap, dateKey, dateStr
           }
         }
         
-        // Build URL for view more button (staff version - no underscore)
-        // Include taskText so the back button knows which task to return to
-        const viewMoreUrl = `inspectionassetdetails.html?assetId=${encodeURIComponent(asset.assetId || '')}&maintenanceId=${encodeURIComponent(maintenanceId || '')}&taskText=${encodeURIComponent(currentTaskText || '')}`;
+        // Build URL for view more button (staff version - same as admin)
+        // Include inspectionDate to load specific inspection, taskText for back link
+        let inspectionDateParam = dateKey ? `&inspectionDate=${encodeURIComponent(dateKey)}` : '';
+        const viewMoreUrl = `inspectionassetdetails.html?assetId=${encodeURIComponent(asset.assetId || '')}&maintenanceId=${encodeURIComponent(maintenanceId || '')}${inspectionDateParam}&taskText=${encodeURIComponent(currentTaskText || '')}`;
         
         return `
           <tr>
