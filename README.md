@@ -51,12 +51,7 @@ Both methods allow IT department staff to identify assets efficiently and record
 
 * Arduino Uno
 * RC522 RFID Module
-
-## Project Outcome
-
-The system provides a more efficient approach to IT asset management by improving asset visibility and data accuracy while reducing manual work in tracking, maintenance, and inspection processes.
-
-It also provides centralized reporting and analytics to support better monitoring and management of IT assets.
+* 
 
 ## Project Recognition
 
