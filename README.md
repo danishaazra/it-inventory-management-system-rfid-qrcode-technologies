@@ -51,7 +51,7 @@ Both methods allow IT department staff to identify assets efficiently and record
 
 * Arduino Uno
 * RC522 RFID Module
-* 
+  
 
 ## Project Recognition
 
